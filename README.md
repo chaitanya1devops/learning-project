@@ -1,35 +1,128 @@
 # DevOps Interview Q&A SPA
 
-A pure static single-page application providing extensive DevOps interview preparation:
-- 30 Q&A per core topic (Linux, Git, Jenkins, Docker, Kubernetes, Terraform, Cloud providers, etc.)
-- Additional topics (SaltStack, System Design Basics, DevSecOps, SRE Concepts, more)
-- Six quiz modes:
-  - Quiz Practice: 50 mixed multiple choice questions
-  - Quiz2: 20 image/logo identification MCQs
-  - Quiz3: Sequential mixed MCQ (advance only on correct)
-  - Quiz4: Sequential Terraform MCQ (IaC focused)
-  - Quiz5: Sequential AWS Networking Expert MCQ (advanced VPC, TGW, endpoints, routing, security)
-  - Quiz6: Sequential Helm Expert MCQ (advanced chart design, templating, dependencies)
-- Features: search, theme toggle (dark/light), accent color picker, copy buttons, animations, accessibility focus handling.
+A comprehensive static single-page application for DevOps interview preparation with interactive learning features:
+
+## 🎯 Features
+
+### 📚 Study Content
+- **30 Q&A per core topic** covering:
+  - Linux, Git, GitHub, Jenkins
+  - Docker, Docker Commands, Kubernetes, Kubernetes Commands
+  - OpenShift, Helm, Terraform
+  - AWS, Azure, GCP
+  - Ansible, SaltStack, Prometheus, Grafana
+  - SRE, CI/CD, DevSecOps, Networking
+  - System Design Basics, Shell Scripting
+
+### 🎮 Quiz Modes
+
+#### Topic-Based Sequential Quizzes (NEW!)
+- **26+ Individual Topic Quizzes** - One quiz for each DevOps topic
+- **10 Questions per Topic** - Mix of MCQ, True/False, and Fill-in-the-blank
+- **Progress Tracking** - Track completion status and best scores
+- **Difficulty Levels** - Beginner, Intermediate, Advanced badges
+- **Smart Feedback** - Instant answer validation with explanations
+- **Score History** - View attempts and best scores for each topic
+- **Celebration Effects** - Confetti animation for quiz completion (≥70%)
+
+#### Challenge Quizzes
+1. **Quiz Practice** - 50 mixed multiple choice questions
+2. **Logo Recognition** - 20 image/logo identification MCQs
+3. **Sequential General** - 30 mixed MCQ (advance only on correct)
+4. **Terraform Deep Dive** - 30 IaC focused questions
+5. **AWS Networking** - 30 advanced VPC, TGW, endpoints questions
+6. **Helm Expert** - 30 advanced chart design & templating questions
+
+### 🎨 User Experience
+- **Dark/Light Theme Toggle** - Comfortable reading in any environment
+- **4 Accent Colors** - Blue, Green, Purple, Orange
+- **Progress Dashboard** - Visual tracking of topics studied
+- **Search Functionality** - Quick content filtering
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Smooth Animations** - Enhanced with transitions and effects
+- **Accessibility** - ARIA labels, keyboard navigation support
+- **LocalStorage Persistence** - Saves progress, theme, and preferences
 
 ## Folder Structure
 ```
 frontend/
   index.html
-  styles.css
-  script.js
-  images/ (SVG placeholders for Quiz2)
-README.md
+## 📁 Folder Structure
 ```
-No build step is required. All assets are static.
+frontend/
+  index.html         - Main SPA structure
+  styles.css         - Complete styling with themes & animations
+  script.js          - App logic, quiz engine, progress tracking
+  images/            - SVG placeholders for logo quiz
+  questions.json     - (Optional) External data source
+README.md            - This file
+.github/workflows/   - GitHub Actions for deployment
+```
+No build step required. All assets are static and framework-free.
 
-## Local Preview
-From project root:
+## 🚀 Quick Start
+
+### Local Development
 ```zsh
+# Clone or navigate to project
+cd learningproject
+
+# Start local server
 python3 -m http.server 8000
-# Then open http://localhost:8000/frontend/
+
+# Open browser
+open http://localhost:8000/frontend/
 ```
-Or simply open `frontend/index.html` in a browser (some features like clipboard & localStorage work directly; a local server is closer to deployment environment).
+
+Or simply open `frontend/index.html` directly in a browser.
+
+## 🎓 Using the Quiz System
+
+### Topic Quizzes
+1. Click **"Quizzes"** tab in sidebar
+2. Select **"Topic Quizzes"** featured card
+3. Choose any topic (Linux, Docker, Kubernetes, etc.)
+4. Answer 10 questions sequentially
+5. View instant feedback after each question
+6. Get detailed results with score, time, and review
+7. Track progress across all topics
+
+### Question Types
+- **Multiple Choice** - Select correct option (A/B/C/D)
+- **True/False** - Simple binary choice
+- **Fill in the Blank** - Type answer (hints provided)
+
+### Scoring & Progress
+- **70%+ to pass** (7/10 questions)
+- **Best scores saved** automatically
+- **Attempt history** tracked per topic
+- **Completion badges** for mastered topics
+- **Difficulty levels** show topic complexity
+
+### Challenge Quizzes
+Access from Quiz Center for specialized practice modes with different formats and difficulty levels.
+
+## 💾 Data Persistence
+All progress saved automatically in browser localStorage:
+- Quiz scores and completion status
+- Best attempts per topic
+- Study progress (topics viewed)
+- Theme preferences (dark/light)
+- Accent color selection
+
+## 🎨 Customization
+
+### Themes
+- Toggle between dark/light mode
+- 4 accent colors: Blue, Green, Purple, Orange
+- Smooth transitions and animations
+- Reduced motion support for accessibility
+
+### Progress Tracking
+- View learning progress dashboard
+- See completion percentages
+- Track viewed vs. unviewed topics
+- Reset progress if needed
 
 ## Deployment Options
 ### 1. GitHub Pages (Project Site)

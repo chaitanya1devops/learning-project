@@ -969,6 +969,54 @@ const devOpsData = {
 let currentTopic = localStorage.getItem('currentTopic') || 'Linux';
 let allTopics = Object.keys(devOpsData);
 
+// ---------------------- Progress Tracking ----------------------
+function initializeProgressTracking() {
+    const progressData = localStorage.getItem('topicProgress');
+    if (!progressData) {
+        const initial = {};
+        allTopics.forEach(topic => {
+            initial[topic] = { viewed: false, viewedAt: null };
+        });
+        localStorage.setItem('topicProgress', JSON.stringify(initial));
+    }
+}
+
+function markTopicViewed(topic) {
+    const progress = JSON.parse(localStorage.getItem('topicProgress') || '{}');
+    if (!progress[topic]) progress[topic] = {};
+    progress[topic].viewed = true;
+    progress[topic].viewedAt = new Date().toISOString();
+    localStorage.setItem('topicProgress', JSON.stringify(progress));
+    updateProgressUI();
+}
+
+function getProgressPercentage() {
+    const progress = JSON.parse(localStorage.getItem('topicProgress') || '{}');
+    const viewed = Object.values(progress).filter(p => p.viewed).length;
+    const total = allTopics.length;
+    return total > 0 ? Math.round((viewed / total) * 100) : 0;
+}
+
+function getViewedTopics() {
+    const progress = JSON.parse(localStorage.getItem('topicProgress') || '{}');
+    return Object.entries(progress)
+        .filter(([_, p]) => p.viewed)
+        .map(([topic, _]) => topic);
+}
+
+function isTopicViewed(topic) {
+    const progress = JSON.parse(localStorage.getItem('topicProgress') || '{}');
+    return progress[topic]?.viewed || false;
+}
+
+function updateProgressUI() {
+    const percentage = getProgressPercentage();
+    const progressBtnText = document.getElementById('progressBtnText');
+    if (progressBtnText) {
+        progressBtnText.textContent = `${percentage}%`;
+    }
+}
+
 // ---------------------- Theme & Accent ----------------------
 function applyTheme(theme) {
     const body = document.body;
@@ -1003,6 +1051,12 @@ function bindUIControls() {
             applyTheme(next);
         });
     }
+    const progressBtn = document.getElementById('progressBtn');
+    if (progressBtn) {
+        progressBtn.addEventListener('click', () => {
+            renderTopic('Progress');
+        });
+    }
     document.querySelectorAll('.accent-btn').forEach(btn => {
         btn.addEventListener('click', () => applyAccent(btn.dataset.accent));
     });
@@ -1010,6 +1064,10 @@ function bindUIControls() {
 
 // ---------------------- Initialization ----------------------
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize progress tracking
+    initializeProgressTracking();
+    // Initialize quiz progress
+    initializeQuizProgress();
     // Restore persisted theme/accent
     applyTheme(localStorage.getItem('theme') || 'dark');
     applyAccent(localStorage.getItem('accent') || 'blue');
@@ -1018,6 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindSearch();
     renderTopic(currentTopic);
     focusActiveTab();
+    updateProgressUI();
 });
 
 // ---------------------- Rendering ----------------------
@@ -1030,6 +1089,7 @@ function renderQuizMenu() {
     const menu = document.createElement('div');
     menu.className = 'quiz-menu';
     menu.innerHTML = `
+<<<<<<< HEAD
         <h2>Select a Quiz</h2>
         <div class="quiz-menu-grid">
             <button class="quiz-menu-btn" data-quiz="Quiz Practice">
@@ -1062,11 +1122,101 @@ function renderQuizMenu() {
                 <p>Sequential Helm Expert</p>
                 <span class="quiz-count">30 questions</span>
             </button>
+=======
+        <h2>🎯 Quiz Center</h2>
+        <p class="quiz-menu-subtitle">Choose your challenge mode</p>
+        
+        <div class="quiz-category">
+            <h3 class="category-title">📚 Topic-Based Quizzes</h3>
+            <p class="category-desc">Sequential quizzes for each DevOps topic with progress tracking</p>
+            <div class="quiz-menu-grid">
+                <button class="quiz-menu-btn featured" data-action="topic-quizzes">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">🎓</span>
+                    </div>
+                    <h3>Topic Quizzes</h3>
+                    <p>26+ topics with 10 questions each</p>
+                    <div class="quiz-features">
+                        <span>✓ Progress tracking</span>
+                        <span>✓ Difficulty levels</span>
+                        <span>✓ Score history</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="quiz-category">
+            <h3 class="category-title">🎮 Challenge Quizzes</h3>
+            <p class="category-desc">Mixed format quizzes for practice and skill testing</p>
+            <div class="quiz-menu-grid">
+                <button class="quiz-menu-btn" data-quiz="Quiz Practice">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">📝</span>
+                    </div>
+                    <h3>Quiz Practice</h3>
+                    <p>General DevOps MCQ</p>
+                    <span class="quiz-count">50 questions</span>
+                </button>
+                <button class="quiz-menu-btn" data-quiz="Quiz2">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">🖼️</span>
+                    </div>
+                    <h3>Logo Recognition</h3>
+                    <p>Identify DevOps tools</p>
+                    <span class="quiz-count">20 images</span>
+                </button>
+                <button class="quiz-menu-btn" data-quiz="Quiz3">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">⚡</span>
+                    </div>
+                    <h3>Sequential General</h3>
+                    <p>Mixed DevOps concepts</p>
+                    <span class="quiz-count">30 questions</span>
+                </button>
+                <button class="quiz-menu-btn" data-quiz="Quiz4">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">🏗️</span>
+                    </div>
+                    <h3>Terraform Deep Dive</h3>
+                    <p>Infrastructure as Code</p>
+                    <span class="quiz-count">30 questions</span>
+                </button>
+                <button class="quiz-menu-btn" data-quiz="Quiz5">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">🌐</span>
+                    </div>
+                    <h3>AWS Networking</h3>
+                    <p>Cloud network concepts</p>
+                    <span class="quiz-count">30 questions</span>
+                </button>
+                <button class="quiz-menu-btn" data-quiz="Quiz6">
+                    <div class="quiz-btn-header">
+                        <span class="quiz-icon">⎈</span>
+                    </div>
+                    <h3>Helm Expert</h3>
+                    <p>K8s package management</p>
+                    <span class="quiz-count">30 questions</span>
+                </button>
+            </div>
+>>>>>>> fb4641a (updated)
         </div>
     `;
     container.appendChild(menu);
     
+<<<<<<< HEAD
     document.querySelectorAll('.quiz-menu-btn').forEach(btn => {
+=======
+    // Topic quizzes button
+    const topicQuizBtn = container.querySelector('[data-action="topic-quizzes"]');
+    if (topicQuizBtn) {
+        topicQuizBtn.addEventListener('click', () => {
+            renderTopicQuizMenu();
+        });
+    }
+    
+    // Challenge quiz buttons
+    document.querySelectorAll('.quiz-menu-btn[data-quiz]').forEach(btn => {
+>>>>>>> fb4641a (updated)
         btn.addEventListener('click', () => {
             const quizType = btn.dataset.quiz;
             renderTopic(quizType);
@@ -1074,11 +1224,90 @@ function renderQuizMenu() {
     });
 }
 
+<<<<<<< HEAD
 function renderTopic(topic) {
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
+=======
+function renderProgressDashboard() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Progress dashboard active'; }
+    
+    const percentage = getProgressPercentage();
+    const viewed = getViewedTopics();
+    const progress = JSON.parse(localStorage.getItem('topicProgress') || '{}');
+    
+    const dashboard = document.createElement('div');
+    dashboard.className = 'progress-dashboard';
+    
+    // Overall stats
+    const statsHtml = `
+        <div class="progress-stats">
+            <h2>Your Learning Progress</h2>
+            <div class="overall-progress">
+                <div class="circular-progress">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" class="progress-bg" />
+                        <circle cx="50" cy="50" r="40" class="progress-fill" style="stroke-dashoffset: ${100 - percentage}" />
+                    </svg>
+                    <div class="progress-text">${percentage}%</div>
+                </div>
+                <div class="progress-info">
+                    <p><strong>${viewed.length}</strong> of <strong>${allTopics.length}</strong> topics explored</p>
+                    <p>Keep learning to master DevOps! 🚀</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Topics grid
+    const topicsHtml = `
+        <div class="progress-topics">
+            <h3>Topic Status</h3>
+            <div class="topics-grid">
+                ${allTopics.map(topic => {
+                    const isViewed = progress[topic]?.viewed || false;
+                    const viewedAt = progress[topic]?.viewedAt ? new Date(progress[topic].viewedAt).toLocaleDateString() : '';
+                    return `
+                        <div class="topic-status ${isViewed ? 'viewed' : 'not-viewed'}">
+                            <div class="topic-badge">${isViewed ? '✓' : '○'}</div>
+                            <div class="topic-name">${topic}</div>
+                            ${isViewed ? `<div class="viewed-date">Viewed: ${viewedAt}</div>` : '<div class="viewed-date">Not yet viewed</div>'}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Reset progress button
+    const resetHtml = `
+        <div class="progress-actions">
+            <button id="resetProgress" class="reset-btn">Reset Progress</button>
+        </div>
+    `;
+    
+    dashboard.innerHTML = statsHtml + topicsHtml + resetHtml;
+    container.appendChild(dashboard);
+    
+    document.getElementById('resetProgress')?.addEventListener('click', () => {
+        if (confirm('Are you sure? This will reset all progress tracking.')) {
+            localStorage.removeItem('topicProgress');
+            initializeProgressTracking();
+            renderProgressDashboard();
+        }
+    });
+}
+
+function renderTopic(topic) {
+    if (topic === 'Quizzes') { renderQuizMenu(); return; }
+    if (topic === 'Progress') { renderProgressDashboard(); return; }
+>>>>>>> fb4641a (updated)
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
     localStorage.setItem('currentTopic', topic);
+    markTopicViewed(topic);
     const container = document.getElementById('questionsContainer');
     container.innerHTML = '';
     // Re-enable search (might have been disabled by sequential quizzes)
@@ -1327,7 +1556,745 @@ function showToast(msg, type = 'info') {
     setTimeout(() => el.className = 'toast', 3000);
 }
 
+// ---------------------- Sequential Quiz System ----------------------
+// Quiz data structure for all DevOps topics
+const topicQuizzes = {
+    "Linux": [
+        { q: "Linux kernel is open source", type: "truefalse", correct: true },
+        { q: "Which command shows disk usage?", type: "mcq", options: ["df", "du", "ls", "ps"], correct: 0 },
+        { q: "The /etc directory contains ___ files", type: "fill", answer: "configuration", hints: ["config", "conf", "system"] },
+        { q: "chmod 755 gives execute permission to everyone", type: "truefalse", correct: true },
+        { q: "Which signal kills a process forcefully?", type: "mcq", options: ["SIGTERM", "SIGKILL", "SIGHUP", "SIGINT"], correct: 1 },
+        { q: "SSH default port is ___", type: "fill", answer: "22" },
+        { q: "systemd is older than SysV init", type: "truefalse", correct: false },
+        { q: "Which shows running processes?", type: "mcq", options: ["top", "df", "mount", "fdisk"], correct: 0 },
+        { q: "The root user has UID ___", type: "fill", answer: "0" },
+        { q: "What does 'sudo' stand for?", type: "mcq", options: ["Super User Do", "System User Do", "Secure User Do", "Super Utility Do"], correct: 0 }
+    ],
+    "Git": [
+        { q: "Git is a distributed version control system", type: "truefalse", correct: true },
+        { q: "Which command stages all changes?", type: "mcq", options: ["git add .", "git commit", "git push", "git pull"], correct: 0 },
+        { q: "git ___ shows commit history", type: "fill", answer: "log" },
+        { q: "Rebase rewrites commit history", type: "truefalse", correct: true },
+        { q: "Which creates a new branch?", type: "mcq", options: ["git branch name", "git checkout", "git merge", "git stash"], correct: 0 },
+        { q: "git ___ downloads remote changes", type: "fill", answer: "fetch", hints: ["pull", "clone"] },
+        { q: "HEAD points to the latest commit", type: "truefalse", correct: true },
+        { q: "Which undoes last commit keeping changes?", type: "mcq", options: ["git reset --soft HEAD~1", "git reset --hard", "git revert", "git clean"], correct: 0 },
+        { q: "The .git folder stores repository ___", type: "fill", answer: "metadata", hints: ["data", "history", "information"] },
+        { q: "What does 'git stash' do?", type: "mcq", options: ["Saves uncommitted changes temporarily", "Deletes changes", "Commits changes", "Pushes to remote"], correct: 0 }
+    ],
+    "GitHub": [
+        { q: "GitHub Actions runs CI/CD workflows", type: "truefalse", correct: true },
+        { q: "Which file defines workflows?", type: "mcq", options: [".github/workflows/*.yml", ".git/config", "package.json", "Dockerfile"], correct: 0 },
+        { q: "Pull requests enable ___ reviews", type: "fill", answer: "code", hints: ["peer", "team"] },
+        { q: "Protected branches can prevent force pushes", type: "truefalse", correct: true },
+        { q: "Where are secrets stored?", type: "mcq", options: ["Repository settings", "Workflow files", "README", "Issues"], correct: 0 },
+        { q: "GitHub Pages hosts ___ websites", type: "fill", answer: "static" },
+        { q: "Dependabot creates automated update PRs", type: "truefalse", correct: true },
+        { q: "Which triggers manual workflows?", type: "mcq", options: ["workflow_dispatch", "push", "pull_request", "schedule"], correct: 0 },
+        { q: "CODEOWNERS file assigns automatic ___", type: "fill", answer: "reviewers", hints: ["owners", "approvers"] },
+        { q: "GitHub uses which VCS?", type: "mcq", options: ["Git", "SVN", "Mercurial", "CVS"], correct: 0 }
+    ],
+    "Jenkins": [
+        { q: "Jenkins is an automation server", type: "truefalse", correct: true },
+        { q: "Which defines Jenkins pipeline?", type: "mcq", options: ["Jenkinsfile", "Dockerfile", "package.json", "config.yml"], correct: 0 },
+        { q: "Jenkins uses ___ for job configuration", type: "fill", answer: "plugins", hints: ["extensions", "modules"] },
+        { q: "Declarative pipeline is simpler than scripted", type: "truefalse", correct: true },
+        { q: "Which stage runs tests?", type: "mcq", options: ["Test stage", "Build stage", "Deploy stage", "Init stage"], correct: 0 },
+        { q: "Jenkins Master delegates work to ___", type: "fill", answer: "agents", hints: ["slaves", "workers", "nodes"] },
+        { q: "Blue Ocean provides modern UI", type: "truefalse", correct: true },
+        { q: "Which triggers build on code push?", type: "mcq", options: ["Webhook", "Cron job", "Manual click", "Email"], correct: 0 },
+        { q: "Pipeline as Code stores build config in ___", type: "fill", answer: "repository", hints: ["repo", "git", "vcs"] },
+        { q: "What language is Jenkins written in?", type: "mcq", options: ["Java", "Python", "Go", "Ruby"], correct: 0 }
+    ],
+    "Docker": [
+        { q: "Docker containers share the host kernel", type: "truefalse", correct: true },
+        { q: "Which file defines container image?", type: "mcq", options: ["Dockerfile", "docker-compose.yml", "container.json", "image.yaml"], correct: 0 },
+        { q: "docker ___ builds an image", type: "fill", answer: "build" },
+        { q: "Containers are lighter than VMs", type: "truefalse", correct: true },
+        { q: "Which instruction sets base image?", type: "mcq", options: ["FROM", "RUN", "CMD", "EXPOSE"], correct: 0 },
+        { q: "docker ___ lists running containers", type: "fill", answer: "ps", hints: ["container ls"] },
+        { q: "Multi-stage builds reduce image size", type: "truefalse", correct: true },
+        { q: "Which creates container network?", type: "mcq", options: ["docker network create", "docker create", "docker net new", "docker setup"], correct: 0 },
+        { q: "Volumes persist data beyond container ___", type: "fill", answer: "lifetime", hints: ["life", "existence", "removal"] },
+        { q: "What does ENTRYPOINT define?", type: "mcq", options: ["Container executable", "Environment variables", "Port mapping", "Volume mount"], correct: 0 }
+    ],
+    "Docker Commands": [
+        { q: "docker run creates and starts a container", type: "truefalse", correct: true },
+        { q: "Which stops a container?", type: "mcq", options: ["docker stop", "docker pause", "docker kill", "docker rm"], correct: 0 },
+        { q: "docker exec -it container bash opens ___ shell", type: "fill", answer: "interactive", hints: ["bash", "terminal"] },
+        { q: "docker logs shows container output", type: "truefalse", correct: true },
+        { q: "Which removes unused images?", type: "mcq", options: ["docker image prune", "docker rm", "docker clean", "docker delete"], correct: 0 },
+        { q: "docker pull downloads images from ___", type: "fill", answer: "registry", hints: ["hub", "repository"] },
+        { q: "docker-compose manages multi-container apps", type: "truefalse", correct: true },
+        { q: "Which shows container resource usage?", type: "mcq", options: ["docker stats", "docker top", "docker info", "docker inspect"], correct: 0 },
+        { q: "docker tag creates image ___", type: "fill", answer: "alias", hints: ["name", "reference", "label"] },
+        { q: "What does 'docker commit' do?", type: "mcq", options: ["Creates image from container", "Pushes to registry", "Starts container", "Builds from Dockerfile"], correct: 0 }
+    ],
+    "Kubernetes": [
+        { q: "Kubernetes orchestrates containerized applications", type: "truefalse", correct: true },
+        { q: "Which is smallest deployable unit?", type: "mcq", options: ["Pod", "Container", "Node", "Service"], correct: 0 },
+        { q: "kubectl ___ creates resources from YAML", type: "fill", answer: "apply", hints: ["create"] },
+        { q: "Services provide stable networking for Pods", type: "truefalse", correct: true },
+        { q: "Which manages stateless replicas?", type: "mcq", options: ["Deployment", "StatefulSet", "DaemonSet", "Job"], correct: 0 },
+        { q: "ConfigMaps store non-confidential ___", type: "fill", answer: "configuration", hints: ["config", "data"] },
+        { q: "Ingress exposes HTTP/HTTPS routes", type: "truefalse", correct: true },
+        { q: "Which ensures Pod runs on every node?", type: "mcq", options: ["DaemonSet", "Deployment", "ReplicaSet", "StatefulSet"], correct: 0 },
+        { q: "Secrets store sensitive data in ___ encoding", type: "fill", answer: "base64" },
+        { q: "What does HPA do?", type: "mcq", options: ["Horizontal Pod Autoscaler", "High Performance API", "Host Port Access", "Health Probe Agent"], correct: 0 }
+    ],
+    "Kubernetes Commands": [
+        { q: "kubectl get pods lists all pods", type: "truefalse", correct: true },
+        { q: "Which shows pod logs?", type: "mcq", options: ["kubectl logs", "kubectl describe", "kubectl exec", "kubectl top"], correct: 0 },
+        { q: "kubectl delete pod ___ removes a pod", type: "fill", answer: "name", hints: ["podname"] },
+        { q: "kubectl describe provides detailed resource info", type: "truefalse", correct: true },
+        { q: "Which creates resources from file?", type: "mcq", options: ["kubectl apply -f", "kubectl create", "kubectl run", "kubectl make"], correct: 0 },
+        { q: "kubectl exec -it pod -- bash opens ___", type: "fill", answer: "shell", hints: ["terminal", "bash", "console"] },
+        { q: "kubectl scale adjusts replica count", type: "truefalse", correct: true },
+        { q: "Which shows cluster info?", type: "mcq", options: ["kubectl cluster-info", "kubectl info", "kubectl status", "kubectl version"], correct: 0 },
+        { q: "kubectl port-forward enables local ___ access", type: "fill", answer: "port", hints: ["service", "pod"] },
+        { q: "What does 'kubectl rollout' manage?", type: "mcq", options: ["Deployment updates", "Storage volumes", "Network policies", "Resource quotas"], correct: 0 }
+    ],
+    "OpenShift": [
+        { q: "OpenShift is built on Kubernetes", type: "truefalse", correct: true },
+        { q: "Which command replaces kubectl?", type: "mcq", options: ["oc", "os", "shift", "openshift"], correct: 0 },
+        { q: "OpenShift adds ___ features to K8s", type: "fill", answer: "developer", hints: ["enterprise", "security", "additional"] },
+        { q: "Routes expose services externally", type: "truefalse", correct: true },
+        { q: "Which builds container images?", type: "mcq", options: ["Source-to-Image (S2I)", "Dockerfile only", "Docker build", "Manual creation"], correct: 0 },
+        { q: "Projects are OpenShift ___", type: "fill", answer: "namespaces", hints: ["namespace"] },
+        { q: "OpenShift includes integrated registry", type: "truefalse", correct: true },
+        { q: "Which provides web console?", type: "mcq", options: ["OpenShift UI", "Kubernetes dashboard", "Rancher", "Portainer"], correct: 0 },
+        { q: "DeploymentConfigs enable ___ deployments", type: "fill", answer: "automated", hints: ["automatic", "auto", "rolling"] },
+        { q: "What company develops OpenShift?", type: "mcq", options: ["Red Hat", "Google", "Microsoft", "Docker"], correct: 0 }
+    ],
+    "Helm": [
+        { q: "Helm is Kubernetes package manager", type: "truefalse", correct: true },
+        { q: "Which file defines chart metadata?", type: "mcq", options: ["Chart.yaml", "values.yaml", "templates/", "helmfile"], correct: 0 },
+        { q: "helm ___ installs a chart", type: "fill", answer: "install" },
+        { q: "Values files allow configuration templating", type: "truefalse", correct: true },
+        { q: "Which upgrades a release?", type: "mcq", options: ["helm upgrade", "helm update", "helm deploy", "helm apply"], correct: 0 },
+        { q: "Charts are stored in ___", type: "fill", answer: "repositories", hints: ["repos", "registry"] },
+        { q: "Helm tracks release history", type: "truefalse", correct: true },
+        { q: "Which rolls back release?", type: "mcq", options: ["helm rollback", "helm undo", "helm revert", "helm reset"], correct: 0 },
+        { q: "Templates use Go ___ syntax", type: "fill", answer: "template", hints: ["templating"] },
+        { q: "What does 'helm list' show?", type: "mcq", options: ["Installed releases", "Available charts", "Repository list", "Template files"], correct: 0 }
+    ],
+    "Terraform": [
+        { q: "Terraform uses declarative configuration", type: "truefalse", correct: true },
+        { q: "Which command initializes directory?", type: "mcq", options: ["terraform init", "terraform setup", "terraform start", "terraform new"], correct: 0 },
+        { q: "terraform ___ shows execution plan", type: "fill", answer: "plan" },
+        { q: "State files track infrastructure", type: "truefalse", correct: true },
+        { q: "Which applies changes?", type: "mcq", options: ["terraform apply", "terraform deploy", "terraform execute", "terraform run"], correct: 0 },
+        { q: "Resources are defined in .tf ___", type: "fill", answer: "files" },
+        { q: "Remote backends enable team collaboration", type: "truefalse", correct: true },
+        { q: "Which destroys infrastructure?", type: "mcq", options: ["terraform destroy", "terraform delete", "terraform remove", "terraform clean"], correct: 0 },
+        { q: "Variables make configurations ___", type: "fill", answer: "reusable", hints: ["flexible", "dynamic", "parameterized"] },
+        { q: "What language does Terraform use?", type: "mcq", options: ["HCL", "YAML", "JSON", "TOML"], correct: 0 }
+    ],
+    "AWS": [
+        { q: "EC2 provides virtual compute instances", type: "truefalse", correct: true },
+        { q: "Which is object storage service?", type: "mcq", options: ["S3", "EBS", "EFS", "RDS"], correct: 0 },
+        { q: "VPC stands for Virtual Private ___", type: "fill", answer: "Cloud" },
+        { q: "Lambda is serverless compute", type: "truefalse", correct: true },
+        { q: "Which is managed database service?", type: "mcq", options: ["RDS", "DynamoDB", "Both", "Neither"], correct: 2 },
+        { q: "IAM manages ___ and permissions", type: "fill", answer: "identities", hints: ["users", "access", "roles"] },
+        { q: "CloudWatch provides monitoring and logging", type: "truefalse", correct: true },
+        { q: "Which is CDN service?", type: "mcq", options: ["CloudFront", "Route53", "API Gateway", "ElastiCache"], correct: 0 },
+        { q: "Auto Scaling adjusts ___ automatically", type: "fill", answer: "capacity", hints: ["instances", "resources"] },
+        { q: "What does ELB stand for?", type: "mcq", options: ["Elastic Load Balancer", "Elastic Linux Box", "Enhanced Load Balancer", "Elastic Layer Backend"], correct: 0 }
+    ],
+    "Azure": [
+        { q: "Azure is Microsoft's cloud platform", type: "truefalse", correct: true },
+        { q: "Which is compute service?", type: "mcq", options: ["Virtual Machines", "Blob Storage", "SQL Database", "CDN"], correct: 0 },
+        { q: "App Service hosts ___ applications", type: "fill", answer: "web", hints: ["website", "app"] },
+        { q: "Resource Groups organize Azure resources", type: "truefalse", correct: true },
+        { q: "Which is container orchestrator?", type: "mcq", options: ["AKS", "VM Scale Sets", "App Service", "Functions"], correct: 0 },
+        { q: "Azure DevOps provides ___ tools", type: "fill", answer: "CI/CD", hints: ["cicd", "pipeline", "development"] },
+        { q: "Blob Storage is object storage", type: "truefalse", correct: true },
+        { q: "Which is serverless compute?", type: "mcq", options: ["Azure Functions", "VM", "AKS", "Container Instances"], correct: 0 },
+        { q: "ARM templates use ___ format", type: "fill", answer: "JSON" },
+        { q: "What is Azure AD?", type: "mcq", options: ["Active Directory identity service", "Application Deployment", "Auto Discovery", "Analytics Dashboard"], correct: 0 }
+    ],
+    "GCP": [
+        { q: "GCP is Google Cloud Platform", type: "truefalse", correct: true },
+        { q: "Which is compute service?", type: "mcq", options: ["Compute Engine", "Cloud Storage", "BigQuery", "Pub/Sub"], correct: 0 },
+        { q: "GKE runs ___ clusters", type: "fill", answer: "Kubernetes", hints: ["K8s", "container"] },
+        { q: "Cloud Functions is serverless", type: "truefalse", correct: true },
+        { q: "Which is object storage?", type: "mcq", options: ["Cloud Storage", "Persistent Disk", "Filestore", "BigQuery"], correct: 0 },
+        { q: "Cloud Run deploys ___ containers", type: "fill", answer: "serverless", hints: ["stateless", "containerized"] },
+        { q: "BigQuery is data warehouse", type: "truefalse", correct: true },
+        { q: "Which is load balancer?", type: "mcq", options: ["Cloud Load Balancing", "Cloud CDN", "Cloud DNS", "Cloud Armor"], correct: 0 },
+        { q: "IAM controls ___ and permissions", type: "fill", answer: "access", hints: ["identity", "authorization"] },
+        { q: "What does Pub/Sub provide?", type: "mcq", options: ["Message queue service", "Database", "Storage", "Compute"], correct: 0 }
+    ],
+    "Ansible": [
+        { q: "Ansible uses agentless architecture", type: "truefalse", correct: true },
+        { q: "Which file defines tasks?", type: "mcq", options: ["Playbook (YAML)", "Dockerfile", "Jenkinsfile", "config.json"], correct: 0 },
+        { q: "Ansible uses ___ for communication", type: "fill", answer: "SSH", hints: ["ssh", "WinRM"] },
+        { q: "Playbooks use YAML syntax", type: "truefalse", correct: true },
+        { q: "Which defines host groups?", type: "mcq", options: ["Inventory file", "Playbook", "Role", "Module"], correct: 0 },
+        { q: "Roles organize ___ components", type: "fill", answer: "reusable", hints: ["playbook", "configuration"] },
+        { q: "Handlers run only when notified", type: "truefalse", correct: true },
+        { q: "Which executes ad-hoc commands?", type: "mcq", options: ["ansible command", "ansible-playbook", "ansible-vault", "ansible-galaxy"], correct: 0 },
+        { q: "Ansible Galaxy provides shared ___", type: "fill", answer: "roles", hints: ["role", "content"] },
+        { q: "What does idempotency mean?", type: "mcq", options: ["Same result on repeat runs", "Runs once only", "Always changes state", "Requires sudo"], correct: 0 }
+    ],
+    "SaltStack": [
+        { q: "Salt uses master-minion architecture", type: "truefalse", correct: true },
+        { q: "Which defines configuration?", type: "mcq", options: ["State files (SLS)", "Playbooks", "Manifests", "Charts"], correct: 0 },
+        { q: "Salt uses ___ for communication", type: "fill", answer: "ZeroMQ", hints: ["zeromq", "messaging"] },
+        { q: "Grains are static minion data", type: "truefalse", correct: true },
+        { q: "Which applies states?", type: "mcq", options: ["salt 'target' state.apply", "salt run", "salt deploy", "salt execute"], correct: 0 },
+        { q: "Pillars store ___ data", type: "fill", answer: "sensitive", hints: ["secure", "secret", "confidential"] },
+        { q: "Salt can run agentless via SSH", type: "truefalse", correct: true },
+        { q: "Which shows minion status?", type: "mcq", options: ["salt-run manage.status", "salt status", "salt list", "salt info"], correct: 0 },
+        { q: "Reactors enable ___ actions", type: "fill", answer: "automated", hints: ["automatic", "event-driven"] },
+        { q: "What language are states written in?", type: "mcq", options: ["YAML", "JSON", "Python", "HCL"], correct: 0 }
+    ],
+    "Prometheus": [
+        { q: "Prometheus is time-series database", type: "truefalse", correct: true },
+        { q: "Which language queries metrics?", type: "mcq", options: ["PromQL", "SQL", "GraphQL", "MongoQL"], correct: 0 },
+        { q: "Prometheus uses ___ model for collection", type: "fill", answer: "pull", hints: ["scrape", "polling"] },
+        { q: "Exporters expose metrics in Prometheus format", type: "truefalse", correct: true },
+        { q: "Which component manages alerts?", type: "mcq", options: ["Alertmanager", "Prometheus Server", "Pushgateway", "Exporter"], correct: 0 },
+        { q: "Labels enable multi-dimensional ___", type: "fill", answer: "data", hints: ["metrics", "queries"] },
+        { q: "Prometheus stores metrics locally", type: "truefalse", correct: true },
+        { q: "Which handles short-lived jobs?", type: "mcq", options: ["Pushgateway", "Exporter", "Alertmanager", "Scraper"], correct: 0 },
+        { q: "Recording rules pre-compute ___", type: "fill", answer: "queries", hints: ["expressions", "aggregations"] },
+        { q: "What is default scrape interval?", type: "mcq", options: ["15 seconds", "30 seconds", "1 minute", "5 seconds"], correct: 0 }
+    ],
+    "Grafana": [
+        { q: "Grafana is visualization platform", type: "truefalse", correct: true },
+        { q: "Which organizes dashboards?", type: "mcq", options: ["Folders", "Buckets", "Groups", "Collections"], correct: 0 },
+        { q: "Grafana supports multiple data ___", type: "fill", answer: "sources", hints: ["source"] },
+        { q: "Dashboards are created with panels", type: "truefalse", correct: true },
+        { q: "Which sends notifications?", type: "mcq", options: ["Alert rules", "Queries", "Variables", "Annotations"], correct: 0 },
+        { q: "Variables make dashboards ___", type: "fill", answer: "dynamic", hints: ["flexible", "reusable", "parameterized"] },
+        { q: "Grafana can connect to Prometheus", type: "truefalse", correct: true },
+        { q: "Which shows time-series data?", type: "mcq", options: ["Graph panel", "Table panel", "Stat panel", "Text panel"], correct: 0 },
+        { q: "Annotations mark ___ on graphs", type: "fill", answer: "events", hints: ["event", "incidents"] },
+        { q: "What format are dashboards stored in?", type: "mcq", options: ["JSON", "YAML", "XML", "TOML"], correct: 0 }
+    ],
+    "SRE": [
+        { q: "SRE applies software engineering to operations", type: "truefalse", correct: true },
+        { q: "Which measures reliability?", type: "mcq", options: ["SLI (Service Level Indicator)", "SLA", "SLO", "Error budget"], correct: 0 },
+        { q: "SLO defines target ___", type: "fill", answer: "availability", hints: ["reliability", "performance"] },
+        { q: "Error budgets balance speed and reliability", type: "truefalse", correct: true },
+        { q: "Which is a DORA metric?", type: "mcq", options: ["Deployment frequency", "CPU usage", "Memory consumption", "Disk I/O"], correct: 0 },
+        { q: "Toil is repetitive ___ work", type: "fill", answer: "manual", hints: ["operational", "routine"] },
+        { q: "Blameless postmortems improve learning", type: "truefalse", correct: true },
+        { q: "Which reduces MTTR?", type: "mcq", options: ["Better monitoring & automation", "More meetings", "Slower deploys", "Manual processes"], correct: 0 },
+        { q: "On-call rotations distribute ___", type: "fill", answer: "responsibility", hints: ["load", "burden", "work"] },
+        { q: "What does MTBF measure?", type: "mcq", options: ["Mean Time Between Failures", "Mean Time Before Fix", "Maximum Time Between Failures", "Minimum Test Before Fix"], correct: 0 }
+    ],
+    "CI/CD": [
+        { q: "CI means Continuous Integration", type: "truefalse", correct: true },
+        { q: "Which runs automated tests?", type: "mcq", options: ["CI pipeline", "CD pipeline", "Version control", "Issue tracker"], correct: 0 },
+        { q: "CD stands for Continuous ___", type: "fill", answer: "Deployment", hints: ["Delivery"] },
+        { q: "Pipelines automate build and deploy", type: "truefalse", correct: true },
+        { q: "Which enables rapid feedback?", type: "mcq", options: ["Automated testing", "Manual QA", "Documentation", "Email reports"], correct: 0 },
+        { q: "Trunk-based development uses ___ branches", type: "fill", answer: "short-lived", hints: ["short", "feature"] },
+        { q: "Blue-green deployment reduces downtime", type: "truefalse", correct: true },
+        { q: "Which deployment strategy is safest?", type: "mcq", options: ["Canary", "Big bang", "Recreate", "All at once"], correct: 0 },
+        { q: "Feature flags decouple ___ from release", type: "fill", answer: "deployment", hints: ["deploy"] },
+        { q: "What is shift-left testing?", type: "mcq", options: ["Test earlier in cycle", "Test only production", "Test after deploy", "Skip testing"], correct: 0 }
+    ],
+    "DevSecOps": [
+        { q: "DevSecOps integrates security into DevOps", type: "truefalse", correct: true },
+        { q: "Which scans for vulnerabilities?", type: "mcq", options: ["SAST tools", "Load balancers", "Proxies", "CDNs"], correct: 0 },
+        { q: "Shift-left security means testing ___", type: "fill", answer: "early", hints: ["earlier", "sooner"] },
+        { q: "Container scanning finds CVEs", type: "truefalse", correct: true },
+        { q: "Which stores secrets securely?", type: "mcq", options: ["Vault", "Git repo", "Dockerfile", "README"], correct: 0 },
+        { q: "SAST performs ___ code analysis", type: "fill", answer: "static", hints: ["source"] },
+        { q: "DAST tests running applications", type: "truefalse", correct: true },
+        { q: "Which enforces policies?", type: "mcq", options: ["OPA (Open Policy Agent)", "Jenkins", "Docker", "Helm"], correct: 0 },
+        { q: "Secret scanning prevents ___ exposure", type: "fill", answer: "credential", hints: ["secret", "key", "password"] },
+        { q: "What is principle of least privilege?", type: "mcq", options: ["Minimum necessary permissions", "Maximum access", "No restrictions", "Admin for all"], correct: 0 }
+    ],
+    "Networking": [
+        { q: "TCP is connection-oriented protocol", type: "truefalse", correct: true },
+        { q: "Which layer has IP protocol?", type: "mcq", options: ["Network layer", "Transport layer", "Application layer", "Data link layer"], correct: 0 },
+        { q: "DNS resolves names to ___", type: "fill", answer: "IP", hints: ["addresses", "IPs"] },
+        { q: "HTTPS uses port 443 by default", type: "truefalse", correct: true },
+        { q: "Which is Layer 4 protocol?", type: "mcq", options: ["TCP", "HTTP", "DNS", "SMTP"], correct: 0 },
+        { q: "Load balancers distribute ___", type: "fill", answer: "traffic", hints: ["requests", "load"] },
+        { q: "VPN encrypts network traffic", type: "truefalse", correct: true },
+        { q: "Which protocol is stateless?", type: "mcq", options: ["UDP", "TCP", "FTP", "SSH"], correct: 0 },
+        { q: "CDN reduces ___ for users", type: "fill", answer: "latency", hints: ["delay", "lag"] },
+        { q: "What does NAT do?", type: "mcq", options: ["Translates IP addresses", "Encrypts data", "Compresses packets", "Routes emails"], correct: 0 }
+    ],
+    "System Design Basics": [
+        { q: "Horizontal scaling adds more servers", type: "truefalse", correct: true },
+        { q: "Which is fastest storage?", type: "mcq", options: ["Cache (RAM)", "SSD", "HDD", "Network storage"], correct: 0 },
+        { q: "CAP theorem: you can have ___ of three", type: "fill", answer: "two", hints: ["2"] },
+        { q: "Sharding partitions database horizontally", type: "truefalse", correct: true },
+        { q: "Which pattern decouples services?", type: "mcq", options: ["Message queue", "Direct API calls", "Shared database", "File sharing"], correct: 0 },
+        { q: "Idempotency means ___ result on retries", type: "fill", answer: "same", hints: ["identical", "consistent"] },
+        { q: "Read replicas improve query performance", type: "truefalse", correct: true },
+        { q: "Which prevents cascading failures?", type: "mcq", options: ["Circuit breaker", "Load balancer", "Cache", "CDN"], correct: 0 },
+        { q: "Eventual consistency allows temporary ___", type: "fill", answer: "divergence", hints: ["inconsistency", "staleness"] },
+        { q: "What is hot storage for?", type: "mcq", options: ["Frequently accessed data", "Archives", "Backups", "Cold data"], correct: 0 }
+    ],
+    "Shell Scripting": [
+        { q: "Bash is a Unix shell", type: "truefalse", correct: true },
+        { q: "Which makes script executable?", type: "mcq", options: ["chmod +x", "chmod 644", "chown", "chgrp"], correct: 0 },
+        { q: "Shebang starts with ___", type: "fill", answer: "#!", hints: ["hashbang"] },
+        { q: "set -e exits on first error", type: "truefalse", correct: true },
+        { q: "Which reads user input?", type: "mcq", options: ["read", "echo", "printf", "cat"], correct: 0 },
+        { q: "$? contains last command ___ code", type: "fill", answer: "exit", hints: ["return", "status"] },
+        { q: "[[ ]] is preferred over [ ] in bash", type: "truefalse", correct: true },
+        { q: "Which loops over array?", type: "mcq", options: ["for item in ${array[@]}", "while true", "until false", "if then"], correct: 0 },
+        { q: "Variables are referenced with ___", type: "fill", answer: "$", hints: ["dollar"] },
+        { q: "What does 'source' do?", type: "mcq", options: ["Executes script in current shell", "Creates new process", "Deletes file", "Compiles code"], correct: 0 }
+    ]
+};
+
+// Quiz state management
+let quizState = {
+    topic: null,
+    currentQuestion: 0,
+    score: 0,
+    answers: [],
+    startTime: null
+};
+
+// Initialize quiz progress storage
+function initializeQuizProgress() {
+    if (!localStorage.getItem('quizProgress')) {
+        const progress = {};
+        Object.keys(topicQuizzes).forEach(topic => {
+            progress[topic] = {
+                completed: false,
+                bestScore: 0,
+                attempts: 0,
+                lastAttempt: null
+            };
+        });
+        localStorage.setItem('quizProgress', JSON.stringify(progress));
+    }
+}
+
+// Get quiz progress for a topic
+function getQuizProgress(topic) {
+    const progress = JSON.parse(localStorage.getItem('quizProgress') || '{}');
+    return progress[topic] || { completed: false, bestScore: 0, attempts: 0, lastAttempt: null };
+}
+
+// Update quiz progress
+function updateQuizProgress(topic, score) {
+    const progress = JSON.parse(localStorage.getItem('quizProgress') || '{}');
+    if (!progress[topic]) {
+        progress[topic] = { completed: false, bestScore: 0, attempts: 0, lastAttempt: null };
+    }
+    
+    progress[topic].attempts += 1;
+    progress[topic].lastAttempt = new Date().toISOString();
+    progress[topic].bestScore = Math.max(progress[topic].bestScore, score);
+    
+    const percentage = (score / 10) * 100;
+    if (percentage >= 70) {
+        progress[topic].completed = true;
+    }
+    
+    localStorage.setItem('quizProgress', JSON.stringify(progress));
+}
+
+// Render topic quiz selection menu
+function renderTopicQuizMenu() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Topic quiz menu active'; }
+    
+    const menu = document.createElement('div');
+    menu.className = 'topic-quiz-menu';
+    
+    let menuHTML = `
+        <div class="quiz-header">
+            <h2>🎯 DevOps Topic Quizzes</h2>
+            <p class="quiz-subtitle">Test your knowledge across all DevOps domains</p>
+        </div>
+        <div class="quiz-stats-summary">
+            <div class="stat-card">
+                <span class="stat-value">${Object.keys(topicQuizzes).length}</span>
+                <span class="stat-label">Total Topics</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${getCompletedQuizCount()}</span>
+                <span class="stat-label">Completed</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">${getAverageScore()}%</span>
+                <span class="stat-label">Avg Score</span>
+            </div>
+        </div>
+        <div class="topic-quiz-grid">
+    `;
+    
+    Object.keys(topicQuizzes).forEach(topic => {
+        const progress = getQuizProgress(topic);
+        const statusClass = progress.completed ? 'completed' : progress.attempts > 0 ? 'in-progress' : 'not-started';
+        const statusIcon = progress.completed ? '✓' : progress.attempts > 0 ? '◐' : '○';
+        const difficultyLevel = getDifficultyLevel(topic);
+        
+        menuHTML += `
+            <button class="topic-quiz-card ${statusClass}" data-topic="${topic}">
+                <div class="quiz-card-header">
+                    <span class="quiz-status-icon">${statusIcon}</span>
+                    <span class="quiz-difficulty ${difficultyLevel}">${difficultyLevel}</span>
+                </div>
+                <h3>${topic}</h3>
+                <div class="quiz-card-stats">
+                    <span>📝 10 Questions</span>
+                    <span>🎯 Best: ${progress.bestScore}/10</span>
+                </div>
+                ${progress.attempts > 0 ? `<div class="quiz-card-attempts">Attempts: ${progress.attempts}</div>` : ''}
+            </button>
+        `;
+    });
+    
+    menuHTML += '</div>';
+    menu.innerHTML = menuHTML;
+    container.appendChild(menu);
+    
+    // Attach click handlers
+    document.querySelectorAll('.topic-quiz-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const topic = card.dataset.topic;
+            startTopicQuiz(topic);
+        });
+    });
+}
+
+// Get difficulty level based on topic
+function getDifficultyLevel(topic) {
+    const advanced = ['Kubernetes', 'Terraform', 'SRE', 'System Design Basics', 'DevSecOps'];
+    const intermediate = ['Docker', 'AWS', 'Azure', 'GCP', 'Prometheus', 'Grafana', 'CI/CD', 'Helm'];
+    
+    if (advanced.includes(topic)) return 'advanced';
+    if (intermediate.includes(topic)) return 'intermediate';
+    return 'beginner';
+}
+
+// Get completed quiz count
+function getCompletedQuizCount() {
+    const progress = JSON.parse(localStorage.getItem('quizProgress') || '{}');
+    return Object.values(progress).filter(p => p.completed).length;
+}
+
+// Get average score
+function getAverageScore() {
+    const progress = JSON.parse(localStorage.getItem('quizProgress') || '{}');
+    const scores = Object.values(progress).filter(p => p.bestScore > 0).map(p => p.bestScore);
+    if (scores.length === 0) return 0;
+    return Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10);
+}
+
+// Start a topic quiz
+function startTopicQuiz(topic) {
+    quizState = {
+        topic: topic,
+        currentQuestion: 0,
+        score: 0,
+        answers: [],
+        startTime: Date.now()
+    };
+    
+    renderQuizQuestion();
+}
+
+// Render current quiz question
+function renderQuizQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const quiz = topicQuizzes[quizState.topic];
+    const question = quiz[quizState.currentQuestion];
+    const questionNum = quizState.currentQuestion + 1;
+    const totalQuestions = quiz.length;
+    const progressPercent = (quizState.currentQuestion / totalQuestions) * 100;
+    
+    container.innerHTML = '';
+    const quizDiv = document.createElement('div');
+    quizDiv.className = 'quiz-container';
+    
+    let questionHTML = `
+        <div class="quiz-progress-header">
+            <button class="quiz-exit-btn" onclick="confirmQuizExit()">✕ Exit Quiz</button>
+            <div class="quiz-topic-title">${quizState.topic}</div>
+        </div>
+        <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" style="width: ${progressPercent}%"></div>
+        </div>
+        <div class="quiz-question-counter">
+            <span class="current-question">${questionNum}</span>
+            <span class="question-separator">/</span>
+            <span class="total-questions">${totalQuestions}</span>
+        </div>
+        <div class="quiz-question-card">
+            <h3 class="quiz-question-text">${question.q}</h3>
+    `;
+    
+    if (question.type === 'mcq') {
+        questionHTML += '<div class="quiz-options">';
+        question.options.forEach((option, index) => {
+            questionHTML += `
+                <button class="quiz-option" data-index="${index}">
+                    <span class="option-letter">${String.fromCharCode(65 + index)}</span>
+                    <span class="option-text">${option}</span>
+                </button>
+            `;
+        });
+        questionHTML += '</div>';
+    } else if (question.type === 'truefalse') {
+        questionHTML += `
+            <div class="quiz-options quiz-truefalse">
+                <button class="quiz-option" data-answer="true">
+                    <span class="option-icon">✓</span>
+                    <span class="option-text">True</span>
+                </button>
+                <button class="quiz-option" data-answer="false">
+                    <span class="option-icon">✗</span>
+                    <span class="option-text">False</span>
+                </button>
+            </div>
+        `;
+    } else if (question.type === 'fill') {
+        questionHTML += `
+            <div class="quiz-fill-container">
+                <input type="text" class="quiz-fill-input" placeholder="Type your answer..." autocomplete="off">
+                <button class="quiz-submit-btn" disabled>Submit Answer</button>
+                ${question.hints ? `<div class="quiz-hints">💡 Hints: ${question.hints.join(', ')}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    questionHTML += `
+        </div>
+        <div class="quiz-score-display">Score: ${quizState.score}/${quizState.currentQuestion}</div>
+    `;
+    
+    quizDiv.innerHTML = questionHTML;
+    container.appendChild(quizDiv);
+    
+    // Add animation
+    quizDiv.classList.add('quiz-slide-in');
+    
+    // Attach event handlers
+    if (question.type === 'mcq') {
+        document.querySelectorAll('.quiz-option').forEach(btn => {
+            btn.addEventListener('click', () => handleMCQAnswer(parseInt(btn.dataset.index)));
+        });
+    } else if (question.type === 'truefalse') {
+        document.querySelectorAll('.quiz-option').forEach(btn => {
+            btn.addEventListener('click', () => handleTrueFalseAnswer(btn.dataset.answer === 'true'));
+        });
+    } else if (question.type === 'fill') {
+        const input = container.querySelector('.quiz-fill-input');
+        const submitBtn = container.querySelector('.quiz-submit-btn');
+        
+        input.addEventListener('input', () => {
+            submitBtn.disabled = input.value.trim() === '';
+        });
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && input.value.trim()) {
+                handleFillAnswer(input.value.trim());
+            }
+        });
+        
+        submitBtn.addEventListener('click', () => {
+            handleFillAnswer(input.value.trim());
+        });
+        
+        input.focus();
+    }
+}
+
+// Handle MCQ answer
+function handleMCQAnswer(selectedIndex) {
+    const question = topicQuizzes[quizState.topic][quizState.currentQuestion];
+    const correct = selectedIndex === question.correct;
+    
+    quizState.answers.push({ question: question.q, userAnswer: selectedIndex, correct });
+    if (correct) quizState.score++;
+    
+    showAnswerFeedback(correct, question.options[question.correct]);
+}
+
+// Handle True/False answer
+function handleTrueFalseAnswer(selectedAnswer) {
+    const question = topicQuizzes[quizState.topic][quizState.currentQuestion];
+    const correct = selectedAnswer === question.correct;
+    
+    quizState.answers.push({ question: question.q, userAnswer: selectedAnswer, correct });
+    if (correct) quizState.score++;
+    
+    showAnswerFeedback(correct, question.correct ? 'True' : 'False');
+}
+
+// Handle fill-in-the-blank answer
+function handleFillAnswer(userAnswer) {
+    const question = topicQuizzes[quizState.topic][quizState.currentQuestion];
+    const normalizedUser = userAnswer.toLowerCase().trim();
+    const normalizedCorrect = question.answer.toLowerCase().trim();
+    
+    // Check answer and hints
+    let correct = normalizedUser === normalizedCorrect;
+    if (!correct && question.hints) {
+        correct = question.hints.some(hint => hint.toLowerCase().trim() === normalizedUser);
+    }
+    
+    quizState.answers.push({ question: question.q, userAnswer, correct });
+    if (correct) quizState.score++;
+    
+    showAnswerFeedback(correct, question.answer);
+}
+
+// Show answer feedback
+function showAnswerFeedback(correct, correctAnswer) {
+    const container = document.getElementById('questionsContainer');
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `quiz-feedback ${correct ? 'correct' : 'incorrect'}`;
+    
+    feedbackDiv.innerHTML = `
+        <div class="feedback-icon">${correct ? '🎉' : '💡'}</div>
+        <div class="feedback-text">
+            <h3>${correct ? 'Correct!' : 'Not quite right'}</h3>
+            ${!correct ? `<p>The correct answer is: <strong>${correctAnswer}</strong></p>` : ''}
+        </div>
+    `;
+    
+    container.appendChild(feedbackDiv);
+    
+    // Play animation
+    setTimeout(() => feedbackDiv.classList.add('show'), 10);
+    
+    // Move to next question or show results
+    setTimeout(() => {
+        quizState.currentQuestion++;
+        if (quizState.currentQuestion < topicQuizzes[quizState.topic].length) {
+            renderQuizQuestion();
+        } else {
+            showQuizResults();
+        }
+    }, 2000);
+}
+
+// Show quiz results
+function showQuizResults() {
+    const container = document.getElementById('questionsContainer');
+    const totalQuestions = topicQuizzes[quizState.topic].length;
+    const percentage = Math.round((quizState.score / totalQuestions) * 100);
+    const timeTaken = Math.round((Date.now() - quizState.startTime) / 1000);
+    const passed = percentage >= 70;
+    
+    // Update progress
+    updateQuizProgress(quizState.topic, quizState.score);
+    const progress = getQuizProgress(quizState.topic);
+    
+    container.innerHTML = '';
+    const resultsDiv = document.createElement('div');
+    resultsDiv.className = 'quiz-results';
+    
+    resultsDiv.innerHTML = `
+        <div class="results-header ${passed ? 'passed' : 'failed'}">
+            <div class="results-icon">${passed ? '🏆' : '📚'}</div>
+            <h2>${passed ? 'Congratulations!' : 'Keep Learning!'}</h2>
+            <p>${passed ? 'You passed the quiz!' : 'Review the material and try again'}</p>
+        </div>
+        
+        <div class="results-score-circle">
+            <svg viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="var(--border)" stroke-width="12"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="var(--accent)" stroke-width="12"
+                    stroke-dasharray="${2 * Math.PI * 90}" 
+                    stroke-dashoffset="${2 * Math.PI * 90 * (1 - percentage / 100)}"
+                    transform="rotate(-90 100 100)"/>
+            </svg>
+            <div class="score-text">
+                <span class="score-number">${percentage}%</span>
+                <span class="score-fraction">${quizState.score}/${totalQuestions}</span>
+            </div>
+        </div>
+        
+        <div class="results-stats">
+            <div class="result-stat">
+                <span class="stat-label">Time Taken</span>
+                <span class="stat-value">${Math.floor(timeTaken / 60)}:${String(timeTaken % 60).padStart(2, '0')}</span>
+            </div>
+            <div class="result-stat">
+                <span class="stat-label">Best Score</span>
+                <span class="stat-value">${progress.bestScore}/10</span>
+            </div>
+            <div class="result-stat">
+                <span class="stat-label">Attempts</span>
+                <span class="stat-value">${progress.attempts}</span>
+            </div>
+        </div>
+        
+        <div class="results-review">
+            <h3>Answer Review</h3>
+            <div class="answer-review-list">
+                ${quizState.answers.map((ans, idx) => `
+                    <div class="review-item ${ans.correct ? 'correct' : 'incorrect'}">
+                        <span class="review-number">${idx + 1}</span>
+                        <span class="review-icon">${ans.correct ? '✓' : '✗'}</span>
+                        <span class="review-question">${ans.question}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        
+        <div class="results-actions">
+            <button class="quiz-action-btn primary" onclick="startTopicQuiz('${quizState.topic}')">
+                🔄 Retry Quiz
+            </button>
+            <button class="quiz-action-btn secondary" onclick="renderTopicQuizMenu()">
+                📚 All Quizzes
+            </button>
+            <button class="quiz-action-btn secondary" onclick="renderTopic('${quizState.topic}')">
+                📖 Study ${quizState.topic}
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(resultsDiv);
+    
+    // Trigger confetti animation if passed
+    if (passed) {
+        createConfetti();
+    }
+}
+
+// Create confetti animation
+function createConfetti() {
+    const colors = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0'];
+    const container = document.getElementById('questionsContainer');
+    
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+        container.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 5000);
+    }
+}
+
+// Confirm quiz exit
+function confirmQuizExit() {
+    if (confirm('Are you sure you want to exit? Your progress will be lost.')) {
+        renderTopicQuizMenu();
+    }
+}
+
 // Expose for debugging (optional)
 window.devOpsData = devOpsData;
 window.renderTopic = renderTopic;
+window.topicQuizzes = topicQuizzes;
+window.startTopicQuiz = startTopicQuiz;
+window.renderTopicQuizMenu = renderTopicQuizMenu;
+window.confirmQuizExit = confirmQuizExit;
 
