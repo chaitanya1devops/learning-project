@@ -1079,6 +1079,593 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressUI();
 });
 
+// ---------------------- Portfolio Page ----------------------
+function renderPortfolio() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Portfolio view active'; }
+    
+    const portfolio = document.createElement('div');
+    portfolio.className = 'portfolio-container';
+    
+    portfolio.innerHTML = `
+        <!-- Hero Section -->
+        <div class="portfolio-hero">
+            <div class="hero-content">
+                <div class="hero-image">
+                    <div class="avatar">👨‍💻</div>
+                </div>
+                <h1 class="hero-title">Chaitanya Kongara</h1>
+                <p class="hero-subtitle">Platform Specialist | DevOps Engineer | Cloud Architect</p>
+                <div class="hero-contact">
+                    <span class="contact-item">✉️ Chaitanya1devops@gmail.com</span>
+                    <span class="contact-item">📱 +91 9182302453</span>
+                </div>
+                <div class="hero-tags">
+                    <span class="tag">AWS | Azure | GCP</span>
+                    <span class="tag">Kubernetes Expert</span>
+                    <span class="tag">CI/CD Specialist</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">👤</span>
+                Professional Summary
+            </h2>
+            <div class="about-content">
+                <p class="about-text">
+                    DevOps professional with 11 years of experience in the IT industry, specializing in AWS, Azure, 
+                    and GCP cloud platforms. Skilled in CI/CD, automation, cloud infrastructure, and configuration management. 
+                    Focused on orchestrating cloud infrastructure services from design and implementation to operations, 
+                    delivering cost savings and improved efficiency for businesses.
+                </p>
+                <p class="about-text">
+                    Proficient in Continuous Integration & Deployment using tools like Git, Maven, Jenkins, SonarQube, 
+                    Docker, and Kubernetes. Strong expertise in managing and scaling workloads in GKE and EKS. 
+                    Designed and implemented highly available, secure, and scalable Kubernetes clusters with ISO 27001 
+                    compliance through Vanta integration.
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">11+</div>
+                        <div class="stat-label">Years Experience</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">Multi-Cloud</div>
+                        <div class="stat-label">AWS | Azure | GCP</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">ISO 27001</div>
+                        <div class="stat-label">Compliance Expert</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education Section -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">🎓</span>
+                Education
+            </h2>
+            <div class="education-card">
+                <h3>Bachelor's in Information Systems</h3>
+                <p class="edu-institution">Federation University, Melbourne, Australia</p>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">🛠️</span>
+                Technical Skills
+            </h2>
+            <div class="skills-grid">
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Cloud Platforms</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Amazon Web Services (AWS)</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Google Cloud Platform (GCP)</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Microsoft Azure</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">CI/CD Tools</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Jenkins</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">GitHub Actions</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">CircleCI</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Azure DevOps</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Bamboo</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Containerization & Orchestration</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Kubernetes (EKS, GKE)</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Docker</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Amazon ECS</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Helm</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">IaC & Configuration Management</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Terraform</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Ansible</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">CloudFormation</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">SaltStack</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Puppet</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Chef</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Monitoring & Logging</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Prometheus</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Grafana</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 92%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">CloudWatch</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Sentry</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Programming & Scripting</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Python</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Shell/Bash</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Java</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Node.js</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 82%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Build & Version Control</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">Maven</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">ANT</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Git (GitHub, GitLab, CodeCommit)</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 95%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skill-category">
+                    <h3 class="skill-category-title">Other Tools</h3>
+                    <div class="skill-items">
+                        <div class="skill-item">
+                            <span class="skill-name">SonarQube</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 88%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">OWASP ZAP</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 82%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">JIRA & Confluence</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span class="skill-name">Vanta (ISO 27001)</span>
+                            <div class="skill-bar">
+                                <div class="skill-progress" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">🚀</span>
+                Key Projects
+            </h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Koodoo - Fintech Platform</h3>
+                        <span class="project-badge featured">Current</span>
+                    </div>
+                    <p class="project-description">
+                        Python, ReactJS, and Node.js based generative AI SaaS platform on GCP. Implemented complete DevOps pipeline with Kubernetes orchestration, monitoring solutions, and security scanning.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-tag">GCP</span>
+                        <span class="tech-tag">Kubernetes (GKE)</span>
+                        <span class="tech-tag">Prometheus</span>
+                        <span class="tech-tag">Grafana</span>
+                        <span class="tech-tag">CircleCI</span>
+                        <span class="tech-tag">Helm</span>
+                        <span class="tech-tag">SonarQube</span>
+                        <span class="tech-tag">MongoDB</span>
+                        <span class="tech-tag">PostgreSQL</span>
+                    </div>
+                    <div class="project-metrics">
+                        <div class="metric">
+                            <span class="metric-value">100%</span>
+                            <span class="metric-label">Automation</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">ISO</span>
+                            <span class="metric-label">27001 Compliant</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Hamilton Lane - Microservices Migration</h3>
+                        <span class="project-badge">Production</span>
+                    </div>
+                    <p class="project-description">
+                        Led migration from monolithic architecture to microservices using Amazon ECS. Built comprehensive CI/CD infrastructure supporting Python, ReactJS, GoLang, and Java applications.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-tag">AWS</span>
+                        <span class="tech-tag">Amazon ECS</span>
+                        <span class="tech-tag">Jenkins</span>
+                        <span class="tech-tag">SaltStack</span>
+                        <span class="tech-tag">Git</span>
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">ReactJS</span>
+                        <span class="tech-tag">GoLang</span>
+                    </div>
+                    <div class="project-metrics">
+                        <div class="metric">
+                            <span class="metric-value">100%</span>
+                            <span class="metric-label">Migration Success</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">4</span>
+                            <span class="metric-label">Tech Stacks</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>Aegon Life Insurance - Cloud Infrastructure</h3>
+                        <span class="project-badge">Active</span>
+                    </div>
+                    <p class="project-description">
+                        Enterprise-scale DevOps implementation for insurance platform. Managed build pipelines with Maven, deployed on AWS cloud infrastructure with Kubernetes orchestration.
+                    </p>
+                    <div class="project-tech">
+                        <span class="tech-tag">AWS</span>
+                        <span class="tech-tag">Kubernetes</span>
+                        <span class="tech-tag">Jenkins</span>
+                        <span class="tech-tag">Maven</span>
+                        <span class="tech-tag">GitHub</span>
+                        <span class="tech-tag">Ansible</span>
+                        <span class="tech-tag">Helm</span>
+                        <span class="tech-tag">S3</span>
+                    </div>
+                    <div class="project-metrics">
+                        <div class="metric">
+                            <span class="metric-value">Enterprise</span>
+                            <span class="metric-label">Scale</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">4+</span>
+                            <span class="metric-label">Years</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Certifications Section -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">🏆</span>
+                Core Competencies
+            </h2>
+            <div class="certifications-grid">
+                <div class="cert-card">
+                    <div class="cert-icon">☁️</div>
+                    <h3>Multi-Cloud Architecture</h3>
+                    <p class="cert-issuer">AWS | Azure | GCP</p>
+                    <span class="cert-level">Expert</span>
+                </div>
+                <div class="cert-card">
+                    <div class="cert-icon">⎈</div>
+                    <h3>Kubernetes & Container Orchestration</h3>
+                    <p class="cert-issuer">GKE | EKS | ECS</p>
+                    <span class="cert-level">Advanced</span>
+                </div>
+                <div class="cert-card">
+                    <div class="cert-icon">🔄</div>
+                    <h3>CI/CD Pipeline Design</h3>
+                    <p class="cert-issuer">Jenkins | CircleCI | GitHub Actions</p>
+                    <span class="cert-level">Expert</span>
+                </div>
+                <div class="cert-card">
+                    <div class="cert-icon">🔒</div>
+                    <h3>Security & Compliance</h3>
+                    <p class="cert-issuer">ISO 27001 via Vanta</p>
+                    <span class="cert-level">Certified</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Timeline -->
+        <section class="portfolio-section">
+            <h2 class="section-title">
+                <span class="title-icon">💼</span>
+                Professional Experience
+            </h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Platform Specialist</h3>
+                        <p class="timeline-company">Blenheim Chalcot, London, UK | March 2023 - Present</p>
+                        <ul class="timeline-achievements">
+                            <li>Deployed CI/CD pipelines using GitHub and CircleCI for Python and ReactJS-based projects</li>
+                            <li>Managed Google Cloud Platform (GCP) infrastructure and Kubernetes deployments via Helm charts</li>
+                            <li>Implemented monitoring solutions with Prometheus and Grafana for real-time system insights</li>
+                            <li>Integrated quality and security tools: SonarQube, Sentry, and OWASP ZAP for code analysis</li>
+                            <li>Led Koodoo Fintech project: Generative AI SaaS platform with Node.js, MongoDB, PostgreSQL on GCP</li>
+                            <li>Ensured ISO 27001 compliance using Vanta for security and compliance management</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Lead DevOps Engineer</h3>
+                        <p class="timeline-company">Alternative-Path, Hyderabad, India | April 2022 - March 2023</p>
+                        <ul class="timeline-achievements">
+                            <li>Built CI/CD pipelines for Python, ReactJS, GoLang, and Java applications</li>
+                            <li>Led migration from monolithic architecture to microservices on Amazon ECS</li>
+                            <li>Implemented infrastructure automation using Git, SaltStack, Jenkins, and AWS</li>
+                            <li>Developed Python scripts for deployment automation and infrastructure management</li>
+                            <li>Hamilton Lane Project: Orchestrated microservices migration with comprehensive CI/CD implementation</li>
+                            <li>Provided technical mentorship and guidance to development teams</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Senior DevOps Engineer</h3>
+                        <p class="timeline-company">Saksoft Ltd, Chennai, India | January 2018 - March 2022</p>
+                        <ul class="timeline-achievements">
+                            <li>Managed Build, Release, and Deployment processes for enterprise applications</li>
+                            <li>Configured MAVEN builds and automated deployments using Jenkins CI/CD</li>
+                            <li>Implemented version control with Git, GitHub, and Ansible for configuration management</li>
+                            <li>Deployed AWS cloud infrastructure: S3, EBS, ELB, Auto Scaling Groups</li>
+                            <li>Aegon Life Insurance Project: Deployed Kubernetes APIs and managed Helm chart deployments</li>
+                            <li>Maintained high availability and reliability for mission-critical insurance systems</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">DevOps Engineer</h3>
+                        <p class="timeline-company">Tata Consultancy Services (TCS), Hyderabad, India | May 2014 - June 2018</p>
+                        <ul class="timeline-achievements">
+                            <li>Managed Build and Release processes for NCB and MMIS projects</li>
+                            <li>Deployed Java-based web applications using SVN, GitHub, and AWS CodeCommit</li>
+                            <li>Implemented continuous integration workflows using Jenkins</li>
+                            <li>Provisioned AWS infrastructure with CloudFormation, EC2, S3, and networking components</li>
+                            <li>Automated configuration management using Puppet for consistent environment setups</li>
+                            <li>Containerized applications with Docker for improved portability and scalability</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="portfolio-section contact-section">
+            <h2 class="section-title">
+                <span class="title-icon">📧</span>
+                Get In Touch
+            </h2>
+            <div class="contact-content">
+                <p class="contact-text">
+                    Interested in discussing DevOps opportunities, cloud architecture, or potential collaborations? 
+                    With 11 years of experience across AWS, Azure, and GCP, I'm always open to connecting with fellow professionals and exploring new challenges in the DevOps and cloud infrastructure space.
+                </p>
+                <div class="contact-links">
+                    <a href="mailto:Chaitanya1devops@gmail.com" class="contact-btn">
+                        <span class="btn-icon">✉️</span>
+                        Chaitanya1devops@gmail.com
+                    </a>
+                    <a href="tel:+919182302453" class="contact-btn">
+                        <span class="btn-icon">📱</span>
+                        +91 9182302453
+                    </a>
+                </div>
+            </div>
+        </section>
+    `;
+    
+    container.appendChild(portfolio);
+    
+    // Animate skill bars on scroll
+    const observerOptions = {
+        threshold: 0.2,
+        rootMargin: '0px 0px -100px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate');
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.skill-progress').forEach(bar => {
+        observer.observe(bar);
+    });
+}
+
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
     const container = document.getElementById('questionsContainer');
@@ -1258,6 +1845,7 @@ function renderProgressDashboard() {
 }
 
 function renderTopic(topic) {
+    if (topic === 'Portfolio') { renderPortfolio(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
