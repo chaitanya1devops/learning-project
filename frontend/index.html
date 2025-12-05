@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Interview Questions & Answers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">DevOps Interview Questions & Answers</h1>
+                <p class="subtitle">Master your DevOps knowledge</p>
+                <div class="ui-controls" aria-label="Interface controls">
+                    <button id="themeToggle" class="control-btn" aria-label="Toggle light or dark theme" title="Toggle Theme">🌙</button>
+                    <div class="accent-picker" role="group" aria-label="Accent color selector">
+                        <button class="accent-btn" data-accent="blue" aria-label="Blue accent" title="Blue"></button>
+                        <button class="accent-btn" data-accent="green" aria-label="Green accent" title="Green"></button>
+                        <button class="accent-btn" data-accent="purple" aria-label="Purple accent" title="Purple"></button>
+                        <button class="accent-btn" data-accent="orange" aria-label="Orange accent" title="Orange"></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>Topics</h2>
+                </div>
+                <nav class="nav-tabs">
+                    <button class="tab-btn active" data-topic="Linux">Linux</button>
+                    <button class="tab-btn" data-topic="Git">Git</button>
+                    <button class="tab-btn" data-topic="GitHub">GitHub</button>
+                    <button class="tab-btn" data-topic="Jenkins">Jenkins</button>
+                    <button class="tab-btn" data-topic="Docker">Docker</button>
+                    <button class="tab-btn" data-topic="Kubernetes">Kubernetes</button>
+                    <button class="tab-btn" data-topic="Helm">Helm</button>
+                    <button class="tab-btn" data-topic="Terraform">Terraform</button>
+                    <button class="tab-btn" data-topic="AWS">AWS</button>
+                    <button class="tab-btn" data-topic="Azure">Azure</button>
+                    <button class="tab-btn" data-topic="GCP">GCP</button>
+                    <button class="tab-btn" data-topic="Ansible">Ansible</button>
+                    <button class="tab-btn" data-topic="SaltStack">SaltStack</button>
+                    <button class="tab-btn" data-topic="Prometheus">Prometheus</button>
+                    <button class="tab-btn" data-topic="Grafana">Grafana</button>
+                    <button class="tab-btn" data-topic="SRE Concepts">SRE Concepts</button>
+                    <button class="tab-btn" data-topic="CI/CD">CI/CD</button>
+                    <button class="tab-btn" data-topic="DevSecOps">DevSecOps</button>
+                    <button class="tab-btn" data-topic="Networking Basics">Networking</button>
+                    <button class="tab-btn" data-topic="System Design Basics">System Design</button>
+                    <button class="tab-btn" data-topic="Shell Scripting">Shell Scripting</button>
+                    <button class="tab-btn" data-topic="Quiz Practice">Quiz Practice</button>
+                    <button class="tab-btn" data-topic="Quiz2">Quiz2</button>
+                    <button class="tab-btn" data-topic="Quiz3">Quiz3</button>
+                    <button class="tab-btn" data-topic="Quiz4">Quiz4</button>
+                    <button class="tab-btn" data-topic="Quiz5">Quiz5</button>
+                    <button class="tab-btn" data-topic="Quiz6">Quiz6</button>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-bar" 
+                        placeholder="Search questions..."
+                        aria-label="Search questions"
+                    >
+                    <span class="search-icon">🔍</span>
+                </div>
+
+                <!-- Questions Container -->
+                <div class="questions-container" id="questionsContainer">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
