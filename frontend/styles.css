@@ -153,6 +153,16 @@ mark { background:var(--mark); color:#111; padding:0 .2em; border-radius:3px; }
 #toast.toast-success { background:#15803d; }
 #toast.toast-info,#toast.toast-error,#toast.toast-success { opacity:1; transform:translateY(0); }
 
+/* Quiz Menu */
+.quiz-menu { padding:2rem; }
+.quiz-menu h2 { text-align:center; margin:0 0 2rem 0; font-size:1.5rem; }
+.quiz-menu-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.5rem; }
+.quiz-menu-btn { background:var(--bg-alt); border:2px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; cursor:pointer; transition:var(--transition); text-align:center; color:var(--text); }
+.quiz-menu-btn:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.2); }
+.quiz-menu-btn h3 { margin:0 0 .5rem 0; font-size:1.1rem; }
+.quiz-menu-btn p { margin:0 0 1rem 0; font-size:.9rem; color:var(--text-dim); }
+.quiz-menu-btn .quiz-count { display:inline-block; background:var(--accent); color:white; padding:.25rem .75rem; border-radius:12px; font-size:.8rem; font-weight:500; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .main-wrapper { flex-direction:column; }
