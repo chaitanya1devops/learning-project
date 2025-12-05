@@ -1089,40 +1089,6 @@ function renderQuizMenu() {
     const menu = document.createElement('div');
     menu.className = 'quiz-menu';
     menu.innerHTML = `
-<<<<<<< HEAD
-        <h2>Select a Quiz</h2>
-        <div class="quiz-menu-grid">
-            <button class="quiz-menu-btn" data-quiz="Quiz Practice">
-                <h3>Quiz Practice</h3>
-                <p>General DevOps MCQ</p>
-                <span class="quiz-count">50 questions</span>
-            </button>
-            <button class="quiz-menu-btn" data-quiz="Quiz2">
-                <h3>Quiz2</h3>
-                <p>Logo Identification</p>
-                <span class="quiz-count">20 images</span>
-            </button>
-            <button class="quiz-menu-btn" data-quiz="Quiz3">
-                <h3>Quiz3</h3>
-                <p>Sequential General</p>
-                <span class="quiz-count">30 questions</span>
-            </button>
-            <button class="quiz-menu-btn" data-quiz="Quiz4">
-                <h3>Quiz4</h3>
-                <p>Sequential Terraform</p>
-                <span class="quiz-count">30 questions</span>
-            </button>
-            <button class="quiz-menu-btn" data-quiz="Quiz5">
-                <h3>Quiz5</h3>
-                <p>Sequential AWS Networking</p>
-                <span class="quiz-count">30 questions</span>
-            </button>
-            <button class="quiz-menu-btn" data-quiz="Quiz6">
-                <h3>Quiz6</h3>
-                <p>Sequential Helm Expert</p>
-                <span class="quiz-count">30 questions</span>
-            </button>
-=======
         <h2>🎯 Quiz Center</h2>
         <p class="quiz-menu-subtitle">Choose your challenge mode</p>
         
@@ -1198,14 +1164,10 @@ function renderQuizMenu() {
                     <span class="quiz-count">30 questions</span>
                 </button>
             </div>
->>>>>>> fb4641a (updated)
         </div>
     `;
     container.appendChild(menu);
     
-<<<<<<< HEAD
-    document.querySelectorAll('.quiz-menu-btn').forEach(btn => {
-=======
     // Topic quizzes button
     const topicQuizBtn = container.querySelector('[data-action="topic-quizzes"]');
     if (topicQuizBtn) {
@@ -1216,7 +1178,6 @@ function renderQuizMenu() {
     
     // Challenge quiz buttons
     document.querySelectorAll('.quiz-menu-btn[data-quiz]').forEach(btn => {
->>>>>>> fb4641a (updated)
         btn.addEventListener('click', () => {
             const quizType = btn.dataset.quiz;
             renderTopic(quizType);
@@ -1224,10 +1185,6 @@ function renderQuizMenu() {
     });
 }
 
-<<<<<<< HEAD
-function renderTopic(topic) {
-    if (topic === 'Quizzes') { renderQuizMenu(); return; }
-=======
 function renderProgressDashboard() {
     const container = document.getElementById('questionsContainer');
     container.innerHTML = '';
@@ -1303,7 +1260,6 @@ function renderProgressDashboard() {
 function renderTopic(topic) {
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
->>>>>>> fb4641a (updated)
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
     localStorage.setItem('currentTopic', topic);

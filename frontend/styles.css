@@ -169,8 +169,6 @@ mark { background:var(--mark); color:#111; padding:0 .2em; border-radius:3px; }
 .quiz-menu-btn p { margin:0 0 1rem 0; font-size:.9rem; color:var(--text-dim); }
 .quiz-menu-btn .quiz-count { display:inline-block; background:var(--accent); color:white; padding:.25rem .75rem; border-radius:12px; font-size:.8rem; font-weight:500; }
 
-<<<<<<< HEAD
-=======
 /* Progress Tracking */
 .progress-badge { font-size:.75rem; background:var(--bg-alt); padding:.35rem .75rem; border-radius:12px; color:var(--text-dim); font-weight:600; letter-spacing:.5px; margin-top:.6rem; }
 
@@ -204,7 +202,6 @@ mark { background:var(--mark); color:#111; padding:0 .2em; border-radius:3px; }
 .reset-btn { background:var(--danger); color:white; border:1px solid var(--danger); padding:.5rem 1rem; border-radius:var(--radius); cursor:pointer; font-weight:600; font-size:.75rem; letter-spacing:.5px; transition:var(--transition); }
 .reset-btn:hover { background:#dc2626; border-color:#dc2626; }
 
->>>>>>> fb4641a (updated)
 /* Responsive */
 @media (max-width: 900px) {
   .main-wrapper { flex-direction:column; }
