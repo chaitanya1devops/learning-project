@@ -14,37 +14,26 @@
 // Minimum 10 items per topic (can be extended easily).
 const devOpsData = {
     "Linux": [
-        { q: "What is the difference between a hard link and a soft link?", a: "Hard link points directly to inode; survives original file deletion. Soft (symbolic) link is a shortcut referencing a pathname; breaks if target removed." },
-        { q: "Explain load average numbers.", a: "Three numbers showing runnable + uninterruptible tasks over 1, 5, 15 minutes. Rough guide: if load > CPU cores count, system is overloaded." },
-        { q: "How to find which process is using a port?", a: "Use: lsof -i :PORT or sudo netstat -tulpn | grep PORT. On modern systems: ss -tulpn | grep PORT." },
-        { q: "Difference between grep, egrep, fgrep?", a: "grep: basic regex. egrep: extended regex (same as grep -E). fgrep: fixed strings (same as grep -F) faster for literal matches." },
-        { q: "What does nohup do?", a: "Runs a command immune to hangups (SIGHUP); output redirected to nohup.out unless specified." },
-        { q: "Explain nice vs renice.", a: "nice starts process with adjusted priority (niceness). renice changes niceness of running process. Higher niceness = lower priority." },
-        { q: "How to view real-time disk I/O?", a: "Use iostat -x 1, atop, pidstat -d, or dstat." },
-        { q: "Purpose of /proc filesystem?", a: "Pseudo-filesystem exposing kernel + process info (runtime). Useful for introspection (cpuinfo, meminfo, mounts)." },
-        { q: "Difference between ext4 and XFS?", a: "ext4 simpler, widely compatible; XFS excels at parallel I/O and large files; XFS lacks shrink support." },
-        { q: "How to troubleshoot high memory usage?", a: "Check free -m, /proc/meminfo, top or htop (RES vs VIRT), pmap PID, oomkill logs in dmesg." },
-        { q: "What is systemd?", a: "Modern init system managing services, sockets, timers, cgroups, logging (journal). Replaces SysV init scripts." },
-        { q: "Difference between runlevel and systemd target?", a: "Runlevels are numeric legacy states; systemd targets are named units grouping services (e.g., multi-user.target)." },
-        { q: "How to list open files by a process?", a: "Use lsof -p <PID> or ls -l /proc/<PID>/fd." },
-        { q: "Explain inode exhaustion.", a: "Occurs when filesystem runs out of inodes before space, usually too many small files; requires reformat or cleanup." },
-        { q: "What is vm.swappiness?", a: "Kernel parameter controlling tendency to swap (0 minimal, 100 aggressive). Adjust via sysctl." },
-        { q: "Difference between /bin and /usr/bin?", a: "/bin historically essential binaries for boot; /usr/bin non-essential user binaries. On modern distros often merged." },
-        { q: "Purpose of /etc/fstab?", a: "Defines filesystems to mount at boot with options and mount points." },
-        { q: "What is setuid bit?", a: "When set on executable, process runs with file owner's privileges (e.g., passwd). Represented as 's' in permissions." },
-        { q: "What is sticky bit?", a: "On directories (e.g., /tmp) prevents users from deleting others' files; shown as 't'." },
-        { q: "Numeric file permission 764 means?", a: "Owner: rwx(7), group: rw-(6), others: r--(4)." },
-        { q: "How to trace system calls of a process?", a: "Use strace -p <PID> or strace <command>." },
-        { q: "Difference between cron and systemd timers?", a: "cron simple time-based jobs; systemd timers integrate with service units, dependencies, calendar expressions." },
-        { q: "What does iostat await mean?", a: "Average time (ms) for I/O request including queuing and service time; high values indicate storage latency." },
-        { q: "How to check TCP connections per state?", a: "Use ss -tan | awk '{print $2}' | sort | uniq -c or netstat -ant (legacy)." },
-        { q: "Difference between top and htop?", a: "htop offers interactive UI, color, scrolling, tree view; top basic text view." },
-        { q: "/dev/null vs /dev/zero?", a: "/dev/null discards writes, reads EOF; /dev/zero produces infinite zero bytes." },
-        { q: "SELinux enforcing vs permissive?", a: "Enforcing blocks unauthorized actions; permissive logs denials only." },
-        { q: "AppArmor vs SELinux?", a: "Both MAC systems; SELinux label-based, AppArmor path-based easier to adopt but less granular." },
-        { q: "What is ulimit used for?", a: "Sets shell resource limits (file descriptors, stack size, etc.) per user/session." },
-        { q: "KVM vs containers?", a: "KVM full virtualization (separate kernels); containers share host kernel offering lighter isolation." },
-        { q: "How to find largest directories quickly?", a: "Use du -h --max-depth=1 or du -sh * | sort -h." }
+        { q: "How do you diagnose and resolve production memory leaks on systems with millions of requests/day?", a: "Use valgrind, heaptrack, or /proc/<pid>/smaps for detailed analysis. Monitor RSS vs VSZ trends. Use memory profilers in code. Implement periodic restarts as temporary fix. Check for long-lived caches. Use jemalloc for C/C++ apps. Implement memory limits and monitoring with cgroups/systemd limits." },
+        { q: "Optimize kernel parameters for high-throughput, low-latency networking (millions of concurrent connections).", a: "Increase net.core.somaxconn, net.ipv4.tcp_max_syn_backlog, net.core.netdev_max_backlog. Set net.ipv4.tcp_tw_reuse=1. Tune TCP buffer sizes (net.ipv4.tcp_rmem, net.ipv4.tcp_wmem). Disable TCP timestamps if needed. Use SO_REUSEADDR. Increase /proc/sys/fs/file-max for file descriptors. Monitor with 'ss' for connection states." },
+        { q: "How to handle filesystem performance degradation during peak load?", a: "Monitor inode usage (df -i). Check I/O wait (iostat -x). Use fio for benchmarking. Implement journal batching. Consider ext4 vs XFS based on workload. Monitor dirty page ratio. Use tmpfs for temporary data. Implement write coalescing. Check disk queue depth and latency." },
+        { q: "Troubleshoot production CPU contention and context switching storms.", a: "Use 'top', 'vmstat', 'mpstat' to identify hotspots. Check context switch rates (higher than cpu_count suggests contention). Profile with perf: 'perf record -a sleep 10; perf report'. Use systemtap for kernel tracing. Implement CPU affinity for important processes. Tune CPU scheduling (CFS parameters)." },
+        { q: "Design kernel parameter strategy for containerized workloads at scale.", a: "Set vm.overcommit_memory=1 for Kubernetes. Configure memory limits via cgroups. Tune swappiness (vm.swappiness=10 for cloud). Implement net.ipv4.ip_local_reserved_ports to avoid ephemeral port exhaustion. Set fs.file-max appropriately. Use sysctl to persist changes. Document all tunings with justification for compliance." },
+        { q: "How to perform live kernel patching without downtime?", a: "Use kpatch or livepatch for critical security patches. Pre-test patches on staging. Implement graceful application reload before applying. Monitor system stability post-patch. Have rollback plan. Use automated patch management (Canonical Livepatch, Azure). Combine with container restarts for defense-in-depth." },
+        { q: "Implement comprehensive system audit logging for security compliance (SOC 2, ISO 27001).", a: "Use auditd with comprehensive rules for system calls, file access, privilege changes. Ship logs to centralized SIEM (ELK, Splunk). Implement log retention (typically 90-365 days). Monitor root/sudo access. Track file integrity (aide, tripwire). Implement log integrity checks. Disable core dump capabilities. Monitor for tampering attempts." },
+        { q: "Troubleshoot production TCP connection timeouts and half-open connections.", a: "Check tcp_keepalive_time, tcp_keepalive_intvl, tcp_keepalive_probes settings. Monitor SYN flood with 'ss -tan | grep SYN'. Check firewall rules (iptables/nftables). Verify application-level keep-alives. Monitor netstat for TIME_WAIT connections. Implement tcp_tw_reuse for rapid reconnection. Check firewall state tracking limits." },
+        { q: "Design disaster recovery strategy for critical Linux systems with RPO/RTO targets.", a: "Implement regular snapshots (LVM, btrfs, or cloud-native). Use remote replication (rsync, Bacula, Veeam). Practice restore drills monthly. Document recovery procedures. Maintain disk images for critical systems. Implement database-specific backups (MySQL, PostgreSQL) with PITR. Use infrastructure-as-code for rapid provisioning." },
+        { q: "Optimize systemd service startup during boot for 1000+ services.", a: "Use Type=notify or Type=simple appropriately. Implement socket activation for parallelization. Reduce service startup timeout. Use systemd.automount for lazy mounting. Monitor startup dependencies with 'systemd-analyze critical-chain'. Implement health checks instead of arbitrary delays. Use tmpfiles.d for ephemeral file setup." },
+        { q: "How to prevent and mitigate privilege escalation attacks in production?", a: "Disable unnecessary SUID binaries. Use AppArmor/SELinux policies strictly. Implement sudo with time-based 2FA (DUO, Google Authenticator). Monitor for setuid/setgid abuse. Use capabilities instead of SUID where possible. Implement kernel module signing. Use measured boot (TPM, SecureBoot). Regular vulnerability scanning for privilege escalation CVEs." },
+        { q: "Implement effective log rotation strategy for 100GB+ daily logs.", a: "Use logrotate with dateext format. Compress immediately post-rotation (gzip). Ship to centralized logging (syslog, fluentd). Implement log sampling for high-volume apps. Delete after retention period (compliance). Monitor disk usage. Implement log buffering. Use async I/O for log writes. Consider structured logging (JSON) for searchability." },
+        { q: "Troubleshoot page cache efficiency and implement appropriate caching strategies.", a: "Monitor page cache hits with /proc/vmstat (pgpgin, pgpgout). Use 'cachestat' tool. Implement drop_caches carefully for testing. Use memory-mapped I/O for frequently accessed files. Monitor buffer/cache ratio with 'free'. Implement application-level caching (Redis). Consider read-ahead tuning for sequential workloads." },
+        { q: "Design network bandwidth management for multi-tenant Linux systems.", a: "Use tc (traffic control) with HTB (Hierarchical Token Bucket) for QoS. Implement per-application rate limits with cgroups v2. Monitor with 'ifstat', 'nethogs'. Use BPF-based monitoring for detailed analysis. Implement ingress/egress policies. Fair queue scheduling with fq_codel. Document SLA expectations and enforce via policy." },
+        { q: "Implement effective process resource limits (cgroups) for container-like isolation.", a: "Use cgroups v2 for unified hierarchy. Set memory.max, cpu.max, io.max limits. Implement reservation (memory.min) for QoS. Monitor with 'systemd-cgtop'. Use oom.group to notify on group OOM. Implement cpuset for CPU pinning on NUMA. Test limits with stress-ng. Document limits with business justification." },
+        { q: "Troubleshoot and optimize DNS resolution latency in production.", a: "Monitor /etc/resolv.conf configuration. Check nameserver response times with 'dig +stats'. Implement local caching resolver (systemd-resolved, dnsmasq). Monitor DNS query logs. Implement retry logic for timeouts. Consider split-horizon DNS. Monitor for DNS amplification attacks. Validate DNSSEC where applicable." },
+        { q: "Design comprehensive monitoring strategy for kernel OOM behavior and prevention.", a: "Configure vm.panic_on_oom=0 for graceful handling. Implement memory.pressure_level for early warnings. Use PSI metrics (Pressure Stall Information). Monitor /proc/pressure for system-wide pressure. Implement OOMkiller tuning (oom_adj, memory.oom_control). Alert on memory pressure before OOM. Implement PID-specific memory limits. Document OOM-safe shutdown procedures." },
+        { q: "Implement secure secrets storage for system-level credentials and certificates.", a: "Use TPM for key storage where available. Implement HashiCorp Vault for credential management. Use systemd user credentials for service secrets. Encrypt /etc filesystem where possible. Use LUKS for full-disk encryption. Implement certificate rotation automation. Store secrets in tmpfs where appropriate. Use file permissions (0600) strictly. Never log secrets or put in configs." },
+        { q: "Troubleshoot production system clock skew and implement NTP/PTP synchronization.", a: "Monitor clock with 'timedatectl' or 'ntpq'. Implement PTP (Precision Time Protocol) for < 1us accuracy. Use ntpsec or chrony (more reliable than legacy ntpd). Monitor clock drift continuously. Alert on skew > threshold. Implement hardware clock backup. Use GPS receivers for critical systems. Document clock requirements by application." },
+        { q: "Design and implement effective IPC (Inter-Process Communication) strategies for performance.", a: "Choose between pipes, sockets, shared memory, message queues based on throughput/latency needs. Implement lock-free structures with atomic operations. Use epoll/kqueue for efficient multiplexing. Monitor IPC overhead with perf. Implement backpressure handling. Use memory barriers appropriately. Benchmark alternatives (unix sockets vs TCP, mmap vs pipes)." }
     ],
     "Git": [
         { q: "Explain git fetch vs git pull.", a: "fetch downloads remote refs only; pull = fetch + merge (or rebase if configured)." },
@@ -140,34 +129,26 @@ const devOpsData = {
         { q: "Blue/green Jenkins upgrade approach?", a: "Spin up new controller version, import config, run validations, switch traffic, keep old for fallback." }
     ],
     "Docker": [
-        { q: "Difference between image and container?", a: "Image is immutable template; container is a running instance of that image." },
-        { q: "Explain COPY vs ADD.", a: "COPY copies files. ADD adds extra features (remote URLs, auto-extract archives). Prefer COPY unless needed." },
-        { q: "What is multi-stage build?", a: "Use multiple FROM stages to build then copy final artifacts into slim runtime image reducing size." },
-        { q: "How to reduce image size?", a: "Use slim base, multi-stage, combine RUN layers, clean cache, pick alpine (caution glibc)." },
-        { q: "Difference between CMD and ENTRYPOINT?", a: "ENTRYPOINT defines executable; CMD supplies default args. Overriding differs (docker run)." },
-        { q: "What is Docker networking bridge?", a: "Default network providing NAT + DNS for containers on same host enabling inter-container communication." },
-        { q: "Purpose of docker compose?", a: "Declarative multi-container orchestration for dev/test environments." },
-        { q: "How to persist data?", a: "Use volumes (named or host mount) to store data beyond container lifecycle." },
-        { q: "Difference between bind mount and volume?", a: "Bind mounts map host path; volumes managed by Docker (better portability & isolation)." },
-        { q: "Inspect container resource usage?", a: "docker stats, or docker inspect for config; use cgroups for deeper metrics." },
-        { q: "Layer caching optimization?", a: "Order Dockerfile instructions so frequently changing lines appear later preserving earlier cached layers." },
-        { q: "Healthcheck instruction purpose?", a: "Defines command to determine container health enabling orchestration decisions." },
-        { q: "Difference between ENV and ARG?", a: "ARG available at build time; ENV persists in final image runtime environment." },
-        { q: "Container logs rotation?", a: "Configure daemon log-driver options (json-file max-size/max-file) or external logging driver." },
-        { q: "How to debug networking inside container?", a: "Use docker exec tools (curl, dig, ip), inspect network settings with docker inspect, create temporary busybox." },
-        { q: "Purpose of scratch base image?", a: "Minimal empty image for statically compiled binaries reducing attack surface." },
-        { q: "Docker registry vs repository?", a: "Registry is service storing images; repository is collection of tagged images under a name." },
-        { q: "Image tag latest pitfalls?", a: "Mutable reference can cause non-reproducible builds; prefer explicit version tags." },
-        { q: "Container security best practices?", a: "Drop root user, minimal packages, scan images, sign & verify, set resource limits." },
-        { q: "Difference between pause and stop?", a: "pause sends SIGSTOP freezing processes; stop sends SIGTERM then SIGKILL gracefully ending." },
-        { q: "How to limit CPU usage?", a: "Use --cpus or --cpu-quota/--cpu-period flags; also cgroups directly in orchestrators." },
-        { q: "Secrets handling in containers?", a: "Use orchestrator secret stores (Docker Swarm/K8s), avoid baking into images or env logs." },
-        { q: "Multi-arch image creation?", a: "Use buildx with platforms flag and manifest lists to support ARM/AMD architectures." },
-        { q: "Docker swarm difference vs K8s?", a: "Swarm simpler built-in clustering; Kubernetes richer ecosystem and features (CRDs, advanced scheduling)." },
-        { q: "What is an OCI image?", a: "Image following Open Container Initiative specification ensuring interoperability across runtimes." },
-        { q: "Immutable infrastructure concept with images?", a: "Rebuild and redeploy new images for changes rather than patching running containers." },
-        { q: "How to scan image for CVEs?", a: "Use docker scan, Trivy, Clair, or registry integrated scanners before deployment." },
-        { q: "Why pin base image digests?", a: "Ensures reproducible builds since tags can move; digest is immutable reference." }
+        { q: "Design a secure container image supply chain for production deployments.", a: "Implement image signing (Docker Content Trust), vulnerability scanning (Trivy, Grype) in CI/CD, registry scanning, namespace isolation in registry, immutable image tags, minimal base images, no root user, scan on push/pull, maintain audit logs of all image operations." },
+        { q: "Optimize Docker image sizes and layer caching for millions of daily builds.", a: "Use multi-stage builds, distroless/alpine base images (20-100MB vs 500MB+). Order Dockerfile for maximal caching. Consolidate RUN commands. Use .dockerignore aggressively. Compress artifacts. Implement layer deduplication in registry. Monitor image sizes in CI. Set max image size policies." },
+        { q: "Implement container runtime security at scale (seccomp, AppArmor, capabilities).", a: "Drop unnecessary capabilities (CAP_NET_RAW, CAP_SYS_ADMIN). Implement seccomp profiles blocking dangerous syscalls. Use AppArmor/SELinux policies. Run as non-root. Use read-only rootfs where possible. Implement pod security policies in Kubernetes. Regular security audits of policies." },
+        { q: "Handle secrets securely in Docker without embedding in images.", a: "Never use ENV or ARG for secrets. Use Docker secrets (Swarm) or Kubernetes Secrets. Use external secret management (HashiCorp Vault, AWS Secrets Manager). Implement secret rotation. Use tmpfs for temporary secrets. Audit all secret access. Use encryption at rest for secrets. Implement least-privilege access." },
+        { q: "Troubleshoot container network connectivity issues in production.", a: "Inspect network configuration with 'docker network inspect'. Check port bindings (docker port). Verify DNS resolution (docker exec -it <id> nslookup). Monitor with docker stats. Check firewall rules on host. Verify exposed vs published ports. Use tcpdump on host network. Implement health checks." },
+        { q: "Design multi-host container networking strategy (overlay networks, service discovery).", a: "Use overlay networks for cross-host communication. Implement DNS service discovery (built-in in Docker/K8s). Use load balancing for service endpoints. Configure network policies. Monitor network latency. Implement network segmentation. Use service mesh for advanced routing. Document network topology." },
+        { q: "Optimize Docker resource limits and implement fair resource sharing.", a: "Set memory limits (--memory) to prevent OOM-kills. Implement CPU limits (--cpus) based on workload. Use memory reservations for guaranteed capacity. Implement swap limits. Monitor with docker stats, cgroup metrics. Implement resource requests/limits per container. Implement CPU affinity for latency-sensitive workloads." },
+        { q: "Implement comprehensive logging strategy for container environments (ELK, Loki).", a: "Configure log driver (json-file, awslogs, splunk). Implement log rotation to prevent disk fill. Ship logs to centralized system. Use structured logging (JSON). Tag logs with container metadata. Implement log filtering and sampling. Monitor logs for security events. Implement audit logging for sensitive operations." },
+        { q: "Design disaster recovery for containerized applications with persistent data.", a: "Implement volume backups (snapshots, replication). Use database-specific backup tools. Implement automated backup testing. Document RTO/RPO by application. Use geographically distributed backups. Implement point-in-time recovery. Regular restore drills. Version control infrastructure-as-code. Implement immutable backups." },
+        { q: "Troubleshoot performance degradation in container workloads.", a: "Monitor CPU, memory, I/O, network metrics. Profile with perf, systemtap. Check for memory leaks. Verify resource limits aren't causing throttling. Monitor disk I/O patterns. Check for network saturation. Profile application code. Implement APM (Datadog, New Relic). Benchmark baseline performance." },
+        { q: "Implement registry security and compliance (private registry, RBAC, scanning).", a: "Use private registries (Harbor, Artifactory, ECR). Implement RBAC for registry access. Enable image scanning on push/pull. Enforce image signing. Implement retention policies. Audit registry operations. Use harbor for vulnerability scanning and compliance. Implement network policies around registry access." },
+        { q: "Design image promotion workflow across environments (dev→staging→prod).", a: "Tag images with environment info. Implement promotion via CI/CD pipeline. Require approvals for prod promotions. Implement smoke tests post-promotion. Monitor for regressions. Use GitOps for declarative promotion. Implement image scanning at each stage. Maintain audit trail of promotions." },
+        { q: "Handle container startup order and dependencies (init containers, wait scripts).", a: "Implement dependency checks in startup scripts. Use init containers to prepare environment. Implement health checks with retries. Use orchestrator dependencies (depends_on in compose). Implement exponential backoff for retries. Document startup dependencies. Use configuration management for dependency injection." },
+        { q: "Implement cost optimization strategies for Docker infrastructure.", a: "Monitor image disk usage. Implement image cleanup policies. Use smaller base images. Consolidate services where possible. Implement resource right-sizing. Use spot/preemptible instances in cloud. Monitor registry storage costs. Implement image deduplication. Regular cost audits." },
+        { q: "Implement container update and patching strategy for base images.", a: "Scan regularly for base image vulnerabilities. Implement automated rebuilds of dependent images. Use Dependabot/Renovate for updates. Test updates in non-prod first. Implement rolling updates with health checks. Document patch procedures. Maintain patch SLA. Implement automated patch compliance checking." },
+        { q: "Design strategy for managing container configuration across environments.", a: "Use environment-specific configuration files (12-factor). Implement ConfigMaps/Secrets for different environments. Use templating tools (Kustomize, Helm). Validate configuration in CI/CD. Implement configuration drift detection. Use infrastructure-as-code for consistency. Document configuration requirements by application." },
+        { q: "Troubleshoot Docker daemon issues and implement high-availability setup.", a: "Monitor daemon health. Check daemon logs for errors. Implement daemon restart policies. Use systemd service for daemon management. Configure daemon storage driver appropriately. Monitor disk usage for daemon. Implement redundant docker engines. Configure daemon reload policies safely." },
+        { q: "Implement container orchestration migration strategy (Docker Swarm vs Kubernetes).", a: "Evaluate requirements (scale, features, complexity). Plan phased migration. Test workloads on target platform. Implement networking translation. Plan storage migration. Document runbook changes. Train operations team. Implement monitoring on new platform. Gradual cutover with rollback plan." },
+        { q: "Design build optimization for large monorepos with hundreds of services.", a: "Implement Docker layer caching across builds. Use build cache storage (registry, S3). Implement conditional builds (only affected services). Use parallel builds. Implement build matrix strategies. Monitor build times. Implement build timeout policies. Cache dependencies separately from code." },
+        { q: "Implement security scanning in CI/CD pipeline as enforcement gate.", a: "Run image scans before push. Fail builds on critical CVEs. Implement policy-as-code (OPA). Scan dependencies (SBOM). Check image signatures. Enforce minimal base images. Block containers from untrusted registries. Regular re-scanning of deployed images. Integration with security incident response." }
     ],
     "Docker Commands": [
         { q: "What is docker run?", a: "Launches a new container from an image with specified config (ports, volumes, env, etc)." },
@@ -202,36 +183,26 @@ const devOpsData = {
         { q: "What is docker manifest?", a: "Lists image references and digests; docker manifest inspect shows platform-specific images in manifest list." }
     ],
     "Kubernetes": [
-        { q: "What is a Pod?", a: "Smallest deployable unit containing one or more tightly coupled containers sharing network & storage." },
-        { q: "Deployment vs StatefulSet?", a: "Deployment for stateless replicated sets; StatefulSet adds stable identity & storage for stateful apps." },
-        { q: "Role of Service object?", a: "Stable virtual IP and DNS for pod set, enabling load balancing and discovery." },
-        { q: "ConfigMap vs Secret?", a: "Secret base64-encoded sensitive data; ConfigMap for non-sensitive config. Mounted or env injected." },
-        { q: "Horizontal Pod Autoscaler trigger?", a: "Metrics (CPU by default or custom) adjusting replica count to meet target utilization." },
-        { q: "Difference between ClusterIP, NodePort, LoadBalancer?", a: "ClusterIP internal only; NodePort exposes fixed port on nodes; LoadBalancer provisions external LB (cloud)." },
-        { q: "What is etcd?", a: "Consistent distributed key-value store backing cluster state for API server." },
-        { q: "Readiness vs Liveness probe?", a: "Readiness gates traffic acceptance; liveness restarts container if unhealthy." },
-        { q: "Explain taints and tolerations.", a: "Taints repel pods from nodes unless pods have matching tolerations, used for dedicated workloads." },
-        { q: "What is kube-proxy?", a: "Maintains network rules for service abstraction (iptables/ipvs) routing service traffic to pods." },
-        { q: "Role of Ingress controller?", a: "Implements Ingress resources providing HTTP routing, TLS termination, path-based rules." },
-        { q: "Difference between Requests and Limits?", a: "Requests guarantee baseline resources for scheduling; limits cap maximum usage." },
-        { q: "DaemonSet use-case?", a: "Ensures a pod copy runs on every (or selected) node for agents/logging/monitoring." },
-        { q: "Job vs CronJob?", a: "Job runs to completion once; CronJob schedules Jobs at defined intervals." },
-        { q: "EphemeralContainers purpose?", a: "Debug running Pod by injecting temporary container without restart (1.25+)." },
-        { q: "Difference between ReplicaSet and Deployment?", a: "ReplicaSet ensures pod count; Deployment adds rollout strategy, history, updates." },
-        { q: "RollingUpdate strategy parameters?", a: "maxUnavailable, maxSurge tune parallel replacement count balancing availability." },
-        { q: "Cluster Autoscaler vs HPA?", a: "CA scales nodes; HPA scales pods; often used together for workload elasticity." },
-        { q: "What are ResourceQuotas?", a: "Namespace-level limits on compute, storage, object counts controlling fairness." },
-        { q: "PodDisruptionBudget purpose?", a: "Ensures minimum available pods during voluntary disruptions (evictions, upgrades)." },
-        { q: "Init container use-case?", a: "Run setup tasks (migrations, config fetch) before app containers start." },
-        { q: "Sidecar pattern?", a: "Auxiliary container augmenting primary (logging, proxy, metrics)." },
-        { q: "ServiceAccount token use?", a: "Grants in-cluster API access; mounted automatically unless disabled." },
-        { q: "NetworkPolicy objective?", a: "Define allowed ingress/egress traffic at pod level enforcing segmentation." },
-        { q: "CSI driver purpose?", a: "Container Storage Interface plugin enabling dynamic storage provisioning." },
-        { q: "What is a CRD?", a: "CustomResourceDefinition extends API with new resource kinds enabling operators." },
-        { q: "Operator pattern?", a: "Controller managing application lifecycle via custom resources embedding domain logic." },
-        { q: "Why use namespaces?", a: "Logical isolation for resources, quotas, access control grouping environments or teams." },
-        { q: "How to debug a CrashLoopBackOff?", a: "kubectl logs previous container, describe pod events, check image, probes, resources." },
-        { q: "etcd backup importance?", a: "Cluster state resides there; regular snapshots required for disaster recovery." }
+        { q: "Design multi-cluster Kubernetes federation strategy with failover and load balancing.", a: "Use KubeFed or service mesh for federation. Implement cross-cluster load balancing (AWS GLB, Istio). Replicate applications across clusters. Implement health checks per cluster. Automatic failover on cluster failure. Synchronize ConfigMaps/Secrets across clusters. Centralized monitoring/logging across clusters. Document recovery procedures by cluster." },
+        { q: "Implement Kubernetes security best practices (RBAC, Pod Security, Network Policies).", a: "Use RBAC with least privilege service accounts. Implement Pod Security Standards (restrict privileged mode). Enforce Network Policies blocking cross-namespace by default. Use OPA/Kyverno for policy enforcement. Implement image registry whitelisting. Scan images for vulnerabilities. Use pod security admission controller. Regular RBAC audits." },
+        { q: "Design stateful application deployment strategy in Kubernetes (databases, caches).", a: "Use StatefulSets for stable identity. Implement persistent volume claims with appropriate storage classes. Use topology-aware scheduling (affinity rules). Implement backup strategy for persistent data. Use init containers for setup. Implement health checks with appropriate timeouts. Use headless services for direct pod access. Test failover scenarios." },
+        { q: "Optimize Kubernetes cost while maintaining reliability and performance.", a: "Right-size resource requests/limits based on actual usage. Use spot/preemptible VMs with pod disruption budgets. Implement cluster autoscaler with Karpenter for efficiency. Use node affinity to consolidate workloads. Implement resource quotas per namespace. Monitor with Kubecost. Use serverless for variable workloads. Implement chargeback models." },
+        { q: "Implement Service Mesh (Istio) for traffic management, security, observability.", a: "Deploy Istio with sidecar injection. Implement VirtualServices for traffic routing. Use DestinationRules for load balancing. Implement circuit breakers. Implement request routing based on headers/paths. Collect distributed traces (Jaeger). Implement mTLS for service-to-service communication. Monitor with Kiali. Implement rate limiting and retries." },
+        { q: "Design strategy for managing Kubernetes secrets at scale with rotation and auditing.", a: "Use external secret management (Vault, cloud provider solutions). Implement secret rotation automation. Use Sealed Secrets or External Secrets Operator. Never log secrets. Implement RBAC for secret access. Audit all secret access. Use encryption at rest. Implement secret scanning in CI/CD. Regular secret audit reviews." },
+        { q: "Handle persistent storage in Kubernetes with snapshots, replication, backups.", a: "Use appropriate storage classes (local, EBS, NFS, CSI). Implement snapshot-based backups. Use storage replication for HA. Implement automated backup testing. Document RTO/RPO by application. Use volume snapshots for point-in-time recovery. Implement cross-zone replication. Monitor storage capacity." },
+        { q: "Implement zero-downtime Kubernetes cluster upgrades with etcd migration.", a: "Plan upgrade window with minimal business impact. Drain nodes gracefully using PodDisruptionBudgets. Upgrade control plane components sequentially. Test on staging cluster first. Upgrade kubelet on worker nodes. Validate cluster health post-upgrade. Monitor for regressions. Have rollback plan. Document compatibility matrix." },
+        { q: "Design Kubernetes networking for multi-team environments with isolation and performance.", a: "Use Network Policies for traffic segmentation. Implement Calico/Cilium for advanced networking. Use separate subnets for different teams. Implement egress filtering. Use service mesh for routing. Monitor network latency. Implement network policies as code. Document network architecture. Test network failover scenarios." },
+        { q: "Implement comprehensive Kubernetes monitoring, logging, alerting (Prometheus, ELK, Alertmanager).", a: "Deploy Prometheus for metrics collection. Use Grafana for visualization. Implement centralized logging (ELK, Loki). Collect application and system metrics. Implement SLO-based alerting. Use AlertManager for intelligent alert routing. Implement custom metrics for business logic. Use distributed tracing (Jaeger). Regular alert review and tuning." },
+        { q: "Handle Kubernetes resource contention and implement fair scheduling (QoS, Priority Classes).", a: "Implement Requests/Limits for QoS. Use PriorityClasses for workload importance. Implement Pod Disruption Budgets. Monitor resource utilization. Implement Vertical Pod Autoscaling. Use node affinity for workload placement. Implement preemption policies. Monitor for starvation. Document QoS policies per workload." },
+        { q: "Design disaster recovery for Kubernetes clusters with backup/restore procedures.", a: "Backup etcd regularly (tested restore procedure). Back up persistent data separately. Use Infrastructure-as-Code for cluster recreation. Implement geographically distributed backups. Test restore procedures monthly. Document RTO/RPO. Implement immutable backups. Use separate backup storage accounts. Encrypt backups." },
+        { q: "Implement GitOps for Kubernetes with declarative infrastructure and automated reconciliation.", a: "Use Flux or ArgoCD for Git-to-cluster sync. Separate infra/apps repos. Use Kustomize/Helm for templating. Implement image update automation (Renovate). Track all changes in Git. Implement approval gates for manual changes. Monitor reconciliation status. Use pull request workflows for changes. Implement secrets management with sealed secrets." },
+        { q: "Design Kubernetes ingress strategy with TLS, routing, rate limiting, DDoS protection.", a: "Implement Ingress Controller (nginx, Istio). Use cert-manager for TLS certificate automation. Implement path-based routing. Use rate limiting middleware. Implement WAF rules for security. Use load balancing across ingress replicas. Monitor ingress controller metrics. Implement graceful reload. Document routing rules." },
+        { q: "Troubleshoot Kubernetes API server performance and etcd latency issues.", a: "Monitor API server latency with metrics. Check etcd database size (compact if needed). Monitor etcd leader elections. Check for slow API calls with audit logs. Implement API rate limiting. Use caching where possible. Monitor API server CPU/memory. Check for excessive reconciliation loops. Tune etcd performance parameters." },
+        { q: "Implement Kubernetes tenant isolation and multi-tenancy at scale.", a: "Use namespaces for logical isolation. Implement ResourceQuotas per namespace. Use Network Policies for traffic isolation. Implement RBAC with namespace-scoped roles. Use PodSecurityPolicies for container restrictions. Implement storage isolation. Monitor resource usage per tenant. Implement cost allocation. Document isolation boundaries." },
+        { q: "Design Kubernetes application deployment pipeline with testing, scanning, validation.", a: "Implement image build and scan stage. Run security tests (SAST/DAST). Validate manifests (kubeval, kube-score). Deploy to staging for integration tests. Implement smoke tests post-deployment. Monitor for regressions. Implement canary deployments. Use GitOps for production deployments. Implement approval gates." },
+        { q: "Troubleshoot Kubernetes pod scheduling issues and optimize scheduler performance.", a: "Check node resources with 'kubectl top nodes'. Monitor pending pods for scheduling failures. Check node selectors/affinity rules. Verify PodDisruptionBudgets aren't blocking scheduling. Monitor scheduler metrics. Check for resource fragmentation. Use cluster autoscaler to provision capacity. Implement priority classes appropriately. Document scheduling policies." },
+        { q: "Implement Kubernetes CNI plugin selection and troubleshooting (Calico, Cilium, Weave).", a: "Evaluate based on network policies, performance, security requirements. Implement appropriate CNI for workload type. Monitor CNI health. Troubleshoot with 'kubectl get nodes -o wide'. Check IP allocation issues. Monitor network latency. Implement IPAM management. Test failover scenarios. Keep CNI components updated." },
+        { q: "Design Kubernetes upgrade strategy across hundreds of clusters and teams.", a: "Maintain cluster version support matrix. Plan phased upgrades by team. Test upgrades in sandbox first. Implement automated upgrade validation. Monitor for incompatibilities. Communicate breaking changes to teams. Provide migration guides. Implement rollback procedures. Track upgrade status. Maintain upgrade runbooks." }
     ],
     "Kubernetes Commands": [
         { q: "kubectl get nodes output columns?", a: "NAME (node identity), STATUS (Ready/NotReady), ROLES (control-plane/worker), AGE, VERSION (kubelet)." },
@@ -298,99 +269,70 @@ const devOpsData = {
         { q: "oc extract secret/configmap local inspection?", a: "oc extract secret/<name> --to=. exports files locally; oc extract configmap/<name> --keys=key.txt exports specific keys." }
     ],
     "Helm": [
-        { q: "What is Helm?", a: "Package manager for Kubernetes enabling chart-based deployments and templated manifests." },
-        { q: "Values.yaml purpose?", a: "Central configuration customizing templates; can override via --set or -f custom-values." },
-        { q: "Helm chart structure?", a: "Chart.yaml, values.yaml, templates/, charts/ (dependencies), NOTES.txt for post-install info." },
-        { q: "Difference between helm upgrade and install?", a: "install creates new release; upgrade modifies existing release keeping revision history." },
-        { q: "What are release revisions?", a: "Sequential versions of a deployed chart; rollbacks possible via helm rollback <release> <rev>." },
-        { q: "Helm dependency update?", a: "Define in Chart.yaml under dependencies then run helm dependency update to fetch packages." },
-        { q: "Template functions usage?", a: "Go templates enabling logic (if, range, include, default, lookup)." },
-        { q: "Secret management with Helm?", a: "Use external tools (sealed-secrets, SOPS) or separate secret management pipelines; avoid committing plaintext." },
-        { q: "Helm diff plugin use-case?", a: "Shows changes between releases prior to upgrade for safer deployments." },
-        { q: "Best practice for large charts?", a: "Use subcharts, library charts, consistent values schema, minimize template logic complexity." },
-        { q: "helm template command usage?", a: "Render manifests locally for review without installing into cluster." },
-        { q: "Chart versioning strategy?", a: "SemVer for Chart.yaml version ensures upgrade expectations and compatibility tracking." },
-        { q: "Global values purpose?", a: "Shared configuration accessible across subcharts reducing duplication." },
-        { q: "_helpers.tpl role?", a: "Contains named template helpers for reuse (labels, annotations)." },
-        { q: "Difference between values override precedence?", a: "--set overrides highest; then multiple -f files (last wins); default values.yaml lowest." },
-        { q: "Helm uninstall retention?", a: "Release metadata removed; can keep history with helm rollback only if not purged in older versions." },
-        { q: "helm upgrade --atomic purpose?", a: "Automatically rolls back if upgrade fails ensuring no partial state." },
-        { q: "Chart repository index.yaml?", a: "Metadata listing chart versions enabling search & retrieval (helm repo index)." },
-        { q: "How to manage dependencies?", a: "List in Chart.yaml then run helm dependency update to vendor under charts/." },
-        { q: "Security considerations?", a: "Audit templates, avoid privileged defaults, parameterize sensitive mounts." },
-        { q: "Helm lifecycle hooks?", a: "Annotations triggering jobs pre/post install/upgrade for migration or validation tasks." },
-        { q: "Library charts?", a: "Charts without installable objects providing shared templates for other charts." },
-        { q: "helm pull usage?", a: "Download chart archive locally for inspection or modification." },
-        { q: "Kustomize vs Helm difference?", a: "Helm templating + packaging; Kustomize patch/overlay existing YAML without templates." },
-        { q: "Helm OCI registry support?", a: "Push/pull charts as OCI artifacts (helm registry login, helm push, helm install oci://...)." },
-        { q: "Values schema enforcement?", a: "Use JSON schema in values.schema.json to validate provided values at install time." },
-        { q: "How to handle secret rendering?", a: "Encrypt with SOPS or use externalSecrets operator rather than plaintext in values." },
-        { q: "Chart testing?", a: "Use helm unittest or chart-testing action to validate templates across sample values." },
-        { q: "Upgrade diff risk mitigation?", a: "Review helm diff output + backup cluster state for critical resources before applying." }
+        { q: "Chart design patterns for monolithic vs microservices architecture?", a: "Monolithic: single chart with complex values schemas. Microservices: umbrella chart with subchart dependencies, enabling independent versioning & deployment strategies (e.g., managed by ArgoCD GitOps)" },
+        { q: "Handling multi-environment deployments: dev, staging, production?", a: "Use values overlay pattern with base values.yaml + envs/prod-values.yaml. Git-driven approach: separate branches/directories per env. Helm hooks + Kustomize overlays for environment-specific patches (taints, resource limits, replicas)" },
+        { q: "Values schema (values.schema.json) for production validation?", a: "Enforce type constraints, required fields, min/max bounds. Fails at install-time preventing invalid deployments. Example: image.tag required string matching semver pattern, replicas minimum 2 for HA" },
+        { q: "Chart testing strategy at scale with helm unittest and chart-testing?", a: "Unit tests validate template rendering with sample values.yaml files. Integration testing via 'helm lint' checks syntax. CI/CD: automated testing on PR, helm-ct validates across multiple Kubernetes versions & schemas" },
+        { q: "Secrets management: SOPS vs Sealed Secrets vs External Secrets Operator?", a: "SOPS: transparent encryption, git-driven, IDE friendly. Sealed Secrets: K8s native cluster-scoped encryption keys. ExternalSecrets: pulls from vault/AWS Secrets Manager at runtime. Production: ExternalSecrets decouples secrets from charts" },
+        { q: "Implementing Helm subcharts for shared infrastructure libraries?", a: "Library charts contain reusable templates (logging sidecars, observability, security policies) without installable resources. Dependencies in Chart.yaml with versions. Prevents duplication across 100+ microservice charts" },
+        { q: "Helm hooks for database migrations, pre-flight checks, and cleanup?", a: "pre-install/upgrade hooks validate schema, run migrations (Job). post-install hooks notify external systems. pre-delete for backup/cleanup jobs. Annotation: helm.sh/hook: pre-upgrade, helm.sh/hook-weight: -5 for execution order" },
+        { q: "Chart versioning and release management with SemVer and appVersion?", a: "Chart version: infrastructure code semver (bump for template changes). appVersion: application version (tracked separately). Enables independent updates and dependency lock-in for critical apps (e.g., DB version 5.7.x only)" },
+        { q: "Preventing breaking changes in chart upgrades: deprecations and migration paths?", a: "Document deprecated values in NOTES.txt. Support old + new values simultaneously for one release. helm-docs generation tracks all options. Changelog entries per version. Test against real customer configs before release" },
+        { q: "Helm release annotation and label management for compliance and auditing?", a: "Add labels: managed-by: helm, team: platform, env: prod. Annotations: deployed-by, deployment-timestamp, approval-status. Enables RBAC filtering, cost allocation, compliance auditing (who deployed what when)" },
+        { q: "Dynamic template rendering using Helm's sprig functions for complex logic?", a: "sprig provides string manipulation, date, random, crypto functions. Example: {{ include 'mychart.labels' . }} with conditional logic, regex replacement. Advanced: lookup() function queries existing K8s resources for dynamic templates" },
+        { q: "Multi-region Helm deployments with CloudFormation + Helm across AWS regions?", a: "Separate helm repos per region or single repo with regional overrides. Values overlays per region handling different instance types, endpoint URLs. Helm plugin chains CloudFormation stack outputs into values" },
+        { q: "Helm OCI registry workflow and private artifact management at scale?", a: "Push to ECR/ACR/Artifactory using 'helm push <chart.tgz> oci://registry/path'. Auth via 'helm registry login'. Enables supply chain scanning, immutable releases, audit trails like container images" },
+        { q: "Chart repository security: signing charts and verifying authenticity?", a: "GnuPG signing during chart upload (helm repo index --sign). Verification on install: helm install --verify validates chain. Provenance files track chart lineage and prevent tampering" },
+        { q: "Resource quota and namespace limits per Helm release for multi-tenant clusters?", a: "Use Helm values to set ResourceQuota and NetworkPolicies per namespace. Example: {{ .Values.resourceQuota.requests.cpu }}. Prevents noisy neighbor problems in shared clusters" },
+        { q: "Helm operator vs GitOps (ArgoCD, Flux) for declarative management at scale?", a: "Helm operator watches custom resources triggering releases. GitOps (ArgoCD): Git source-of-truth with automated reconciliation. Choice depends on operational model: Helm for programmatic control, GitOps for declarative CI/CD" },
+        { q: "Post-deployment validation and smoke testing with Helm hooks and tests?", a: "helm test runs test pods with 'helm.sh/hook: test'. Example: verify API endpoints, check database connectivity. Fails entire release if tests fail, blocking production traffic" },
+        { q: "Helm upgrade rollback strategies with atomic and keep-history flags?", a: "--atomic: automatic rollback on failure. --keep-history: retains failed release revision for debugging. Implement health checks + monitoring to detect failures within SLA window before rollback completes" },
+        { q: "Handling stateful applications (databases, message queues) with Helm and StatefulSets?", a: "Values control storage claims, pod ordinals (headless services). PersistentVolumes via storage classes. Backup hooks via helm.sh/hook: pre-delete. Monitor pod identity, ordered startup/shutdown" },
+        { q: "Compliance and policy enforcement: Kyverno/OPA policies with Helm templates?", a: "Mutating webhooks inject compliance labels/annotations via Helm. Validating policies enforce image registries, resource limits, security contexts. Example: all images must come from approved registries, enforce pod security standards" }
     ],
     "Terraform": [
-        { q: "What is Terraform state?", a: "A snapshot of managed resources mapping real world to configuration enabling diff plans." },
-        { q: "Purpose of terraform plan?", a: "Generates execution proposal showing changes before apply for review & safety." },
-        { q: "Difference between variable and local?", a: "Variable external input; local computed helper without external override." },
-        { q: "What are providers?", a: "Plugins enabling resource management for specific platforms (AWS, Azure, etc.)." },
-        { q: "Why remote backend?", a: "Shared state, locking, durability (e.g. S3 + DynamoDB lock)." },
-        { q: "Module best practices?", a: "Version pinning, minimal outputs, clear input variables, avoid tight coupling." },
-        { q: "Lifecycle ignore_changes usage?", a: "Prevent updates to certain attributes (e.g., external managed fields) preserving drift." },
-        { q: "Difference between count and for_each?", a: "count index-based; for_each uses map/set keys creating stable addressing." },
-        { q: "Sensitive data handling?", a: "Mark variables sensitive, use vault integration, avoid logging outputs." },
-        { q: "State locking importance?", a: "Prevents concurrent modifications causing corruption; remote backends often implement." },
-        { q: "terraform import purpose?", a: "Brings existing infrastructure into state allowing management without recreation." },
-        { q: "Difference between data and resource blocks?", a: "resource manages lifecycle; data fetches read-only external info for interpolation." },
-        { q: "What are outputs used for?", a: "Expose derived values for parent modules or external tooling (pipeline stages)." },
-        { q: "Backend migration procedure?", a: "Configure new backend, run terraform init -migrate-state to transfer safely." },
-        { q: "How to prevent accidental destroy?", a: "Set lifecycle { prevent_destroy = true } on critical resources." },
-        { q: "Terraform Cloud advantages?", a: "Remote runs, policy enforcement (Sentinel), team collaboration, secure variables." },
-        { q: "State file security?", a: "Contains secrets (IDs, attributes); encrypt at rest, restrict access, avoid committing to VCS." },
-        { q: "Plan file usage?", a: "Binary artifact produced by terraform plan -out used to apply exactly same changes." },
-        { q: "Workspace concept?", a: "Separate state instances (e.g., dev/stage/prod) sharing same configuration code." },
-        { q: "Handling provider version constraints?", a: "Use required_providers block with version = \"~> x.y\" for compatibility control." },
-        { q: "What is drift detection?", a: "Identifying real-world changes not captured in state during plan causing proposed updates." },
-        { q: "Dynamic blocks purpose?", a: "Generate nested configuration programmatically based on variable collections." },
-        { q: "Taint command usage?", a: "Marks resource for recreation on next apply: terraform taint <res>. (Deprecated for state rm + replace)." },
-        { q: "How to reference module outputs?", a: "module.<name>.<output> used in root or other modules." },
-        { q: "Sentinel policy examples?", a: "Ensure tagging, restrict instance sizes, prevent open security groups in runs." },
-        { q: "What is terraform graph?", a: "Generates DOT graph of resource dependencies assisting visualization." },
-        { q: "Local-exec provisioner use-case?", a: "Run host command after resource creation for integration tasks (notify system)." },
-        { q: "Why minimize provisioners?", a: "They are last-resort; increase complexity and reduce declarative transparency." },
-        { q: "How to upgrade provider versions?", a: "Adjust constraints then terraform init -upgrade to fetch new versions." },
-        { q: "File function usage?", a: "Reads file content into variable (e.g., injecting policies/templates)." }
+        { q: "State management challenges at enterprise scale: splitting state across 50+ teams?", a: "Monolithic state causes conflicts and long lock contention. Solution: separate state per team/component (terraform_remote_state data sources), hierarchical module structure, Terraform Cloud workspace isolation, cross-stack references via outputs. Example: networking state in separate stack referenced by application stacks" },
+        { q: "Multi-account AWS architecture with Terraform: organizational best practices?", a: "Root account for org/billing only. Separate accounts per environment (dev/staging/prod) + security/logging account. Cross-account assume roles via terraform. Terraform Cloud: workspace per account, shared tfstate in central account (read-only reference). Policy enforcement (Sentinel) across accounts" },
+        { q: "Disaster recovery strategy: Terraform state backup and recovery procedures?", a: "S3 backend with versioning + MFA delete enabled. Cross-region replication for state buckets. State snapshots: daily exports to secure secondary location. Runbook: state corruption recovery via backup restore, test in non-prod first. DLM lifecycle for state archives (7-year retention compliance)" },
+        { q: "Module design patterns: versioning, testing, and breaking changes management?", a: "Semantic versioning for modules (v1.2.3). Separate git repos per module with release tags. Source = 'git::https://repo/path?ref=v1.0.0'. Test matrix: terraform test block validates modules across input combinations. Changelog tracks breaking changes with migration docs" },
+        { q: "Testing Terraform configurations: terraform test, terratest, and policy validation?", a: "terraform test: HCL assertions on outputs and values. terratest: Go framework for integration testing (create real infra, validate). Policy testing: OPA/Sentinel rules validate cost, security, compliance. CI/CD: all three layers before apply" },
+        { q: "Cost optimization via Terraform: reserved instances, spot, right-sizing at scale?", a: "Reserved Instance modules with autogenerated SKU lookups. Spot pricing automation. Cost estimation: terraform plan -json piped to cost analyzer (Infracost integration). TTL tags on ephemeral resources. Scheduled scaling: var.business_hours controls instance counts" },
+        { q: "Compliance-as-code: implementing audit trails and enforcement with Terraform?", a: "Outputs capture created resource ARNs/IDs for audit logging. CloudTrail tags link IaC changes to API calls. Sentinel policies enforce compliance frameworks (PCI-DSS tagging, encryption, IAM constraints). State file encryption mandatory (kms_key_id)" },
+        { q: "Refactoring monolithic Terraform state: moved blocks and safe migration paths?", a: "moved { from = 'aws_instance.old' to = 'aws_instance.new' } prevents destroy/recreate. terraform apply -replace = 'resource' forces replacement. State manipulation: terraform state mv for advanced scenarios. Plan review critical to prevent outages" },
+        { q: "Provider pinning and version management across 20+ regions and AWS accounts?", a: "required_providers with version = '~> 5.0' (bumps patch/minor). terraform lock file (terraform.lock.hcl) ensures consistent versions. Separate lock files per environment avoid accidental upgrades. Version upgrade process: test in dev, validate breaking changes" },
+        { q: "Multi-region deployments: aliases, failover, and state synchronization strategies?", a: "Provider aliases: provider 'aws.us-east-1' { region = 'us-east-1' }. Separate state per region or cross-region state references. Active-passive failover via CloudFormation stack sets or Terraform workspaces. Replicated resources: for_each with map of regions" },
+        { q: "Handling secrets in Terraform: vault, AWS Secrets Manager, sealed secrets?", a: "Vault as primary source: HCP Vault managed service with dynamic secrets. AWS Secrets Manager: data source queries secrets at apply time, never stored in state. Sealed Secrets operator for K8s. Avoid: hardcoding, committing .tfvars with secrets, logging sensitive outputs" },
+        { q: "Terraform Cloud vs self-hosted Terraform Enterprise deployment comparison?", a: "Terraform Cloud: SaaS, cost per user, managed (no ops), limited customization. Enterprise: self-hosted, audit-friendly, network isolation, custom integrations (SSO, webhooks). Hybrid: Enterprise with private agents for connectivity requirements" },
+        { q: "Dynamic infrastructure provisioning: generating resources from data files (CSV, JSON)?", a: "data 'local_file' reads CSV, jsonpath() parses structure. for_each with zipmap() creates resource map. Example: 100 subnets from JSON config file. Enables separation of infrastructure from data" },
+        { q: "Implementing blue-green deployments with Terraform for zero-downtime infrastructure updates?", a: "Parallel environment provisioning: blue = aws_autoscaling_group 'v1', green = aws_autoscaling_group 'v2'. Load balancer traffic-weighted via aws_lb_target_group_attachment with weights. Health checks validate green before decommissioning blue" },
+        { q: "Handling EC2 capacity reservation and dedicate host provisioning for compliance?", a: "aws_ec2_capacity_reservation reserves specific instance counts (avoid overselling). aws_ec2_host provisions dedicated hosts for licensing. Terraform integration: instance_family constraints link to reservations. BYOL tracking via tags" },
+        { q: "Audit logging and change tracking: CloudTrail integration with Terraform state changes?", a: "Every terraform apply triggers API calls logged in CloudTrail with assumed role. State file in S3 enables bucket logging and object lambda auditing. Integration: CloudTrail events -> EventBridge -> Lambda -> custom tracking DB" },
+        { q: "Module orchestration: coordinating 30+ modules across environments with dependencies?", a: "Root module aggregates child modules. terraform_remote_state data source chains outputs (networking -> app -> observability). Explicit dependencies: depends_on prevents race conditions. Workspace separation for parallel module development" },
+        { q: "Performance optimization: reducing terraform plan time from 10min to <1min on large configs?", a: "Split state across regions and teams (10M+ resources per root). Lazy loading: -target resource for focused applies. Caching: terraform graph optimization via backend caching. Parallel apply: terraform apply -parallelism=50 (default=10)" },
+        { q: "Cost allocation and chargeback: tagging strategy linked to Terraform resource creation?", a: "Enforce tags on all resources via Sentinel policies. Tag format: cost-center, team, project, environment. Terraform locals generate standard tags applied to all resources. Cost analyzer parses tags for chargeback (s3 ://cost-allocation bucket)" },
+        { q: "Post-apply validation and reconciliation: automated testing and drift detection workflows?", a: "Terraform refresh detects real-world drift. Post-apply hooks run integration tests (curl endpoints, database queries). Scheduled drift detection: terraform plan runs hourly via CI/CD, alerts on changes. No-op runs verify state consistency" }
     ],
     "AWS": [
-        { q: "Difference between EC2 and Lambda?", a: "EC2 virtual server persistent runtime; Lambda serverless function executed on demand with autoscaling built-in." },
-        { q: "What is an Auto Scaling Group?", a: "Manages fleet size of EC2 instances based on policies & health checks." },
-        { q: "Explain IAM role vs user.", a: "User = long-term identity with credentials; Role = assumable temporary permission set." },
-        { q: "VPC components?", a: "Subnets, route tables, IGW, NAT gateway, security groups, NACLs, endpoints." },
-        { q: "S3 storage classes difference?", a: "Standard, IA, One Zone IA, Glacier Instant/ Flexible/ Deep Archive for different access & cost profiles." },
-        { q: "CloudWatch vs CloudTrail?", a: "CloudWatch metrics & logs; CloudTrail records API calls & account activity." },
-        { q: "Purpose of ELB types?", a: "ALB (HTTP layer7), NLB (TCP high perf), CLB (classic deprecated transitional)." },
-        { q: "What is Route 53?", a: "DNS + health checks + routing policies (latency, weighted, geolocation)." },
-        { q: "Difference between Security Group and NACL?", a: "SG stateful instance-level; NACL stateless subnet-level rules ordered." },
-        { q: "How to secure secrets?", a: "Use AWS Secrets Manager or SSM Parameter Store with KMS encryption." },
-        { q: "EBS vs Instance Store?", a: "EBS persistent network-attached; Instance Store ephemeral physically attached faster but lost on stop." },
-        { q: "RDS Multi-AZ purpose?", a: "Provides automatic failover with synchronous standby in another AZ for availability." },
-        { q: "Difference between SNS and SQS?", a: "SNS pub/sub fan-out notifications; SQS queue decouples components with pull consumption." },
-        { q: "CloudFormation vs Terraform?", a: "CloudFormation AWS-native, uses stacks, drift detection; Terraform multi-cloud with richer modules ecosystem." },
-        { q: "ECS vs EKS?", a: "ECS container orchestration AWS-specific; EKS managed Kubernetes control plane." },
-        { q: "Purpose of IAM policies?", a: "JSON documents granting/denying permissions attached to identities or resources." },
-        { q: "KMS key rotation?", a: "Automatic for AWS-managed keys yearly; manual schedule for customer-managed keys possible." },
-        { q: "S3 versioning benefits?", a: "Protects against accidental deletes/overwrites; enables restore of prior object versions." },
-        { q: "Cost optimization strategies?", a: "Right-size instances, use Reserved or Savings Plans, spot, storage lifecycle rules." },
-        { q: "Difference between PrivateLink and VPC Peering?", a: "PrivateLink exposes specific services privately; peering connects entire VPC routing." },
-        { q: "IAM permission boundary?", a: "Limits maximum allowable permissions regardless of attached policies." },
-        { q: "GuardDuty purpose?", a: "Threat detection service analyzing logs for malicious activity and anomalies." },
-        { q: "S3 bucket policy vs ACL?", a: "Bucket policy granular JSON control; ACL legacy coarse grained access lists." },
-        { q: "Glue vs Athena?", a: "Glue ETL/catalog; Athena serverless SQL queries on S3 using catalog metadata." },
-        { q: "CloudFront caching mechanism?", a: "Edge locations serve cached content; behaviors define TTL, path-based rules, compression." },
-        { q: "EKS node group types?", a: "Managed node groups simplify lifecycle; self-managed allow custom bootstrap; Fargate serverless pods." },
-        { q: "DynamoDB vs RDS use-case?", a: "DynamoDB NoSQL key-value low latency; RDS relational structured queries and transactions." },
-        { q: "Difference between Secrets Manager and Parameter Store?", a: "Secrets Manager rotation built-in + higher cost; Parameter Store hierarchical free standard tier." },
-        { q: "S3 pre-signed URL purpose?", a: "Temporary secure access for upload/download without exposing credentials." },
-        { q: "Elastic IP use caution?", a: "Static public IP for instances; charges when unattached, scarce resource allocate only when needed." }
+        { q: "AWS Organizations best practices: multi-account structure for 100+ accounts in enterprise?", a: "Root account: billing/org only (no workloads). OUs per environment (prod/staging/dev) + function (security/logging/networking). Service Control Policies (SCPs) enforce guardrails (block public RDS, restrict regions). Cross-account assume roles (least privilege)." },
+        { q: "Cost optimization at $100M+ annual spend: strategies for reserved instances, savings plans, spot?", a: "Reserved Instance pool: 3-yr commitment saves 70% vs on-demand. Savings Plan mixing (Compute/EC2 blend). Spot instances (85% discount) for fault-tolerant batch workloads. Commitment discounts optimizer (Cost Explorer), chargeback model (cost allocation tags), RI sharing across accounts" },
+        { q: "Security foundation: IAM best practices for 1000+ developers across 50 teams?", a: "Cross-account roles via AWS SSO / Identity Center (federated). Permission boundaries prevent privilege escalation. Least privilege: deny by default. Service-linked roles for managed services. No long-term user credentials (assume role via temp credentials). MFA enforced via SCP" },
+        { q: "Disaster recovery: RTO/RPO targets and multi-region failover architecture?", a: "RTO 15min: active-active multi-region (Route 53 health checks). RPO <1hr: cross-region RDS replicas + DynamoDB global tables. Backup strategy: daily snapshots, cross-region copy, annual archive to Glacier. Runbook automation: Lambda/Systems Manager documents for failover" },
+        { q: "High availability architecture: ELB, ASG, Multi-AZ patterns across 3 regions?", a: "ALB spanning 3 AZs with health checks (replace failed instances). ASG: target tracking policy scales on CPU/network. RDS Multi-AZ synchronous standby (automatic failover <2min). Databases: read replicas in other regions. Chaos testing (Gremlin) validates resilience" },
+        { q: "Networking at scale: VPC design supporting 10000+ hosts, subnets, routing efficiency?", a: "Transit Gateway hub-and-spoke: centralizes routing, simplifies peering (vs 100s of peering connections). CIDR planning: class B (172.16.0.0/12) split into /16s per env. NAT Gateway (high availability): multi-AZ deployment. VPC Flow Logs to S3 + Athena for network analysis" },
+        { q: "Data protection compliance: PCI-DSS, HIPAA, SOC2 implementation across AWS workloads?", a: "KMS encryption (data at rest) + TLS 1.2+ (in transit). Secrets Manager rotation policies (auto-rotate every 30days). VPC isolation (private subnets for sensitive data). GuardDuty + SecurityHub for threat detection. Audit logs: CloudTrail + Config rules + access logging (S3, RDS, VPC)" },
+        { q: "S3 bucket security and data governance: preventing data leaks at scale?", a: "Default: Block Public Access enabled. Bucket policies enforce encryption (aws:SecureTransport). MFA Delete on versioned buckets. Access logs to separate bucket. S3 Intelligent-Tiering for cost optimization. Object Lock (WORM) for compliance archives. S3 Replication: cross-region + cross-account" },
+        { q: "Secrets rotation at scale: Secrets Manager, Parameter Store, and external integrations?", a: "Secrets Manager: automatic rotation via Lambda (supports RDS, Redshift, DocumentDB native). Parameter Store: manual rotation via EventBridge + Lambda. Vault integration: external rotation source. Monitoring: failed rotations trigger SNS. Audit: CloudTrail records all secret access" },
+        { q: "Container security: ECR scanning, image signing, and supply chain security?", a: "ECR: push with clair/trivy scanning (block high-severity images). Docker Content Trust signs images (cryptographic verification). Notary repositories store signatures. ECR lifecycle policies prune old images. VPC endpoints prevent internet exposure. Private registry for air-gapped networks" },
+        { q: "EKS best practices: cluster autoscaling, security posture, and multi-tenancy?", a: "Cluster autoscaling: Karpenter (efficient bin-packing) vs Cluster Autoscaler. Pod security standards (PSS) enforce policies. RBAC: namespaced roles per team. Network policies restrict traffic between pods. Falco for runtime security. IRSA (IAM Roles for Service Accounts) fine-grained permissions" },
+        { q: "Lambda at scale: coldstart optimization, concurrent execution limits, and cost control?", a: "Coldstart: Lambda SnapStart (java), container image vs zip (150MB limit). Reserved concurrency prevents throttling. Provisioned concurrency keeps instances warm (cost trade-off). ARM-based Graviton2 saves 20% cost. X-Ray tracing for performance analysis" },
+        { q: "RDS production patterns: backup strategies, failover testing, and parameter group management?", a: "Automated backups: 35-day retention + cross-region copy. Manual snapshots for major upgrades. Failover testing: promote read replica, monitor promotion time. Parameter groups: custom for tuning (max_connections, slow_query_log). Enhanced Monitoring for OS-level metrics" },
+        { q: "DynamoDB at scale: provisioning modes, global tables, and cost optimization?", a: "Provisioned capacity: predictable workloads, reserved capacity saves 25%. On-demand: bursty traffic, auto-scaling. Global tables: multi-region replication, eventual consistency. TTL for auto-cleanup. DynamoDB Streams trigger Lambda (real-time processing). Query optimization (GSI vs scan)" },
+        { q: "CloudFront and edge caching: geographic performance optimization and DDoS protection?", a: "Distribution behaviors define cache rules (TTL, compression). Origin Shield (additional cache layer) reduces origin load. Field-level encryption for sensitive data (EC). WAF integration: rate limiting, geo-blocking, SQL injection protection. Lambda@Edge: compute at edge (auth, image optimization)" },
+        { q: "EventBridge and SQS integration patterns for decoupled async architectures?", a: "EventBridge: event-driven fan-out (publish hundreds of rules). SQS: queue-based decoupling (FIFO for ordering, visibility timeout). DLQ (dead-letter queue) handles failed processing. Lambda consumers scale via SQS concurrency. Cross-account event routing via resource-based policies" },
+        { q: "Compliance monitoring: AWS Config, Systems Manager, and automated remediation?", a: "Config rules: 100+ predefined rules (e.g., ec2-public-ip check, encryptionEnabled). Systems Manager Automation remediation: auto-repair config drift (e.g., enable versioning on S3). CloudTrail integration: audit trail for rule violations. Compliance scoring dashboard" },
+        { q: "Cross-account log aggregation: CloudWatch, S3, and centralized SIEM integration?", a: "Logs Insights: cross-account queries via cross-account permissions. Central logging account: S3 bucket receives logs from all accounts (bucket policy). Splunk/ELK integration: Kinesis Firehose streams logs to external SIEM. Log retention: cost-optimized lifecycle (S3 Glacier after 90days)" },
+        { q: "Networking deep-dive: VPC endpoints, PrivateLink, and zero-trust network access?", a: "Gateway endpoints (S3, DynamoDB) free, no NAT needed. Interface endpoints (SNS, SQS, Lambda) private connectivity. PrivateLink: expose services across accounts securely. NACLs + Security Groups (defense-in-depth). Network performance isolation: placement groups for EC2 clusters" },
+        { q: "FinOps and cost accountability: tagging, showback, and chargeback models at scale?", a: "Tag compliance: SCP enforces mandatory tags (cost-center, team, project). Cost allocation reports grouped by tags. Reserved instance pool optimization (Compute Savings Plans). Spot instance fleet: 25-50% discount on diverse instance types. Estimated monthly: $1M+ saves $300K+ via RI + Spot" }
     ],
     "Azure": [
         { q: "What is an Azure Resource Group?", a: "Logical container for resources lifecycle + permissions grouping." },
@@ -644,7 +586,27 @@ const devOpsData = {
         { q: "Continuous verification meaning?", a: "Post-deploy live checks and metrics evaluation validating success beyond static tests." },
         { q: "Blue/green plus DB migration handling?", a: "Use backward-compatible migrations, expand->migrate->contract pattern ensuring old version tolerance." },
         { q: "Pipeline secret management?", a: "Inject from vault or secret manager at runtime; avoid env logging, rotate regularly." },
-        { q: "Canary metric selection?", a: "Error rate, latency, saturation, business KPIs to judge incremental rollout health." }
+        { q: "Canary metric selection?", a: "Error rate, latency, saturation, business KPIs to judge incremental rollout health." },
+        { q: "Design end-to-end CI/CD pipeline for microservices architecture with 50+ services.", a: "Source control (Git) triggers webhook to CI system (Jenkins, GitLab CI, GitHub Actions). Build stage: compile, unit test, SAST scan. Registry push: scan image, sign with GPG, push to private registry. CD stage: deploy to staging via Helm, run integration tests. Approval gate for production. Progressive rollout: canary (5%), then full rollout. Automated rollback on metric degradation. Maintain audit trail of every deployment." },
+        { q: "How to design a CI/CD pipeline that reduces deployment time from 2 hours to 15 minutes?", a: "Parallelize stages: build, test, scan run concurrently. Implement build cache (Docker layer caching, Maven cache). Cache dependencies and test results. Use fast health checks (avoid long tests in critical path). Pre-stage artifacts. Implement fast image distribution (image warming on nodes). Skip tests for infrastructure changes. Optimize network latency between build agents and artifact storage. Profile bottlenecks and remove serial dependencies." },
+        { q: "Design security scanning strategy across entire CI/CD pipeline (shift-left).", a: "Pre-commit hooks: git-secrets, detect-secrets. SCM: SAST via SonarQube, dependency scanning via Dependabot. Build: container image scanning (Trivy), image signing (Cosign). Registry: re-scan on push/pull. Deploy: policy validation (OPA/Kyverno). Runtime: DAST via OWASP ZAP, runtime security (Falco). Quarterly: penetration testing, vulnerability assessment. Block deployments on high-severity findings." },
+        { q: "Design artifact management strategy for compliance-heavy environment (fintech, healthcare).", a: "Immutable artifact storage with versioning and tagging. Cryptographic signing of all artifacts (Cosign for containers, GPG for binaries). Audit trail: who created, when, from what source commit. Vulnerability scanning on push and periodically. Retention policy per compliance requirement (typically 7 years for healthcare). Separate registries per environment (dev, staging, prod). Access control via RBAC. Encryption at rest and in transit." },
+        { q: "How to implement multi-stage deployment across 3 regions with canary validation?", a: "Canary stage: deploy to 5% of one region, compare error rate, latency, resource usage vs baseline. Use statistical significance testing to detect degradation. Auto-rollback if metrics exceed thresholds. Roll forward: 20% in region 1. Next: deploy to region 2 and 3 same pattern. Use service mesh (Istio) for traffic splitting. Feature flags for progressive feature exposure. Maintain traffic shift capability for instant rollback." },
+        { q: "Design solution for managing secrets in CI/CD pipeline safely.", a: "Never commit secrets to Git. Use vault (HashiCorp, cloud-native) as central source. Inject secrets at runtime via environment variables or files. Rotate secrets regularly (30-90 days). Audit all secret access. Use dynamic secrets (generated per request). Implement least-privilege secret access. Never log secrets. Separate secrets per environment. Use sealed secrets for K8s. Implement secret scanning in repos (git-secrets)." },
+        { q: "How to implement effective feedback loop for developers in CI/CD pipeline?", a: "Fast pipeline (< 10 minutes for full validation). Clear error messages showing which test failed and why. Link to logs and dashboards. Instant notifications on failures (Slack, email). Run tests in parallel by timing data. Implement code review integration (mandatory approvals). Show metrics in notifications (build time trend). Implement commit status checks preventing merge of failed builds. Dashboard showing pipeline health." },
+        { q: "Design deployment strategy that enables daily releases with zero downtime.", a: "Blue-green deployments: two production environments, instant traffic switch. Rolling deployments: gradually replace old instances. Feature flags: decouple deployment from release. Canary deployments: 5% traffic initially, observe metrics. Database migrations: backward-compatible, expand->migrate->contract. API versioning: maintain old API versions temporarily. Health checks: liveness, readiness, startup probes. Automated rollback: on metric degradation." },
+        { q: "How to design CI/CD pipeline for stateful services (databases, message queues)?", a: "Separate database migration pipeline: test migrations on staging replica first. Use online schema change tools (gh-ost). Application code handles both old/new schemas. Dual-write during transition. Implement point-in-time recovery. Backup before major changes. Test rollback procedures. Use health checks to validate data integrity. Monitor replication lag. For message queues: ensure ordering semantics, implement deduplication, test consumer compatibility." },
+        { q: "Design approach for handling configuration management across environments (dev, staging, prod).", a: "12-factor app principles: config via environment variables. Infrastructure-as-code (Terraform) for infrastructure config. Helm/Kustomize for Kubernetes config. Git-driven: all config in version control except secrets. Validation: schema validation in CI/CD. GitOps: Git as source of truth, reconciliation ensures actual state matches. Review config changes in PR. Monitor drift: alert on manual changes. Document configuration requirements." },
+        { q: "How to implement feature flags effectively in CI/CD workflow?", a: "Use feature flag platform (LaunchDarkly, Unleash) instead of code branches. Define flag lifecycle: development, testing, gradual rollout, cleanup. Implement targeting rules: user segments, geographic locations, percentages. Monitor flag behavior: track which code paths executed. Audit: log all flag changes. Remove flags after release (technical debt). Integrate with deployment: auto-flag management during releases. Dashboard showing active flags." },
+        { q: "Design disaster recovery strategy for CI/CD infrastructure itself.", a: "Replicate pipeline infrastructure across regions. Backup pipeline configuration and history. Implement alerting for pipeline failures. Runbooks for recovery. Test disaster recovery procedures quarterly. Maintain backup CI/CD system in standby. Document pipeline dependencies and critical configurations. Implement automated backups of artifact storage. Use infrastructure-as-code for rapid reprovisioning. Monitor pipeline health continuously." },
+        { q: "How to measure CI/CD effectiveness and track improvement?", a: "DORA metrics: deployment frequency, lead time for changes, MTTR, change failure rate. Build time: measure and track trends. Test coverage: maintain >80% for critical paths. Security scan findings: track remediation time. Artifact storage growth: monitor and optimize. Pipeline success rate: aim for >95%. Deployment duration: measure elapsed time. Rollback frequency: monitor and investigate. Cost per deployment: optimize resources. Developer satisfaction surveys." },
+        { q: "Design approval and gating process for production deployments balancing speed and safety.", a: "Automated gates: run all tests, security scans, policy validation. Require approval for production from owner. Risk-based approval: minor bug fix auto-approve vs major features require review. Separation of duties: deployer != approver. Scheduled deployments: avoid Friday afternoon, off-hours. Deployment windows: coordinate across teams. Change advisory board for major changes. Approval timeout: if not approved within 24h, request expires. Document approval decisions." },
+        { q: "How to implement effective test automation in CI/CD pipeline (test pyramid)?", a: "Unit tests: fast, isolated, >80% of tests. Integration tests: verify service interactions, <15% of tests. UI/e2e tests: validate user workflows, <5% of tests. Run unit tests first (5 min). Parallel integration tests (10 min). Nightly: full e2e tests. Use realistic test data (not production data). Test against staging with live dependencies. Maintain test performance: delete slow tests. Mock external services. Use test containers for database tests." },
+        { q: "Design approach for progressive deployment using deployment rings with validation gates.", a: "Internal ring: deploy to development environment, run smoke tests. Early adopter ring: 5-10% of users, monitor metrics. Standard ring: 50% of users, validate no regressions. Final ring: 100% rollout. Each ring has exit criteria: error rate < 0.1%, latency p95 < threshold, customer satisfaction metrics. Automated metrics collection and comparison against baseline. Manual approval at gates for risk assessment. Rollback capability at each ring." },
+        { q: "How to design CI/CD pipeline that supports multiple languages and frameworks (polyglot)?", a: "Build stage: language-specific builders (Docker images with SDKs). Each language has build script (build.sh) at root. Standard artifact format: Docker images. Pipeline language-agnostic: use generic build, test, push stages. Dependencies per language handled in container build. Testing: language-specific test runners. Coverage: aggregate reports. Linting and formatting: language-specific tools. Documentation: standardized per-language. Training: provide templates for new languages." },
+        { q: "Design solution for managing database schema changes in zero-downtime deployments.", a: "Backward-compatible migrations: add column (v1), application handles both (v2 code supports new column), remove old (v3). Online schema change tools: gh-ost, pt-online-schema-change avoid table locks. Separate migration pipeline: run before application deployment. Dual-write during transition: write to both old and new schema. Data validation: verify correctness post-migration. Rollback plan: restore from backup. Monitor replication lag: ensure replicas stay in sync. Test migrations on staging replica." },
+        { q: "Design CI/CD for compliance-driven releases (SOC2, PCI-DSS, HIPAA).", a: "Immutable artifacts: sign and store with audit trail. Policy enforcement: OPA rules validate compliance (encryption, logging, access controls). Automated scanning: SAST, dependency, container scans mandatory. Approval process: security/compliance review gates. Change documentation: linked to risk assessment. Audit logging: CloudTrail/equivalent logs all deployments. Data handling: sensitive data never in logs. Encryption: in-transit (TLS) and at-rest (KMS). Regular audits: quarterly compliance checks. Incident response: documented procedures for security events." },
+        { q: "How to implement effective incident response automation in CI/CD?", a: "Automated alerts: anomaly detection on metrics post-deployment. Auto-rollback triggers: error rate/latency exceeding thresholds. Incident severity classification: auto-trigger based on impact. Page on-call engineer: immediate notification. War room: auto-create Slack channel with relevant dashboards. Runbook automation: execute recovery steps automatically where safe. Logging: auto-collect logs at incident time. Communication: auto-notify stakeholders. Post-mortem: auto-extract relevant logs and metrics for analysis. Feedback loop: update runbooks and policies." }
     ],
     "DevSecOps": [
         { q: "What is DevSecOps?", a: "Integrating security practices early and continuously across DevOps workflows." },
@@ -962,8 +924,50 @@ const devOpsData = {
         { q: "helm lint checks?", options: ["Chart structure & template issues","Security vulnerabilities","Cluster quota","Pod runtime health"], correct: 0 },
         { q: "Secret encryption at rest handled by?", options: ["Helm native encryption","Kubernetes provider / external tool like SOPS","Chart.yaml flag","--secure-secret"], correct: 1 },
     { q: "Templating to default a value if empty?", options: ["default 'x' .Values.someKey","fallback .Values.someKey 'x'","valueElse","ifDefault"], correct: 0 }
+    ],
+    "Senior DevOps": [
+        { q: "Design a high-availability deployment strategy for a microservices architecture.", a: "Implement multi-region active-active setup with disaster recovery. Use service mesh (Istio) for traffic management, distributed tracing (Jaeger), circuit breakers, and automated failover. Deploy on Kubernetes with PodDisruptionBudgets, replicas across zones, and etcd backup/restore procedures. Use GitOps (Flux/ArgoCD) for infrastructure consistency." },
+        { q: "How would you implement blue-green deployments at scale?", a: "Run two identical production environments (blue/green) on separate clusters or namespaces. Route traffic via load balancer/ingress controller to switch between versions instantly. Maintain database migrations separately, use feature flags for gradual rollout, and implement instant rollback via traffic redirect. Monitor both versions simultaneously for anomalies." },
+        { q: "Explain strategies for managing configuration drift in production.", a: "Use Infrastructure as Code (Terraform/Helm) as single source of truth. Implement policy-as-code (OPA/Kyverno) to enforce compliance. Audit all changes via Git commits. Use configuration management (Ansible) for compliance checking. Implement continuous validation with drift detection tools and auto-remediation where safe." },
+        { q: "Design a CI/CD pipeline for compliance-heavy environments (fintech, healthcare).", a: "Implement multiple stages: security scanning (SAST/DAST), container scanning (Trivy/Grype), policy checks (OPA), approval gates, audit logging of all deployments, cryptographic signing of artifacts, and immutable deployment records. Use separate networks for dev/staging/prod. Implement role-based approval workflows and maintain comprehensive audit trails for regulatory compliance." },
+        { q: "How to handle secrets management at enterprise scale?", a: "Use HashiCorp Vault or cloud-native solutions (AWS Secrets Manager, Azure Key Vault). Implement secret rotation policies, audit logging, fine-grained RBAC, and dynamic secrets for databases. Never commit secrets to Git. Use tools like Sealed Secrets or External Secrets Operator for Kubernetes. Implement secret scanning in repos (git-secrets, detect-secrets)." },
+        { q: "Design a monitoring and alerting strategy for thousands of microservices.", a: "Use multi-level observability: metrics (Prometheus), logs (ELK/Loki), traces (Jaeger/Tempo). Implement cardinality management to prevent metric explosion. Use alert aggregation with intelligent grouping. Implement SLO/SLI-based alerting instead of threshold-based. Create runbooks for each alert. Use AIOps tools for anomaly detection and correlation analysis." },
+        { q: "How would you reduce deployment time from 45 minutes to under 5 minutes?", a: "Profile bottlenecks: identify slow stages. Parallelize jobs (Docker builds, tests). Use caching (layer caching, dependency caching). Implement fast health checks (avoid long-running tests in critical path). Use artifact pre-staging. Optimize image sizes. Implement canary deployments for faster rollback. Use infrastructure closer to build agents to reduce network latency." },
+        { q: "Explain canary deployments with metric-based automatic rollback.", a: "Deploy new version to small percentage (5-10%) of traffic. Compare metrics (error rate, latency, resource usage) against baseline using statistical significance testing. If metrics exceed thresholds, automatically rollback. Use service mesh to split traffic and control rollout percentage. Integrate with observability stack to make data-driven decisions automatically." },
+        { q: "Design infrastructure for handling millions of requests per second.", a: "Use auto-scaling (HPA/KEDA) with predictive scaling. Implement multi-region load balancing. Use CDN for static assets. Implement caching at multiple layers (Redis, application). Use message queues to decouple services. Optimize database queries and implement read replicas. Use sharding for horizontal scaling. Monitor and adjust resource limits continuously based on traffic patterns." },
+        { q: "How to implement GitOps for multi-cluster management?", a: "Use tools like Flux or ArgoCD to sync Git state to multiple clusters. Implement separate repos for different environments/regions. Use Kustomize or Helm for templating. Implement image update automation with tools like Renovate. Track all changes in Git with audit trail. Use cluster-api for cluster provisioning as code. Implement cross-cluster secrets management." },
+        { q: "Explain disaster recovery strategy with RTO/RPO targets.", a: "Define RTO (Recovery Time Objective) and RPO (Recovery Point Objective) based on business criticality. Implement regular backup/restore drills. Use automated failover for critical systems. Maintain geographically distributed backups. Implement incremental backups to reduce storage. Test recovery procedures monthly. Use point-in-time recovery for databases. Document recovery procedures with step-by-step runbooks." },
+        { q: "Design a strategy to eliminate toil and improve SRE maturity.", a: "Quantify toil activities and their impact. Prioritize automation of repetitive tasks. Implement self-service platforms (PaaS for developers). Use chatops for common operations. Implement automated remediation for known issues. Create runbooks and playbooks for incident response. Build dashboards for visibility. Establish SLOs and track error budgets to guide engineering efforts." },
+        { q: "How to handle database schema migrations in production without downtime?", a: "Use backward-compatible migrations: add columns before removing. Deploy application code handling both old/new schemas. Use feature flags to control feature rollout. Implement dual-write during transition period. Test migrations thoroughly in staging. Use online schema change tools (gh-ost, pt-online-schema-change). Monitor for performance impact during migration. Have rollback procedures ready." },
+        { q: "Design a strategy for managing Kubernetes at scale (1000+ nodes).", a: "Use cluster federation or multi-cluster management tools. Implement node auto-scaling with cluster autoscaler or Karpenter. Use node pools for different workload types. Implement pod disruption budgets for safe drains. Use network policies for microsegmentation. Implement resource quotas and limits per namespace. Use service mesh for traffic management. Automate cluster upgrades using GitOps." },
+        { q: "Explain how to implement effective cost optimization in cloud infrastructure.", a: "Monitor and analyze spend using cloud cost tools (Kubecost, CloudHealth). Right-size resources based on actual usage. Use reserved instances and spot/preemptible VMs. Implement auto-scaling to match demand. Remove unused resources. Use serverless for variable workloads. Negotiate volume discounts. Implement chargeback models to make teams cost-aware. Automate cost anomaly detection." },
+        { q: "How would you implement feature flags in production safely?", a: "Use feature flag platforms (LaunchDarkly, Unleash) instead of code branches. Implement targeting rules (user segments, percentages, environments). Track flag changes in audit logs. Monitor impact of feature flags on key metrics. Use canary rollouts with automatic rollback on metric degradation. Document flag lifecycle and cleanup procedures. Integrate flag state with deployment pipeline." },
+        { q: "Design an incident response process for high-severity outages.", a: "Establish clear escalation procedures and on-call rotation. Implement automated alerting and paging. Use centralized incident tracking (PagerDuty, Opsgenie). Establish incident commander role. Collect logs/metrics automatically during incidents. Implement runbooks for known issues. Maintain war rooms for cross-functional communication. Conduct blameless post-mortems. Track action items from incidents to prevent recurrence." },
+        { q: "How to implement observability-driven development?", a: "Instrument code to emit metrics, logs, and traces. Use OpenTelemetry for standardized instrumentation. Implement structured logging with relevant context. Set up dashboards before features launch. Define SLOs and error budgets. Use tracing to understand service dependencies. Make observability a requirement in code reviews. Train developers on observability best practices." },
+        { q: "Explain strategies for managing Kubernetes upgrades across clusters.", a: "Plan upgrades respecting RTO/RPO. Upgrade control plane and nodes in rolling fashion. Test upgrades in non-prod first. Use cluster-api for infrastructure automation. Implement node cordons and graceful pod eviction. Test application compatibility with new k8s version. Maintain downtime budget using PodDisruptionBudgets. Automate rollback if issues detected. Monitor for regressions post-upgrade." },
+        { q: "How to design systems that are observable, scalable, and cost-efficient simultaneously?", a: "Balance trade-offs: high observability increases costs, over-scaling wastes resources. Use intelligent auto-scaling (predictive, metric-based). Implement tiered observability (high detail for critical components). Use sampling for high-volume telemetry. Monitor system health via SLOs instead of individual metrics. Automate resource cleanup. Review quarterly to adjust based on actual needs and costs." },
+        { q: "Design a strategy for managing data consistency across microservices without transactions.", a: "Implement eventual consistency patterns: event sourcing stores all state changes as immutable events, CQRS separates read/write models. Use saga pattern for distributed transactions (orchestrator or choreography). Implement idempotency keys to handle retries safely. Use event replay for reconciliation. Monitor consistency metrics. Accept temporary inconsistency windows based on business requirements. Use causal ordering where needed." },
+        { q: "How to implement security as a first-class concern in infrastructure?", a: "Design zero-trust architecture: authenticate every request, encrypt in-transit and at-rest. Implement least privilege RBAC. Use network policies to restrict traffic. Deploy runtime security tools (Falco). Implement container image scanning and signing. Use policy-as-code (OPA/Kyverno). Audit all access. Implement secrets rotation. Regular vulnerability scanning. Security training for teams. Threat modeling exercises." },
+        { q: "Explain how to migrate monolithic application to microservices without downtime.", a: "Start with strangler pattern: extract one service at a time while maintaining monolith. Use anti-corruption layer to translate between old/new systems. Implement dual-write for data consistency during transition. Use feature flags to control traffic routing. Monitor both systems in parallel. Gradual traffic migration to new service. Keep fallback to monolith for months. Test extensively at each step." },
+        { q: "Design observability for a distributed system with 100+ services.", a: "Implement distributed tracing (Jaeger/Tempo) to track requests across services. Use service mesh (Istio) to inject tracing automatically. Collect metrics via Prometheus with cardinality limits. Aggregate logs via ELK/Loki. Create cross-service dashboards. Implement SLO monitoring. Use alert correlation to reduce noise. Monitor dependency graph health. Implement latency percentile tracking (p50, p95, p99)." },
+        { q: "How to achieve sub-second deployment cycles?", a: "Parallelize stages: build, test, deployment can run concurrently. Implement fast health checks. Use layer caching for Docker builds. Pre-stage artifacts. Use direct artifact push instead of registry for internal deploys. Implement rolling deployments instead of blue-green (faster). Use infrastructure closer to build system. Profile and optimize slowest stages. Consider canary deployments to avoid full validation." },
+        { q: "Design a strategy for preventing and recovering from cascading failures.", a: "Implement circuit breakers to stop propagation. Use bulkheads to isolate failures (thread pools, connection pools). Implement timeouts aggressively. Use exponential backoff with jitter. Implement request deduplication. Use fallbacks and graceful degradation. Monitor dependency health continuously. Use synthetic monitoring to catch issues early. Implement chaos testing (Gremlin, Pumba) regularly." },
+        { q: "Explain how to implement effective capacity planning for seasonal traffic.", a: "Analyze historical data and trends. Use time-series forecasting (Prophet, ARIMA). Plan for peak + buffer (typically 40-50% headroom). Use auto-scaling with predictive scaling. Pre-provision before known peaks. Use spot instances for variable load. Implement load shedding if needed. Reserve capacity with cloud providers. Monitor utilization constantly. Adjust reservations annually." },
+        { q: "How to manage configuration in highly dynamic environments (pets vs cattle)?", a: "Treat infrastructure as cattle (immutable infrastructure). Use infrastructure-as-code for all provisioning. Container images bundled with configuration. Use ConfigMaps/Secrets for runtime config changes. Use GitOps for configuration management. Implement policy enforcement via admission controllers. Avoid SSH into servers (use remote execution). Use service mesh for dynamic routing configuration." },
+        { q: "Design a strategy for maintaining developer velocity while ensuring security and compliance.", a: "Shift security left: implement scanning in developer tools (IDE, pre-commit hooks). Use policy-as-code to enforce automatically. Provide self-service onboarding. Automate compliance checking. Create security libraries for common patterns. Regular security training. Fast feedback loop from CI/CD. Use security champions program. Balance speed with safety via error budgets." },
+        { q: "Explain how to implement effective load testing and capacity planning.", a: "Use realistic production-like load (user behavior simulation). Test gradually increasing load to find breaking points. Test with sustained load and spikes. Measure not just throughput but latency percentiles. Identify bottlenecks: CPU, memory, disk I/O, network, database. Test chaos scenarios (node failures, network latency). Use tools like k6, JMeter, Gatling. Automate load tests in CI/CD pipeline." },
+        { q: "How to handle long-running operations and asynchronous processing at scale?", a: "Use message queues (RabbitMQ, Kafka) to decouple producers from consumers. Implement exponential backoff for retries. Use dead-letter queues for failed messages. Implement idempotency for safe retries. Monitor queue depth and consumer lag. Use stateless workers for horizontal scaling. Implement circuit breakers to prevent cascading failures. Use distributed tracing for debugging." },
+        { q: "Design a strategy for managing infrastructure secrets across 50+ services.", a: "Centralize secrets in vault (HashiCorp, cloud-native). Implement automatic rotation with zero-downtime. Use RBAC to limit secret access. Audit all secret access. Implement dynamic secrets generation per request. Use service-to-service authentication (mTLS). Implement secret scanning in repos. Store secrets in tmpfs where possible. Never log secrets. Implement emergency secret revocation procedures." },
+        { q: "Explain how to implement effective runbooks for incident response.", a: "Document common issues with step-by-step procedures. Include decision trees for troubleshooting. Automate common recovery steps (restart service, scale out). Link to dashboards and log searches. Version control runbooks alongside infrastructure. Keep runbooks updated as systems change. Test runbooks during drills. Include escalation procedures. Use runbook automation tools (Rundeck, Ansible). Train team on runbooks." },
+        { q: "How to design databases for scale without sacrificing consistency where needed?", a: "Use CQRS for read/write separation. Implement read replicas for scalability. Use caching (Redis, Memcached) for hot data. Implement connection pooling. Use database sharding for horizontal scale. For critical data, use multi-master replication with conflict resolution. Implement eventual consistency for non-critical data. Monitor query performance. Use indexes strategically. Consider polyglot persistence (multiple databases for different needs)." },
+        { q: "Design a strategy for gradual rollout of infrastructure changes to production.", a: "Use canary deployments: route small percentage to new infrastructure. Monitor health metrics (error rate, latency, resource usage). Compare against baseline using statistical testing. Automate rollback on metric degradation. Use feature flags to control rollout speed. Implement traffic shifting (5%, 25%, 50%, 100%). Use synthetic monitors to detect issues. Maintain rollback capability throughout rollout." },
+        { q: "Explain how to implement effective API rate limiting and quota management.", a: "Use token bucket algorithm for smooth rate limiting. Implement per-user, per-IP, and global limits. Use Redis for distributed rate limiting across servers. Return clear rate limit headers (X-RateLimit-*). Implement graceful degradation when limits exceeded. Use adaptive rate limiting based on system load. Monitor rate limit violations for DDoS detection. Provide quota dashboard for users. Implement whitelisting for trusted clients." },
+        { q: "How to manage and scale stateful services (databases, caches) in Kubernetes?", a: "Use StatefulSets with persistent volumes. Implement consistent pod identities and ordering. Use headless services for stable DNS names. Implement cluster-aware applications (e.g., RabbitMQ, Redis Cluster). Use operators for lifecycle management. Implement backup strategies for data. Monitor data replication lag. Use anti-affinity rules to spread across nodes. Implement persistent volume snapshots for disaster recovery." },
+        { q: "Design a strategy for preventing and handling common production incidents.", a: "Implement monitoring for known failure modes. Create playbooks for common issues. Use chaos engineering to find new failure modes. Implement circuit breakers and bulkheads. Use distributed tracing for diagnosis. Implement automated remediation where safe. Establish clear incident commander and communication procedures. Post-mortem every incident. Track trends and systemic issues. Regular drills and war games." },
+        { q: "Explain how to optimize cloud spend while maintaining performance and reliability.", a: "Continuously monitor spend and resource utilization. Right-size resources based on actual usage. Use reserved instances for baseline load. Use spot/preemptible for variable workloads. Implement auto-scaling policies. Remove unused resources automatically. Implement cost allocation tags. Use cloud-native services instead of self-managed. Negotiate volume discounts. Implement chargeback to make teams cost-aware. Review quarterly." }
     ]
 };
+
 
 // ---------------------- State ----------------------
 let currentTopic = localStorage.getItem('currentTopic') || 'Linux';
@@ -1078,593 +1082,6 @@ document.addEventListener('DOMContentLoaded', () => {
     focusActiveTab();
     updateProgressUI();
 });
-
-// ---------------------- Portfolio Page ----------------------
-function renderPortfolio() {
-    const container = document.getElementById('questionsContainer');
-    container.innerHTML = '';
-    const search = document.getElementById('searchInput');
-    if (search) { search.disabled = true; search.placeholder = 'Portfolio view active'; }
-    
-    const portfolio = document.createElement('div');
-    portfolio.className = 'portfolio-container';
-    
-    portfolio.innerHTML = `
-        <!-- Hero Section -->
-        <div class="portfolio-hero">
-            <div class="hero-content">
-                <div class="hero-image">
-                    <div class="avatar">👨‍💻</div>
-                </div>
-                <h1 class="hero-title">Chaitanya Kongara</h1>
-                <p class="hero-subtitle">Platform Specialist | DevOps Engineer | Cloud Architect</p>
-                <div class="hero-contact">
-                    <span class="contact-item">✉️ Chaitanya1devops@gmail.com</span>
-                    <span class="contact-item">📱 +91 9182302453</span>
-                </div>
-                <div class="hero-tags">
-                    <span class="tag">AWS | Azure | GCP</span>
-                    <span class="tag">Kubernetes Expert</span>
-                    <span class="tag">CI/CD Specialist</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- About Section -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">👤</span>
-                Professional Summary
-            </h2>
-            <div class="about-content">
-                <p class="about-text">
-                    DevOps professional with 11 years of experience in the IT industry, specializing in AWS, Azure, 
-                    and GCP cloud platforms. Skilled in CI/CD, automation, cloud infrastructure, and configuration management. 
-                    Focused on orchestrating cloud infrastructure services from design and implementation to operations, 
-                    delivering cost savings and improved efficiency for businesses.
-                </p>
-                <p class="about-text">
-                    Proficient in Continuous Integration & Deployment using tools like Git, Maven, Jenkins, SonarQube, 
-                    Docker, and Kubernetes. Strong expertise in managing and scaling workloads in GKE and EKS. 
-                    Designed and implemented highly available, secure, and scalable Kubernetes clusters with ISO 27001 
-                    compliance through Vanta integration.
-                </p>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">11+</div>
-                        <div class="stat-label">Years Experience</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">Multi-Cloud</div>
-                        <div class="stat-label">AWS | Azure | GCP</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">ISO 27001</div>
-                        <div class="stat-label">Compliance Expert</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Education Section -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">🎓</span>
-                Education
-            </h2>
-            <div class="education-card">
-                <h3>Bachelor's in Information Systems</h3>
-                <p class="edu-institution">Federation University, Melbourne, Australia</p>
-            </div>
-        </section>
-
-        <!-- Skills Section -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">🛠️</span>
-                Technical Skills
-            </h2>
-            <div class="skills-grid">
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Cloud Platforms</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Amazon Web Services (AWS)</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Google Cloud Platform (GCP)</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Microsoft Azure</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">CI/CD Tools</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Jenkins</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">GitHub Actions</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">CircleCI</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 88%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Azure DevOps</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Bamboo</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 80%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Containerization & Orchestration</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Kubernetes (EKS, GKE)</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Docker</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Amazon ECS</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 88%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Helm</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">IaC & Configuration Management</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Terraform</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Ansible</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">CloudFormation</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 88%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">SaltStack</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Puppet</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 80%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Chef</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 75%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Monitoring & Logging</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Prometheus</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Grafana</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 92%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">CloudWatch</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 88%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Sentry</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Programming & Scripting</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Python</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Shell/Bash</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Java</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 80%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Node.js</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 82%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Build & Version Control</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">Maven</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">ANT</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Git (GitHub, GitLab, CodeCommit)</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 95%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skill-category">
-                    <h3 class="skill-category-title">Other Tools</h3>
-                    <div class="skill-items">
-                        <div class="skill-item">
-                            <span class="skill-name">SonarQube</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 88%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">OWASP ZAP</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 82%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">JIRA & Confluence</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span class="skill-name">Vanta (ISO 27001)</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Projects Section -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">🚀</span>
-                Key Projects
-            </h2>
-            <div class="projects-grid">
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3>Koodoo - Fintech Platform</h3>
-                        <span class="project-badge featured">Current</span>
-                    </div>
-                    <p class="project-description">
-                        Python, ReactJS, and Node.js based generative AI SaaS platform on GCP. Implemented complete DevOps pipeline with Kubernetes orchestration, monitoring solutions, and security scanning.
-                    </p>
-                    <div class="project-tech">
-                        <span class="tech-tag">GCP</span>
-                        <span class="tech-tag">Kubernetes (GKE)</span>
-                        <span class="tech-tag">Prometheus</span>
-                        <span class="tech-tag">Grafana</span>
-                        <span class="tech-tag">CircleCI</span>
-                        <span class="tech-tag">Helm</span>
-                        <span class="tech-tag">SonarQube</span>
-                        <span class="tech-tag">MongoDB</span>
-                        <span class="tech-tag">PostgreSQL</span>
-                    </div>
-                    <div class="project-metrics">
-                        <div class="metric">
-                            <span class="metric-value">100%</span>
-                            <span class="metric-label">Automation</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-value">ISO</span>
-                            <span class="metric-label">27001 Compliant</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3>Hamilton Lane - Microservices Migration</h3>
-                        <span class="project-badge">Production</span>
-                    </div>
-                    <p class="project-description">
-                        Led migration from monolithic architecture to microservices using Amazon ECS. Built comprehensive CI/CD infrastructure supporting Python, ReactJS, GoLang, and Java applications.
-                    </p>
-                    <div class="project-tech">
-                        <span class="tech-tag">AWS</span>
-                        <span class="tech-tag">Amazon ECS</span>
-                        <span class="tech-tag">Jenkins</span>
-                        <span class="tech-tag">SaltStack</span>
-                        <span class="tech-tag">Git</span>
-                        <span class="tech-tag">Python</span>
-                        <span class="tech-tag">ReactJS</span>
-                        <span class="tech-tag">GoLang</span>
-                    </div>
-                    <div class="project-metrics">
-                        <div class="metric">
-                            <span class="metric-value">100%</span>
-                            <span class="metric-label">Migration Success</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-value">4</span>
-                            <span class="metric-label">Tech Stacks</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="project-card">
-                    <div class="project-header">
-                        <h3>Aegon Life Insurance - Cloud Infrastructure</h3>
-                        <span class="project-badge">Active</span>
-                    </div>
-                    <p class="project-description">
-                        Enterprise-scale DevOps implementation for insurance platform. Managed build pipelines with Maven, deployed on AWS cloud infrastructure with Kubernetes orchestration.
-                    </p>
-                    <div class="project-tech">
-                        <span class="tech-tag">AWS</span>
-                        <span class="tech-tag">Kubernetes</span>
-                        <span class="tech-tag">Jenkins</span>
-                        <span class="tech-tag">Maven</span>
-                        <span class="tech-tag">GitHub</span>
-                        <span class="tech-tag">Ansible</span>
-                        <span class="tech-tag">Helm</span>
-                        <span class="tech-tag">S3</span>
-                    </div>
-                    <div class="project-metrics">
-                        <div class="metric">
-                            <span class="metric-value">Enterprise</span>
-                            <span class="metric-label">Scale</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-value">4+</span>
-                            <span class="metric-label">Years</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Certifications Section -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">🏆</span>
-                Core Competencies
-            </h2>
-            <div class="certifications-grid">
-                <div class="cert-card">
-                    <div class="cert-icon">☁️</div>
-                    <h3>Multi-Cloud Architecture</h3>
-                    <p class="cert-issuer">AWS | Azure | GCP</p>
-                    <span class="cert-level">Expert</span>
-                </div>
-                <div class="cert-card">
-                    <div class="cert-icon">⎈</div>
-                    <h3>Kubernetes & Container Orchestration</h3>
-                    <p class="cert-issuer">GKE | EKS | ECS</p>
-                    <span class="cert-level">Advanced</span>
-                </div>
-                <div class="cert-card">
-                    <div class="cert-icon">🔄</div>
-                    <h3>CI/CD Pipeline Design</h3>
-                    <p class="cert-issuer">Jenkins | CircleCI | GitHub Actions</p>
-                    <span class="cert-level">Expert</span>
-                </div>
-                <div class="cert-card">
-                    <div class="cert-icon">🔒</div>
-                    <h3>Security & Compliance</h3>
-                    <p class="cert-issuer">ISO 27001 via Vanta</p>
-                    <span class="cert-level">Certified</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Experience Timeline -->
-        <section class="portfolio-section">
-            <h2 class="section-title">
-                <span class="title-icon">💼</span>
-                Professional Experience
-            </h2>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h3 class="timeline-title">Platform Specialist</h3>
-                        <p class="timeline-company">Blenheim Chalcot, London, UK | March 2023 - Present</p>
-                        <ul class="timeline-achievements">
-                            <li>Deployed CI/CD pipelines using GitHub and CircleCI for Python and ReactJS-based projects</li>
-                            <li>Managed Google Cloud Platform (GCP) infrastructure and Kubernetes deployments via Helm charts</li>
-                            <li>Implemented monitoring solutions with Prometheus and Grafana for real-time system insights</li>
-                            <li>Integrated quality and security tools: SonarQube, Sentry, and OWASP ZAP for code analysis</li>
-                            <li>Led Koodoo Fintech project: Generative AI SaaS platform with Node.js, MongoDB, PostgreSQL on GCP</li>
-                            <li>Ensured ISO 27001 compliance using Vanta for security and compliance management</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h3 class="timeline-title">Lead DevOps Engineer</h3>
-                        <p class="timeline-company">Alternative-Path, Hyderabad, India | April 2022 - March 2023</p>
-                        <ul class="timeline-achievements">
-                            <li>Built CI/CD pipelines for Python, ReactJS, GoLang, and Java applications</li>
-                            <li>Led migration from monolithic architecture to microservices on Amazon ECS</li>
-                            <li>Implemented infrastructure automation using Git, SaltStack, Jenkins, and AWS</li>
-                            <li>Developed Python scripts for deployment automation and infrastructure management</li>
-                            <li>Hamilton Lane Project: Orchestrated microservices migration with comprehensive CI/CD implementation</li>
-                            <li>Provided technical mentorship and guidance to development teams</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h3 class="timeline-title">Senior DevOps Engineer</h3>
-                        <p class="timeline-company">Saksoft Ltd, Chennai, India | January 2018 - March 2022</p>
-                        <ul class="timeline-achievements">
-                            <li>Managed Build, Release, and Deployment processes for enterprise applications</li>
-                            <li>Configured MAVEN builds and automated deployments using Jenkins CI/CD</li>
-                            <li>Implemented version control with Git, GitHub, and Ansible for configuration management</li>
-                            <li>Deployed AWS cloud infrastructure: S3, EBS, ELB, Auto Scaling Groups</li>
-                            <li>Aegon Life Insurance Project: Deployed Kubernetes APIs and managed Helm chart deployments</li>
-                            <li>Maintained high availability and reliability for mission-critical insurance systems</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h3 class="timeline-title">DevOps Engineer</h3>
-                        <p class="timeline-company">Tata Consultancy Services (TCS), Hyderabad, India | May 2014 - June 2018</p>
-                        <ul class="timeline-achievements">
-                            <li>Managed Build and Release processes for NCB and MMIS projects</li>
-                            <li>Deployed Java-based web applications using SVN, GitHub, and AWS CodeCommit</li>
-                            <li>Implemented continuous integration workflows using Jenkins</li>
-                            <li>Provisioned AWS infrastructure with CloudFormation, EC2, S3, and networking components</li>
-                            <li>Automated configuration management using Puppet for consistent environment setups</li>
-                            <li>Containerized applications with Docker for improved portability and scalability</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Contact Section -->
-        <section class="portfolio-section contact-section">
-            <h2 class="section-title">
-                <span class="title-icon">📧</span>
-                Get In Touch
-            </h2>
-            <div class="contact-content">
-                <p class="contact-text">
-                    Interested in discussing DevOps opportunities, cloud architecture, or potential collaborations? 
-                    With 11 years of experience across AWS, Azure, and GCP, I'm always open to connecting with fellow professionals and exploring new challenges in the DevOps and cloud infrastructure space.
-                </p>
-                <div class="contact-links">
-                    <a href="mailto:Chaitanya1devops@gmail.com" class="contact-btn">
-                        <span class="btn-icon">✉️</span>
-                        Chaitanya1devops@gmail.com
-                    </a>
-                    <a href="tel:+919182302453" class="contact-btn">
-                        <span class="btn-icon">📱</span>
-                        +91 9182302453
-                    </a>
-                </div>
-            </div>
-        </section>
-    `;
-    
-    container.appendChild(portfolio);
-    
-    // Animate skill bars on scroll
-    const observerOptions = {
-        threshold: 0.2,
-        rootMargin: '0px 0px -100px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate');
-            }
-        });
-    }, observerOptions);
-    
-    document.querySelectorAll('.skill-progress').forEach(bar => {
-        observer.observe(bar);
-    });
-}
 
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
@@ -1845,7 +1262,7 @@ function renderProgressDashboard() {
 }
 
 function renderTopic(topic) {
-    if (topic === 'Portfolio') { renderPortfolio(); return; }
+    if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
@@ -1890,7 +1307,6 @@ function renderTopic(topic) {
                     ${optionsHtml}
                 </div>
                 <div class="card-tools">
-                    <button class="tool-btn" aria-label="Copy question" data-copy="${escapeAttr(item.q)}">Copy Q</button>
                     <button class="tool-btn quiz-reset" aria-label="Reset this question" type="button" style="display:none" data-reset>Reset</button>
                     <span class="index">#${idx + 1}</span>
                 </div>
@@ -1901,15 +1317,12 @@ function renderTopic(topic) {
                 <h3 id="q-${idx}" class="question">${highlight(item.q, searchTerm)}</h3>
                 <div class="answer">${highlight(formatMultiline(item.a), searchTerm)}</div>
                 <div class="card-tools">
-                    <button class="tool-btn" aria-label="Copy question" data-copy="${escapeAttr(item.q)}">Copy Q</button>
-                    <button class="tool-btn" aria-label="Copy answer" data-copy="${escapeAttr(item.a)}">Copy A</button>
                     <span class="index">#${idx + 1}</span>
                 </div>
             `;
         }
         container.appendChild(card);
     });
-    wireCopyButtons(container);
     wireQuizOptionHandlers(container);
     updateActiveTabButton(topic);
     updateHeaderTopic(topic, filtered.length, data.length);
@@ -2013,15 +1426,6 @@ function bindSearch() {
     search.addEventListener('input', debounce(() => renderTopic(currentTopic), 150));
     search.addEventListener('keydown', e => {
         if (e.key === 'Escape') { search.value = ''; renderTopic(currentTopic); }
-    });
-}
-
-function wireCopyButtons(scope) {
-    scope.querySelectorAll('[data-copy]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const text = btn.getAttribute('data-copy');
-            navigator.clipboard.writeText(text).then(() => showToast('Copied ✅')).catch(() => showToast('Copy failed', 'error'));
-        });
     });
 }
 
@@ -2834,6 +2238,654 @@ function confirmQuizExit() {
     }
 }
 
+// ---------------------- Brain Games ----------------------
+function renderBrainGames() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Brain Games - Train Your Mind!'; }
+    
+    const gamesDiv = document.createElement('div');
+    gamesDiv.className = 'brain-games-container';
+    gamesDiv.innerHTML = `
+        <div class="games-header">
+            <h2 class="games-title">🧠 Brain Games</h2>
+            <p class="games-subtitle">Challenge your mind with these fun games!</p>
+        </div>
+        <div class="games-grid">
+            <div class="game-card" onclick="startMemoryGame()">
+                <div class="game-icon">🃏</div>
+                <h3 class="game-title">Memory Match</h3>
+                <p class="game-description">Match pairs of cards and test your memory</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
+            <div class="game-card" onclick="startNumberSequence()">
+                <div class="game-icon">🔢</div>
+                <h3 class="game-title">Number Sequence</h3>
+                <p class="game-description">Remember and repeat the number sequence</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
+            <div class="game-card" onclick="startWordScramble()">
+                <div class="game-icon">📝</div>
+                <h3 class="game-title">Word Scramble</h3>
+                <p class="game-description">Unscramble DevOps terms as fast as you can</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
+            <div class="game-card" onclick="startCountryCapitalGame()">
+                <div class="game-icon">🌍</div>
+                <h3 class="game-title">Country & Capital</h3>
+                <p class="game-description">Match countries with their capitals</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
+            <div class="game-card" onclick="startCountryFlagGame()">
+                <div class="game-icon">🏳️</div>
+                <h3 class="game-title">Country & Flag</h3>
+                <p class="game-description">Match countries with their flags</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(gamesDiv);
+}
+
+// Memory Match Game
+let memoryGameState = { flipped: [], matched: [], moves: 0, startTime: null };
+
+function startMemoryGame() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    const symbols = ['🐳', '☸️', '🔧', '🚀', '⚙️', '🔐', '📦', '🌐'];
+    const cards = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+    
+    memoryGameState = { flipped: [], matched: [], moves: 0, startTime: Date.now() };
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'memory-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header">
+            <button class="back-btn" onclick="renderBrainGames()">← Back to Games</button>
+            <h2>🃏 Memory Match</h2>
+            <div class="game-stats">
+                <span>Moves: <strong id="moves">0</strong></span>
+                <span>Matched: <strong id="matched">0/8</strong></span>
+            </div>
+        </div>
+        <div class="memory-grid" id="memoryGrid"></div>
+    `;
+    
+    container.appendChild(gameDiv);
+    
+    const grid = document.getElementById('memoryGrid');
+    cards.forEach((symbol, index) => {
+        const card = document.createElement('div');
+        card.className = 'memory-card';
+        card.dataset.index = index;
+        card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front">?</div>
+                <div class="card-back">${symbol}</div>
+            </div>
+        `;
+        card.onclick = () => flipMemoryCard(index, symbol, cards);
+        grid.appendChild(card);
+    });
+}
+
+function flipMemoryCard(index, symbol, cards) {
+    if (memoryGameState.flipped.length >= 2 || memoryGameState.matched.includes(index) || memoryGameState.flipped.includes(index)) return;
+    
+    const card = document.querySelector(`[data-index="${index}"]`);
+    card.classList.add('flipped');
+    memoryGameState.flipped.push(index);
+    
+    if (memoryGameState.flipped.length === 2) {
+        memoryGameState.moves++;
+        document.getElementById('moves').textContent = memoryGameState.moves;
+        
+        const [first, second] = memoryGameState.flipped;
+        if (cards[first] === cards[second]) {
+            memoryGameState.matched.push(first, second);
+            document.getElementById('matched').textContent = `${memoryGameState.matched.length / 2}/8`;
+            memoryGameState.flipped = [];
+            
+            if (memoryGameState.matched.length === 16) {
+                setTimeout(() => {
+                    const time = ((Date.now() - memoryGameState.startTime) / 1000).toFixed(1);
+                    alert(`🎉 Congratulations! You won!\nMoves: ${memoryGameState.moves}\nTime: ${time}s`);
+                }, 500);
+            }
+        } else {
+            setTimeout(() => {
+                document.querySelectorAll('.memory-card').forEach((c, i) => {
+                    if (i === first || i === second) c.classList.remove('flipped');
+                });
+                memoryGameState.flipped = [];
+            }, 1000);
+        }
+    }
+}
+
+// Number Sequence Game
+let numberGameState = { sequence: [], userSequence: [], level: 1, showingSequence: false };
+
+function startNumberSequence() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    numberGameState = { sequence: [], userSequence: [], level: 1, showingSequence: false };
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'number-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header">
+            <button class="back-btn" onclick="renderBrainGames()">← Back to Games</button>
+            <h2>🔢 Number Sequence</h2>
+            <div class="game-stats">
+                <span>Level: <strong id="level">1</strong></span>
+                <span>Best: <strong id="best">${localStorage.getItem('numberGameBest') || 0}</strong></span>
+            </div>
+        </div>
+        <div class="number-game-content">
+            <div class="sequence-display" id="sequenceDisplay">
+                <p class="game-instruction">Watch and memorize the sequence!</p>
+                <div id="sequenceNumbers"></div>
+            </div>
+            <div class="number-pad" id="numberPad">
+                ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button class="number-btn" onclick="numberInput(${n})">${n}</button>`).join('')}
+            </div>
+            <button class="start-btn" id="startBtn" onclick="startNumberRound()">Start Level 1</button>
+        </div>
+    `;
+    
+    container.appendChild(gameDiv);
+}
+
+function startNumberRound() {
+    numberGameState.sequence.push(Math.floor(Math.random() * 10));
+    numberGameState.userSequence = [];
+    numberGameState.showingSequence = true;
+    
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('sequenceNumbers').innerHTML = '';
+    
+    const display = document.getElementById('sequenceDisplay');
+    display.querySelector('.game-instruction').textContent = 'Watch carefully...';
+    
+    numberGameState.sequence.forEach((num, i) => {
+        setTimeout(() => {
+            const numDiv = document.createElement('div');
+            numDiv.className = 'sequence-number active';
+            numDiv.textContent = num;
+            document.getElementById('sequenceNumbers').appendChild(numDiv);
+            
+            setTimeout(() => numDiv.classList.remove('active'), 500);
+        }, i * 1000);
+    });
+    
+    setTimeout(() => {
+        numberGameState.showingSequence = false;
+        display.querySelector('.game-instruction').textContent = 'Now repeat the sequence!';
+        document.getElementById('sequenceNumbers').innerHTML = '';
+    }, numberGameState.sequence.length * 1000 + 500);
+}
+
+function numberInput(num) {
+    if (numberGameState.showingSequence) return;
+    
+    numberGameState.userSequence.push(num);
+    
+    const numDiv = document.createElement('div');
+    numDiv.className = 'sequence-number';
+    numDiv.textContent = num;
+    document.getElementById('sequenceNumbers').appendChild(numDiv);
+    
+    const index = numberGameState.userSequence.length - 1;
+    if (numberGameState.userSequence[index] !== numberGameState.sequence[index]) {
+        setTimeout(() => {
+            alert(`❌ Game Over! You reached level ${numberGameState.level}`);
+            const best = parseInt(localStorage.getItem('numberGameBest') || 0);
+            if (numberGameState.level > best) {
+                localStorage.setItem('numberGameBest', numberGameState.level);
+                alert(`🎉 New Best Score: ${numberGameState.level}!`);
+            }
+            startNumberSequence();
+        }, 500);
+        return;
+    }
+    
+    if (numberGameState.userSequence.length === numberGameState.sequence.length) {
+        numberGameState.level++;
+        document.getElementById('level').textContent = numberGameState.level;
+        setTimeout(() => {
+            document.getElementById('startBtn').textContent = `Start Level ${numberGameState.level}`;
+            document.getElementById('startBtn').disabled = false;
+        }, 1000);
+    }
+}
+
+// Word Scramble Game
+const devOpsWords = [
+    'KUBERNETES', 'DOCKER', 'JENKINS', 'TERRAFORM', 'ANSIBLE',
+    'PROMETHEUS', 'GRAFANA', 'PIPELINE', 'CONTAINER', 'ORCHESTRATION',
+    'DEPLOYMENT', 'AUTOMATION', 'MONITORING', 'INTEGRATION', 'REPOSITORY'
+];
+
+let wordGameState = { currentWord: '', scrambled: '', score: 0, timer: null, timeLeft: 60 };
+
+function startWordScramble() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    wordGameState = { currentWord: '', scrambled: '', score: 0, timer: null, timeLeft: 60 };
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'word-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header">
+            <button class="back-btn" onclick="renderBrainGames()">← Back to Games</button>
+            <h2>📝 Word Scramble</h2>
+            <div class="game-stats">
+                <span>Score: <strong id="score">0</strong></span>
+                <span>Time: <strong id="timer">60</strong>s</span>
+            </div>
+        </div>
+        <div class="word-game-content">
+            <div class="scrambled-word" id="scrambledWord">Click Start to Play!</div>
+            <input type="text" id="wordInput" class="word-input" placeholder="Type your answer..." disabled>
+            <div class="word-game-actions">
+                <button class="word-btn" id="startWordBtn" onclick="startWordRound()">Start Game</button>
+                <button class="word-btn secondary" id="skipBtn" onclick="skipWord()" disabled>Skip</button>
+            </div>
+            <div id="feedback" class="word-feedback"></div>
+        </div>
+    `;
+    
+    container.appendChild(gameDiv);
+}
+
+function startWordRound() {
+    if (!wordGameState.timer) {
+        wordGameState.timer = setInterval(() => {
+            wordGameState.timeLeft--;
+            document.getElementById('timer').textContent = wordGameState.timeLeft;
+            if (wordGameState.timeLeft <= 0) {
+                endWordGame();
+            }
+        }, 1000);
+    }
+    
+    document.getElementById('startWordBtn').disabled = true;
+    document.getElementById('skipBtn').disabled = false;
+    
+    const word = devOpsWords[Math.floor(Math.random() * devOpsWords.length)];
+    wordGameState.currentWord = word;
+    wordGameState.scrambled = word.split('').sort(() => Math.random() - 0.5).join('');
+    
+    document.getElementById('scrambledWord').textContent = wordGameState.scrambled;
+    const input = document.getElementById('wordInput');
+    input.disabled = false;
+    input.value = '';
+    input.focus();
+    
+    input.onkeypress = (e) => {
+        if (e.key === 'Enter') checkWord();
+    };
+}
+
+function checkWord() {
+    const input = document.getElementById('wordInput');
+    const guess = input.value.toUpperCase().trim();
+    const feedback = document.getElementById('feedback');
+    
+    if (guess === wordGameState.currentWord) {
+        wordGameState.score += 10;
+        document.getElementById('score').textContent = wordGameState.score;
+        feedback.textContent = '✅ Correct!';
+        feedback.className = 'word-feedback correct';
+        setTimeout(() => {
+            feedback.textContent = '';
+            startWordRound();
+        }, 1000);
+    } else {
+        feedback.textContent = '❌ Try again!';
+        feedback.className = 'word-feedback incorrect';
+        input.value = '';
+    }
+}
+
+function skipWord() {
+    startWordRound();
+}
+
+function endWordGame() {
+    clearInterval(wordGameState.timer);
+    document.getElementById('wordInput').disabled = true;
+    document.getElementById('skipBtn').disabled = true;
+    document.getElementById('scrambledWord').textContent = `Game Over! Final Score: ${wordGameState.score}`;
+    
+    const best = parseInt(localStorage.getItem('wordGameBest') || 0);
+    if (wordGameState.score > best) {
+        localStorage.setItem('wordGameBest', wordGameState.score);
+        alert(`🎉 New Best Score: ${wordGameState.score}!`);
+    } else {
+        alert(`Your Score: ${wordGameState.score}\nBest Score: ${best}`);
+    }
+    
+    document.getElementById('startWordBtn').textContent = 'Play Again';
+    document.getElementById('startWordBtn').disabled = false;
+    document.getElementById('startWordBtn').onclick = startWordScramble;
+}
+
+// Country-Capital Game
+const countryCapitalData = [
+    { country: 'France', capital: 'Paris' },
+    { country: 'Japan', capital: 'Tokyo' },
+    { country: 'Australia', capital: 'Canberra' },
+    { country: 'Brazil', capital: 'Brasília' },
+    { country: 'Egypt', capital: 'Cairo' },
+    { country: 'India', capital: 'New Delhi' },
+    { country: 'Canada', capital: 'Ottawa' },
+    { country: 'Germany', capital: 'Berlin' },
+    { country: 'Italy', capital: 'Rome' },
+    { country: 'Spain', capital: 'Madrid' },
+    { country: 'China', capital: 'Beijing' },
+    { country: 'Russia', capital: 'Moscow' },
+    { country: 'Mexico', capital: 'Mexico City' },
+    { country: 'Argentina', capital: 'Buenos Aires' },
+    { country: 'South Korea', capital: 'Seoul' },
+    { country: 'Thailand', capital: 'Bangkok' },
+    { country: 'Turkey', capital: 'Ankara' },
+    { country: 'Greece', capital: 'Athens' },
+    { country: 'Poland', capital: 'Warsaw' },
+    { country: 'Netherlands', capital: 'Amsterdam' }
+];
+
+let countryCapitalState = { selected: null, matched: [], attempts: 0, startTime: null };
+
+function startCountryCapitalGame() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    // Select 8 random pairs
+    const pairs = [...countryCapitalData].sort(() => Math.random() - 0.5).slice(0, 8);
+    const items = [];
+    pairs.forEach(pair => {
+        items.push({ type: 'country', value: pair.country, pairId: pair.country });
+        items.push({ type: 'capital', value: pair.capital, pairId: pair.country });
+    });
+    items.sort(() => Math.random() - 0.5);
+    
+    countryCapitalState = { selected: null, matched: [], attempts: 0, startTime: Date.now() };
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'country-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header">
+            <button class="back-btn" onclick="renderBrainGames()">← Back to Games</button>
+            <h2>🌍 Country & Capital Match</h2>
+            <div class="game-stats">
+                <span>Attempts: <strong id="attempts">0</strong></span>
+                <span>Matched: <strong id="ccMatched">0/8</strong></span>
+            </div>
+        </div>
+        <div class="country-grid" id="countryGrid"></div>
+    `;
+    
+    container.appendChild(gameDiv);
+    
+    const grid = document.getElementById('countryGrid');
+    items.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `country-card ${item.type}`;
+        card.dataset.index = index;
+        card.dataset.pairId = item.pairId;
+        card.textContent = item.value;
+        card.onclick = () => selectCountryCard(index, item, items);
+        grid.appendChild(card);
+    });
+}
+
+function selectCountryCard(index, item, items) {
+    const card = document.querySelector(`[data-index="${index}"]`);
+    
+    if (card.classList.contains('matched') || card.classList.contains('selected')) return;
+    
+    if (countryCapitalState.selected === null) {
+        countryCapitalState.selected = { index, item };
+        card.classList.add('selected');
+    } else {
+        const firstCard = document.querySelector(`[data-index="${countryCapitalState.selected.index}"]`);
+        card.classList.add('selected');
+        countryCapitalState.attempts++;
+        document.getElementById('attempts').textContent = countryCapitalState.attempts;
+        
+        if (countryCapitalState.selected.item.pairId === item.pairId && 
+            countryCapitalState.selected.item.type !== item.type) {
+            // Match found
+            setTimeout(() => {
+                firstCard.classList.remove('selected');
+                firstCard.classList.add('matched');
+                card.classList.remove('selected');
+                card.classList.add('matched');
+                countryCapitalState.matched.push(item.pairId);
+                document.getElementById('ccMatched').textContent = `${countryCapitalState.matched.length}/8`;
+                
+                if (countryCapitalState.matched.length === 8) {
+                    const time = ((Date.now() - countryCapitalState.startTime) / 1000).toFixed(1);
+                    setTimeout(() => {
+                        alert(`🎉 Perfect! You matched all pairs!\nAttempts: ${countryCapitalState.attempts}\nTime: ${time}s`);
+                    }, 500);
+                }
+            }, 500);
+        } else {
+            // No match
+            setTimeout(() => {
+                firstCard.classList.remove('selected');
+                card.classList.remove('selected');
+            }, 1000);
+        }
+        
+        countryCapitalState.selected = null;
+    }
+}
+
+// Country-Flag Game
+const countryFlagData = [
+    { country: 'United States', flag: '🇺🇸' },
+    { country: 'China', flag: '🇨🇳' },
+    { country: 'Japan', flag: '🇯🇵' },
+    { country: 'Germany', flag: '🇩🇪' },
+    { country: 'India', flag: '🇮🇳' },
+    { country: 'United Kingdom', flag: '🇬🇧' },
+    { country: 'France', flag: '🇫🇷' },
+    { country: 'Italy', flag: '🇮🇹' },
+    { country: 'Brazil', flag: '🇧🇷' },
+    { country: 'Canada', flag: '🇨🇦' },
+    { country: 'Russia', flag: '🇷🇺' },
+    { country: 'South Korea', flag: '🇰🇷' },
+    { country: 'Spain', flag: '🇪🇸' },
+    { country: 'Australia', flag: '🇦🇺' },
+    { country: 'Mexico', flag: '🇲🇽' },
+    { country: 'Indonesia', flag: '🇮🇩' },
+    { country: 'Netherlands', flag: '🇳🇱' },
+    { country: 'Saudi Arabia', flag: '🇸🇦' },
+    { country: 'Turkey', flag: '🇹🇷' },
+    { country: 'Switzerland', flag: '🇨🇭' },
+    { country: 'Poland', flag: '🇵🇱' },
+    { country: 'Argentina', flag: '🇦🇷' },
+    { country: 'Belgium', flag: '🇧🇪' },
+    { country: 'Sweden', flag: '🇸🇪' },
+    { country: 'Ireland', flag: '🇮🇪' },
+    { country: 'Thailand', flag: '🇹🇭' },
+    { country: 'Austria', flag: '🇦🇹' },
+    { country: 'Norway', flag: '🇳🇴' },
+    { country: 'United Arab Emirates', flag: '🇦🇪' },
+    { country: 'Nigeria', flag: '🇳🇬' },
+    { country: 'Israel', flag: '🇮🇱' },
+    { country: 'South Africa', flag: '🇿🇦' },
+    { country: 'Singapore', flag: '🇸🇬' },
+    { country: 'Malaysia', flag: '🇲🇾' },
+    { country: 'Denmark', flag: '🇩🇰' },
+    { country: 'Philippines', flag: '🇵🇭' },
+    { country: 'Hong Kong', flag: '🇭🇰' },
+    { country: 'Colombia', flag: '🇨🇴' },
+    { country: 'Pakistan', flag: '🇵🇰' },
+    { country: 'Chile', flag: '🇨🇱' },
+    { country: 'Finland', flag: '🇫🇮' },
+    { country: 'Bangladesh', flag: '🇧🇩' },
+    { country: 'Egypt', flag: '🇪🇬' },
+    { country: 'Vietnam', flag: '🇻🇳' },
+    { country: 'Czech Republic', flag: '🇨🇿' },
+    { country: 'Romania', flag: '🇷🇴' },
+    { country: 'Portugal', flag: '🇵🇹' },
+    { country: 'Peru', flag: '🇵🇪' },
+    { country: 'Greece', flag: '🇬🇷' },
+    { country: 'New Zealand', flag: '🇳🇿' },
+    { country: 'Qatar', flag: '🇶🇦' },
+    { country: 'Kazakhstan', flag: '🇰🇿' },
+    { country: 'Hungary', flag: '🇭🇺' },
+    { country: 'Kuwait', flag: '🇰🇼' },
+    { country: 'Ukraine', flag: '🇺🇦' },
+    { country: 'Morocco', flag: '🇲🇦' },
+    { country: 'Ecuador', flag: '🇪🇨' },
+    { country: 'Slovakia', flag: '🇸🇰' },
+    { country: 'Kenya', flag: '🇰🇪' },
+    { country: 'Ethiopia', flag: '🇪🇹' },
+    { country: 'Dominican Republic', flag: '🇩🇴' },
+    { country: 'Puerto Rico', flag: '🇵🇷' },
+    { country: 'Guatemala', flag: '🇬🇹' },
+    { country: 'Sri Lanka', flag: '🇱🇰' },
+    { country: 'Myanmar', flag: '🇲🇲' },
+    { country: 'Luxembourg', flag: '🇱🇺' },
+    { country: 'Uruguay', flag: '🇺🇾' },
+    { country: 'Costa Rica', flag: '🇨🇷' },
+    { country: 'Panama', flag: '🇵🇦' },
+    { country: 'Croatia', flag: '🇭🇷' },
+    { country: 'Bulgaria', flag: '🇧🇬' },
+    { country: 'Lithuania', flag: '🇱🇹' },
+    { country: 'Slovenia', flag: '🇸🇮' },
+    { country: 'Tunisia', flag: '🇹🇳' },
+    { country: 'Jordan', flag: '🇯🇴' },
+    { country: 'Bolivia', flag: '🇧🇴' },
+    { country: 'Ghana', flag: '🇬🇭' },
+    { country: 'Ivory Coast', flag: '🇨🇮' },
+    { country: 'Paraguay', flag: '🇵🇾' },
+    { country: 'Uganda', flag: '🇺🇬' },
+    { country: 'Lebanon', flag: '🇱🇧' },
+    { country: 'Latvia', flag: '🇱🇻' },
+    { country: 'Estonia', flag: '🇪🇪' },
+    { country: 'Cambodia', flag: '🇰🇭' },
+    { country: 'Cameroon', flag: '🇨🇲' },
+    { country: 'Zimbabwe', flag: '🇿🇼' },
+    { country: 'Senegal', flag: '🇸🇳' },
+    { country: 'Angola', flag: '🇦🇴' },
+    { country: 'Jamaica', flag: '🇯🇲' },
+    { country: 'Trinidad and Tobago', flag: '🇹🇹' },
+    { country: 'Iceland', flag: '🇮🇸' },
+    { country: 'Malta', flag: '🇲🇹' },
+    { country: 'Cyprus', flag: '🇨🇾' },
+    { country: 'Bahrain', flag: '🇧🇭' },
+    { country: 'Albania', flag: '🇦🇱' },
+    { country: 'Mongolia', flag: '🇲🇳' },
+    { country: 'Namibia', flag: '🇳🇦' },
+    { country: 'Botswana', flag: '🇧🇼' }
+];
+
+
+let countryFlagState = { selected: null, matched: [], attempts: 0, startTime: null };
+
+function startCountryFlagGame() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    // Select 8 random pairs
+    const pairs = [...countryFlagData].sort(() => Math.random() - 0.5).slice(0, 8);
+    const items = [];
+    pairs.forEach(pair => {
+        items.push({ type: 'country', value: pair.country, pairId: pair.country });
+        items.push({ type: 'flag', value: pair.flag, pairId: pair.country });
+    });
+    items.sort(() => Math.random() - 0.5);
+    
+    countryFlagState = { selected: null, matched: [], attempts: 0, startTime: Date.now() };
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'country-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header">
+            <button class="back-btn" onclick="renderBrainGames()">← Back to Games</button>
+            <h2>🏳️ Country & Flag Match</h2>
+            <div class="game-stats">
+                <span>Attempts: <strong id="attempts">0</strong></span>
+                <span>Matched: <strong id="cfMatched">0/8</strong></span>
+            </div>
+        </div>
+        <div class="country-grid" id="flagGrid"></div>
+    `;
+    
+    container.appendChild(gameDiv);
+    
+    const grid = document.getElementById('flagGrid');
+    items.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `country-card ${item.type}`;
+        card.dataset.index = index;
+        card.dataset.pairId = item.pairId;
+        if (item.type === 'flag') {
+            card.innerHTML = `<span class="flag-emoji">${item.value}</span>`;
+        } else {
+            card.textContent = item.value;
+        }
+        card.onclick = () => selectFlagCard(index, item, items);
+        grid.appendChild(card);
+    });
+}
+
+function selectFlagCard(index, item, items) {
+    const card = document.querySelector(`[data-index="${index}"]`);
+    
+    if (card.classList.contains('matched') || card.classList.contains('selected')) return;
+    
+    if (countryFlagState.selected === null) {
+        countryFlagState.selected = { index, item };
+        card.classList.add('selected');
+    } else {
+        const firstCard = document.querySelector(`[data-index="${countryFlagState.selected.index}"]`);
+        card.classList.add('selected');
+        countryFlagState.attempts++;
+        document.getElementById('attempts').textContent = countryFlagState.attempts;
+        
+        if (countryFlagState.selected.item.pairId === item.pairId && 
+            countryFlagState.selected.item.type !== item.type) {
+            // Match found
+            setTimeout(() => {
+                firstCard.classList.remove('selected');
+                firstCard.classList.add('matched');
+                card.classList.remove('selected');
+                card.classList.add('matched');
+                countryFlagState.matched.push(item.pairId);
+                document.getElementById('cfMatched').textContent = `${countryFlagState.matched.length}/8`;
+                
+                if (countryFlagState.matched.length === 8) {
+                    const time = ((Date.now() - countryFlagState.startTime) / 1000).toFixed(1);
+                    setTimeout(() => {
+                        alert(`🎉 Excellent! You matched all flags!\nAttempts: ${countryFlagState.attempts}\nTime: ${time}s`);
+                    }, 500);
+                }
+            }, 500);
+        } else {
+            // No match
+            setTimeout(() => {
+                firstCard.classList.remove('selected');
+                card.classList.remove('selected');
+            }, 1000);
+        }
+        
+        countryFlagState.selected = null;
+    }
+}
+
 // Expose for debugging (optional)
 window.devOpsData = devOpsData;
 window.renderTopic = renderTopic;
@@ -2841,4 +2893,5 @@ window.topicQuizzes = topicQuizzes;
 window.startTopicQuiz = startTopicQuiz;
 window.renderTopicQuizMenu = renderTopicQuizMenu;
 window.confirmQuizExit = confirmQuizExit;
+window.renderBrainGames = renderBrainGames;
 
