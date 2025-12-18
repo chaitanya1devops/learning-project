@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>DevOps Interview Questions & Answers</title>
-    <link rel="stylesheet" href="styles.css?v=20251214">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -17,6 +20,7 @@
                 </div>
                 <button id="progressBtn" class="progress-btn" aria-label="View progress tracking" title="View Progress">📊 <span id="progressBtnText">0%</span></button>
                 <div class="header-controls">
+                    <button id="helpBtn" class="control-btn" aria-label="Keyboard shortcuts" title="Help (?)">❓</button>
                     <button id="themeToggle" class="control-btn" aria-label="Toggle light or dark theme" title="Toggle Theme">🌙</button>
                     <div class="accent-picker" role="group" aria-label="Accent color selector">
                         <button class="accent-btn" data-accent="blue" aria-label="Blue accent" title="Blue"></button>
@@ -62,6 +66,7 @@
                     <button class="tab-btn" data-topic="Senior DevOps">👨‍💼 Senior DevOps</button>
                     <button class="tab-btn" data-topic="Important">⚠️ Important</button>
                     <button class="tab-btn" data-topic="Scenario-Based Kubernetes">🎯 Scenarios-Kubernetes</button>
+                    <button class="tab-btn" data-topic="Favorites">❤️ Favorites</button>
                     <button class="tab-btn" data-topic="Brain Games">🎮 Brain Games</button>
                     <button class="tab-btn" data-topic="Quizzes">Quizzes</button>
                     <button class="tab-btn" data-topic="Progress">📊 Progress</button>
@@ -90,6 +95,19 @@
         </div>
     </div>
 
-    <script src="script.js?v=20251214"></script>
+    <script src="script.js"></script>
+    <script>
+        // Register Service Worker for aggressive cache busting
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js?t=' + new Date().getTime()).catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        }
+        
+        // Clear browser cache on page load
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            window.location.reload(true);
+        }
+    </script>
 </body>
 </html>
