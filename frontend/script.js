@@ -14,26 +14,65 @@
 // Minimum 10 items per topic (can be extended easily).
 const devOpsData = {
     "Linux": [
-        { q: "How do you diagnose and resolve production memory leaks on systems with millions of requests/day?", a: "Use valgrind, heaptrack, or /proc/<pid>/smaps for detailed analysis. Monitor RSS vs VSZ trends. Use memory profilers in code. Implement periodic restarts as temporary fix. Check for long-lived caches. Use jemalloc for C/C++ apps. Implement memory limits and monitoring with cgroups/systemd limits." },
-        { q: "Optimize kernel parameters for high-throughput, low-latency networking (millions of concurrent connections).", a: "Increase net.core.somaxconn, net.ipv4.tcp_max_syn_backlog, net.core.netdev_max_backlog. Set net.ipv4.tcp_tw_reuse=1. Tune TCP buffer sizes (net.ipv4.tcp_rmem, net.ipv4.tcp_wmem). Disable TCP timestamps if needed. Use SO_REUSEADDR. Increase /proc/sys/fs/file-max for file descriptors. Monitor with 'ss' for connection states." },
-        { q: "How to handle filesystem performance degradation during peak load?", a: "Monitor inode usage (df -i). Check I/O wait (iostat -x). Use fio for benchmarking. Implement journal batching. Consider ext4 vs XFS based on workload. Monitor dirty page ratio. Use tmpfs for temporary data. Implement write coalescing. Check disk queue depth and latency." },
-        { q: "Troubleshoot production CPU contention and context switching storms.", a: "Use 'top', 'vmstat', 'mpstat' to identify hotspots. Check context switch rates (higher than cpu_count suggests contention). Profile with perf: 'perf record -a sleep 10; perf report'. Use systemtap for kernel tracing. Implement CPU affinity for important processes. Tune CPU scheduling (CFS parameters)." },
-        { q: "Design kernel parameter strategy for containerized workloads at scale.", a: "Set vm.overcommit_memory=1 for Kubernetes. Configure memory limits via cgroups. Tune swappiness (vm.swappiness=10 for cloud). Implement net.ipv4.ip_local_reserved_ports to avoid ephemeral port exhaustion. Set fs.file-max appropriately. Use sysctl to persist changes. Document all tunings with justification for compliance." },
-        { q: "How to perform live kernel patching without downtime?", a: "Use kpatch or livepatch for critical security patches. Pre-test patches on staging. Implement graceful application reload before applying. Monitor system stability post-patch. Have rollback plan. Use automated patch management (Canonical Livepatch, Azure). Combine with container restarts for defense-in-depth." },
-        { q: "Implement comprehensive system audit logging for security compliance (SOC 2, ISO 27001).", a: "Use auditd with comprehensive rules for system calls, file access, privilege changes. Ship logs to centralized SIEM (ELK, Splunk). Implement log retention (typically 90-365 days). Monitor root/sudo access. Track file integrity (aide, tripwire). Implement log integrity checks. Disable core dump capabilities. Monitor for tampering attempts." },
-        { q: "Troubleshoot production TCP connection timeouts and half-open connections.", a: "Check tcp_keepalive_time, tcp_keepalive_intvl, tcp_keepalive_probes settings. Monitor SYN flood with 'ss -tan | grep SYN'. Check firewall rules (iptables/nftables). Verify application-level keep-alives. Monitor netstat for TIME_WAIT connections. Implement tcp_tw_reuse for rapid reconnection. Check firewall state tracking limits." },
-        { q: "Design disaster recovery strategy for critical Linux systems with RPO/RTO targets.", a: "Implement regular snapshots (LVM, btrfs, or cloud-native). Use remote replication (rsync, Bacula, Veeam). Practice restore drills monthly. Document recovery procedures. Maintain disk images for critical systems. Implement database-specific backups (MySQL, PostgreSQL) with PITR. Use infrastructure-as-code for rapid provisioning." },
-        { q: "Optimize systemd service startup during boot for 1000+ services.", a: "Use Type=notify or Type=simple appropriately. Implement socket activation for parallelization. Reduce service startup timeout. Use systemd.automount for lazy mounting. Monitor startup dependencies with 'systemd-analyze critical-chain'. Implement health checks instead of arbitrary delays. Use tmpfiles.d for ephemeral file setup." },
-        { q: "How to prevent and mitigate privilege escalation attacks in production?", a: "Disable unnecessary SUID binaries. Use AppArmor/SELinux policies strictly. Implement sudo with time-based 2FA (DUO, Google Authenticator). Monitor for setuid/setgid abuse. Use capabilities instead of SUID where possible. Implement kernel module signing. Use measured boot (TPM, SecureBoot). Regular vulnerability scanning for privilege escalation CVEs." },
-        { q: "Implement effective log rotation strategy for 100GB+ daily logs.", a: "Use logrotate with dateext format. Compress immediately post-rotation (gzip). Ship to centralized logging (syslog, fluentd). Implement log sampling for high-volume apps. Delete after retention period (compliance). Monitor disk usage. Implement log buffering. Use async I/O for log writes. Consider structured logging (JSON) for searchability." },
-        { q: "Troubleshoot page cache efficiency and implement appropriate caching strategies.", a: "Monitor page cache hits with /proc/vmstat (pgpgin, pgpgout). Use 'cachestat' tool. Implement drop_caches carefully for testing. Use memory-mapped I/O for frequently accessed files. Monitor buffer/cache ratio with 'free'. Implement application-level caching (Redis). Consider read-ahead tuning for sequential workloads." },
-        { q: "Design network bandwidth management for multi-tenant Linux systems.", a: "Use tc (traffic control) with HTB (Hierarchical Token Bucket) for QoS. Implement per-application rate limits with cgroups v2. Monitor with 'ifstat', 'nethogs'. Use BPF-based monitoring for detailed analysis. Implement ingress/egress policies. Fair queue scheduling with fq_codel. Document SLA expectations and enforce via policy." },
-        { q: "Implement effective process resource limits (cgroups) for container-like isolation.", a: "Use cgroups v2 for unified hierarchy. Set memory.max, cpu.max, io.max limits. Implement reservation (memory.min) for QoS. Monitor with 'systemd-cgtop'. Use oom.group to notify on group OOM. Implement cpuset for CPU pinning on NUMA. Test limits with stress-ng. Document limits with business justification." },
-        { q: "Troubleshoot and optimize DNS resolution latency in production.", a: "Monitor /etc/resolv.conf configuration. Check nameserver response times with 'dig +stats'. Implement local caching resolver (systemd-resolved, dnsmasq). Monitor DNS query logs. Implement retry logic for timeouts. Consider split-horizon DNS. Monitor for DNS amplification attacks. Validate DNSSEC where applicable." },
-        { q: "Design comprehensive monitoring strategy for kernel OOM behavior and prevention.", a: "Configure vm.panic_on_oom=0 for graceful handling. Implement memory.pressure_level for early warnings. Use PSI metrics (Pressure Stall Information). Monitor /proc/pressure for system-wide pressure. Implement OOMkiller tuning (oom_adj, memory.oom_control). Alert on memory pressure before OOM. Implement PID-specific memory limits. Document OOM-safe shutdown procedures." },
-        { q: "Implement secure secrets storage for system-level credentials and certificates.", a: "Use TPM for key storage where available. Implement HashiCorp Vault for credential management. Use systemd user credentials for service secrets. Encrypt /etc filesystem where possible. Use LUKS for full-disk encryption. Implement certificate rotation automation. Store secrets in tmpfs where appropriate. Use file permissions (0600) strictly. Never log secrets or put in configs." },
-        { q: "Troubleshoot production system clock skew and implement NTP/PTP synchronization.", a: "Monitor clock with 'timedatectl' or 'ntpq'. Implement PTP (Precision Time Protocol) for < 1us accuracy. Use ntpsec or chrony (more reliable than legacy ntpd). Monitor clock drift continuously. Alert on skew > threshold. Implement hardware clock backup. Use GPS receivers for critical systems. Document clock requirements by application." },
-        { q: "Design and implement effective IPC (Inter-Process Communication) strategies for performance.", a: "Choose between pipes, sockets, shared memory, message queues based on throughput/latency needs. Implement lock-free structures with atomic operations. Use epoll/kqueue for efficient multiplexing. Monitor IPC overhead with perf. Implement backpressure handling. Use memory barriers appropriately. Benchmark alternatives (unix sockets vs TCP, mmap vs pipes)." }
+        { q: "What are some commonly used Linux commands in DevOps?", a: "ls, cd, pwd, cp, mv, rm, cat, echo, grep, find, awk, sed, tar, zip, unzip - These are fundamental tools for file management, text processing, and system navigation." },
+        { q: "How do you check disk usage and memory consumption in Linux?", a: "Use df -h for disk usage and free -m for memory consumption. df -h shows disk usage by filesystem, free -m shows RAM and swap usage in MB." },
+        { q: "What is the difference between df -h and du -sh?", a: "df -h shows disk usage of file systems, while du -sh shows the disk usage of a specific directory. df reports filesystem level, du reports actual directory contents." },
+        { q: "How do you find a file in Linux? (e.g., using find or locate)", a: "Use find /path -name \"filename\" to search from a specific path, or locate filename (after running updatedb) for a faster database search." },
+        { q: "How do you count the number of lines in a file?", a: "Use wc -l filename to display the line count." },
+        { q: "How do you create a new user and assign them sudo privileges?", a: "Use: useradd username && passwd username && usermod -aG sudo username. This creates user, sets password, and adds to sudo group." },
+        { q: "What are file permissions in Linux? How do you modify them using chmod, chown, and chgrp?", a: "chmod changes permissions (rwx for user/group/other), chown changes file owner, and chgrp changes group ownership. Example: chmod 755 file, chown user:group file." },
+        { q: "How do you find which users are currently logged in?", a: "Use who, w, or users command to view logged-in users and their sessions." },
+        { q: "What is the difference between su and sudo?", a: "su switches to another user (requires their password), sudo executes a command as another user (typically root, requires your password with sudo access)." },
+        { q: "Explain how Linux groups work and how to add a user to a group.", a: "Groups manage user permissions collectively. Add a user using: usermod -aG groupname username. Use id command to verify group membership." },
+        { q: "How do you check running processes in Linux?", a: "Use ps aux to list all processes, top for real-time view, or htop for interactive process viewer." },
+        { q: "How do you terminate a process using kill, killall, or pkill?", a: "kill PID (terminate specific process by ID), killall process_name (terminate all processes by name), pkill pattern (terminate by pattern matching)." },
+        { q: "What is the difference between nice and renice?", a: "nice sets priority (-20 to 19) for a new process at startup. renice changes the priority of an already running process." },
+        { q: "How do you check CPU and memory usage of a process?", a: "Use top or htop for real-time view, or ps aux --sort=-%mem | head -5 to sort by memory usage." },
+        { q: "What does the top and htop command do?", a: "top shows real-time system information and running processes. htop is a more user-friendly, interactive version with better visualization." },
+        { q: "What is the difference between apt, yum, dnf, and zypper?", a: "apt (Debian/Ubuntu), yum (RHEL/CentOS 7), dnf (RHEL/CentOS 8+), zypper (SUSE) are package managers for different Linux distributions." },
+        { q: "How do you install, remove, and update packages in Linux?", a: "apt install/remove/update package (Debian), yum/dnf install/remove/update package (RHEL). Update pulls latest versions from repositories." },
+        { q: "How do you find the location of an installed package?", a: "Use which package for executables, or dpkg -L package (Debian) / rpm -ql package (RHEL) to list all package files." },
+        { q: "What is the difference between dpkg and rpm?", a: "dpkg is the package manager for Debian-based systems, rpm is for RHEL-based systems. Different formats and dependency handling." },
+        { q: "How do you check open ports in Linux?", a: "Use netstat -tulnp or ss -tulnp to display listening ports and associated processes." },
+        { q: "What is the difference between netstat and ss?", a: "ss (socket statistics) is faster and more powerful than netstat. ss uses /proc/net files directly, netstat is legacy." },
+        { q: "How do you test network connectivity using ping?", a: "Use ping destination_IP to send ICMP echo requests and verify connectivity to a host." },
+        { q: "How do you check DNS resolution in Linux?", a: "Use nslookup or dig domain.com to query DNS servers and verify name resolution." },
+        { q: "How do you find your system's IP address?", a: "Use ip a or hostname -I to display all IP addresses assigned to the system." },
+        { q: "How do you permanently change the hostname of a Linux machine?", a: "Modify /etc/hostname or use: hostnamectl set-hostname \"new-hostname\" then restart." },
+        { q: "Where are system logs stored in Linux?", a: "Primarily in /var/log/ directory containing syslog, auth.log, kern.log, messages, etc." },
+        { q: "How do you check system logs using journalctl?", a: "Use journalctl -xe to view recent logs with full details, or journalctl -u service_name for specific service." },
+        { q: "How do you filter logs using grep?", a: "Use grep \"keyword\" /var/log/syslog to search for specific patterns in log files. Combine with pipes for complex filtering." },
+        { q: "What is the purpose of /var/log/messages and /var/log/syslog?", a: "They store system messages and logs. /var/log/syslog is used on Debian systems, /var/log/messages on RHEL systems." },
+        { q: "How do you set up passwordless SSH authentication?", a: "Use ssh-keygen to generate key pair, then ssh-copy-id user@remote-host to copy public key to remote authorized_keys." },
+        { q: "How do you change the default SSH port?", a: "Edit /etc/ssh/sshd_config, modify Port to desired number, then systemctl restart sshd." },
+        { q: "How do you copy files between servers using scp or rsync?", a: "scp file user@remote:/path/ copies file to remote. rsync -av file user@remote:/path/ provides more options like compression and resume." },
+        { q: "How do you configure an SSH jump host?", a: "Use ssh -J user@jumphost user@target-host to route through intermediate jump host." },
+        { q: "How do you check disk partitions in Linux?", a: "Use lsblk to display block devices in tree format, or fdisk -l to show partition tables." },
+        { q: "How do you mount and unmount a file system?", a: "mount /dev/sdX /mnt to mount, umount /mnt to unmount. Add to /etc/fstab for persistent mounting." },
+        { q: "How do you create a new partition using fdisk or parted?", a: "fdisk /dev/sdX for interactive partition creation, or parted for command-line partitioning. Create, format, and mount partitions." },
+        { q: "What is LVM, and how do you create an LVM partition?", a: "LVM (Logical Volume Management) allows flexible disk management. Use pvcreate (physical volume), vgcreate (volume group), and lvcreate (logical volume)." },
+        { q: "How do you schedule a cron job to run every day at 5 AM?", a: "Add '0 5 * * * command' to crontab -e. Fields: minute hour day month weekday." },
+        { q: "Where are cron jobs stored in Linux?", a: "In /var/spool/cron/crontabs/ (user jobs) and /etc/crontab (system jobs), plus /etc/cron.d/ for additional scripts." },
+        { q: "What is the difference between cron and anacron?", a: "cron runs jobs at scheduled times (requires system running). anacron runs missed jobs upon reboot (no specific time dependency)." },
+        { q: "How do you list all scheduled cron jobs for a user?", a: "Use crontab -l to display current user's cron jobs." },
+        { q: "How do you analyze system performance using vmstat, iostat, or sar?", a: "vmstat 5 10 shows CPU/memory/IO stats every 5 seconds for 10 iterations. iostat -x 5 shows extended disk stats. sar -u 5 shows CPU usage." },
+        { q: "How do you check the system uptime?", a: "Use uptime command to display system uptime and load averages. Alternative: cat /proc/uptime shows uptime in seconds." },
+        { q: "How do you debug a slow server?", a: "Check CPU/memory (top, htop), disk I/O (iostat, df), running processes (ps), network (netstat), and logs (journalctl). Use perf for profiling." },
+        { q: "How do you find the system's load average?", a: "Use uptime or cat /proc/loadavg to see 1, 5, and 15-minute averages. Load > CPU core count indicates contention." },
+        { q: "What is the difference between ext3, ext4, and xfs?", a: "ext3: Supports journaling, max 2TB files. ext4: Improved, up to 16TB files, better performance. XFS: High-performance journaling filesystem for large-scale storage." },
+        { q: "How do you check disk space usage using df and du?", a: "df -h shows filesystem usage in human-readable format. du -sh /path shows directory size including contents." },
+        { q: "How do you format a new disk partition?", a: "Use mkfs.ext4 /dev/sdX to format with ext4, or mkfs.xfs /dev/sdX for XFS filesystem." },
+        { q: "What is an inode in Linux?", a: "An inode is a data structure storing file metadata (permissions, ownership, timestamps, file size) but not filename or actual data." },
+        { q: "What is SELinux? How do you disable it?", a: "SELinux enforces mandatory access control policies. Disable temporarily with setenforce 0, or permanently by editing /etc/selinux/config." },
+        { q: "How do you check firewall rules in Linux?", a: "Use iptables -L -v -n for legacy systems, or firewall-cmd --list-all for firewalld systems." },
+        { q: "How do you block an IP address using iptables or firewalld?", a: "iptables: iptables -A INPUT -s <IP> -j DROP. firewalld: firewall-cmd --permanent --add-rich-rule='rule family=\"ipv4\" source address=\"<IP>\" reject'." },
+        { q: "What are the different SELinux modes?", a: "Enforcing (policies enforced), Permissive (policies not enforced but logged), Disabled (SELinux off)." },
+        { q: "How do you start, stop, restart, and check the status of a service?", a: "systemctl start/stop/restart/status <service>. Use 'is-active' to check if running, 'is-enabled' for boot status." },
+        { q: "What is the difference between systemctl and service commands?", a: "systemctl is for modern systemd-based distributions with more features. service is for older SysVinit systems." },
+        { q: "How do you enable a service to start at boot?", a: "systemctl enable <service> ensures the service starts automatically at boot." },
+        { q: "Explain the Linux boot process step by step.", a: "1. BIOS/UEFI initializes hardware and loads bootloader. 2. Bootloader (GRUB) loads kernel into memory. 3. Kernel initialization sets up drivers and filesystem. 4. init/systemd runs initialization scripts. 5. User space starts services and login prompts." },
+        { q: "How do you check the current Linux kernel version?", a: "Use uname -r to display current kernel version." },
+        { q: "How do you update the Linux kernel?", a: "Debian: sudo apt update && sudo apt upgrade -y. RHEL: sudo yum update kernel -y. Verify with uname -r after reboot." }
     ],
     "Git": [
         { q: "Explain git fetch vs git pull.", a: "fetch downloads remote refs only; pull = fetch + merge (or rebase if configured)." },
@@ -129,26 +168,36 @@ const devOpsData = {
         { q: "Blue/green Jenkins upgrade approach?", a: "Spin up new controller version, import config, run validations, switch traffic, keep old for fallback." }
     ],
     "Docker": [
-        { q: "Design a secure container image supply chain for production deployments.", a: "Implement image signing (Docker Content Trust), vulnerability scanning (Trivy, Grype) in CI/CD, registry scanning, namespace isolation in registry, immutable image tags, minimal base images, no root user, scan on push/pull, maintain audit logs of all image operations." },
-        { q: "Optimize Docker image sizes and layer caching for millions of daily builds.", a: "Use multi-stage builds, distroless/alpine base images (20-100MB vs 500MB+). Order Dockerfile for maximal caching. Consolidate RUN commands. Use .dockerignore aggressively. Compress artifacts. Implement layer deduplication in registry. Monitor image sizes in CI. Set max image size policies." },
-        { q: "Implement container runtime security at scale (seccomp, AppArmor, capabilities).", a: "Drop unnecessary capabilities (CAP_NET_RAW, CAP_SYS_ADMIN). Implement seccomp profiles blocking dangerous syscalls. Use AppArmor/SELinux policies. Run as non-root. Use read-only rootfs where possible. Implement pod security policies in Kubernetes. Regular security audits of policies." },
-        { q: "Handle secrets securely in Docker without embedding in images.", a: "Never use ENV or ARG for secrets. Use Docker secrets (Swarm) or Kubernetes Secrets. Use external secret management (HashiCorp Vault, AWS Secrets Manager). Implement secret rotation. Use tmpfs for temporary secrets. Audit all secret access. Use encryption at rest for secrets. Implement least-privilege access." },
-        { q: "Troubleshoot container network connectivity issues in production.", a: "Inspect network configuration with 'docker network inspect'. Check port bindings (docker port). Verify DNS resolution (docker exec -it <id> nslookup). Monitor with docker stats. Check firewall rules on host. Verify exposed vs published ports. Use tcpdump on host network. Implement health checks." },
-        { q: "Design multi-host container networking strategy (overlay networks, service discovery).", a: "Use overlay networks for cross-host communication. Implement DNS service discovery (built-in in Docker/K8s). Use load balancing for service endpoints. Configure network policies. Monitor network latency. Implement network segmentation. Use service mesh for advanced routing. Document network topology." },
-        { q: "Optimize Docker resource limits and implement fair resource sharing.", a: "Set memory limits (--memory) to prevent OOM-kills. Implement CPU limits (--cpus) based on workload. Use memory reservations for guaranteed capacity. Implement swap limits. Monitor with docker stats, cgroup metrics. Implement resource requests/limits per container. Implement CPU affinity for latency-sensitive workloads." },
-        { q: "Implement comprehensive logging strategy for container environments (ELK, Loki).", a: "Configure log driver (json-file, awslogs, splunk). Implement log rotation to prevent disk fill. Ship logs to centralized system. Use structured logging (JSON). Tag logs with container metadata. Implement log filtering and sampling. Monitor logs for security events. Implement audit logging for sensitive operations." },
-        { q: "Design disaster recovery for containerized applications with persistent data.", a: "Implement volume backups (snapshots, replication). Use database-specific backup tools. Implement automated backup testing. Document RTO/RPO by application. Use geographically distributed backups. Implement point-in-time recovery. Regular restore drills. Version control infrastructure-as-code. Implement immutable backups." },
-        { q: "Troubleshoot performance degradation in container workloads.", a: "Monitor CPU, memory, I/O, network metrics. Profile with perf, systemtap. Check for memory leaks. Verify resource limits aren't causing throttling. Monitor disk I/O patterns. Check for network saturation. Profile application code. Implement APM (Datadog, New Relic). Benchmark baseline performance." },
-        { q: "Implement registry security and compliance (private registry, RBAC, scanning).", a: "Use private registries (Harbor, Artifactory, ECR). Implement RBAC for registry access. Enable image scanning on push/pull. Enforce image signing. Implement retention policies. Audit registry operations. Use harbor for vulnerability scanning and compliance. Implement network policies around registry access." },
-        { q: "Design image promotion workflow across environments (dev→staging→prod).", a: "Tag images with environment info. Implement promotion via CI/CD pipeline. Require approvals for prod promotions. Implement smoke tests post-promotion. Monitor for regressions. Use GitOps for declarative promotion. Implement image scanning at each stage. Maintain audit trail of promotions." },
-        { q: "Handle container startup order and dependencies (init containers, wait scripts).", a: "Implement dependency checks in startup scripts. Use init containers to prepare environment. Implement health checks with retries. Use orchestrator dependencies (depends_on in compose). Implement exponential backoff for retries. Document startup dependencies. Use configuration management for dependency injection." },
-        { q: "Implement cost optimization strategies for Docker infrastructure.", a: "Monitor image disk usage. Implement image cleanup policies. Use smaller base images. Consolidate services where possible. Implement resource right-sizing. Use spot/preemptible instances in cloud. Monitor registry storage costs. Implement image deduplication. Regular cost audits." },
-        { q: "Implement container update and patching strategy for base images.", a: "Scan regularly for base image vulnerabilities. Implement automated rebuilds of dependent images. Use Dependabot/Renovate for updates. Test updates in non-prod first. Implement rolling updates with health checks. Document patch procedures. Maintain patch SLA. Implement automated patch compliance checking." },
-        { q: "Design strategy for managing container configuration across environments.", a: "Use environment-specific configuration files (12-factor). Implement ConfigMaps/Secrets for different environments. Use templating tools (Kustomize, Helm). Validate configuration in CI/CD. Implement configuration drift detection. Use infrastructure-as-code for consistency. Document configuration requirements by application." },
-        { q: "Troubleshoot Docker daemon issues and implement high-availability setup.", a: "Monitor daemon health. Check daemon logs for errors. Implement daemon restart policies. Use systemd service for daemon management. Configure daemon storage driver appropriately. Monitor disk usage for daemon. Implement redundant docker engines. Configure daemon reload policies safely." },
-        { q: "Implement container orchestration migration strategy (Docker Swarm vs Kubernetes).", a: "Evaluate requirements (scale, features, complexity). Plan phased migration. Test workloads on target platform. Implement networking translation. Plan storage migration. Document runbook changes. Train operations team. Implement monitoring on new platform. Gradual cutover with rollback plan." },
-        { q: "Design build optimization for large monorepos with hundreds of services.", a: "Implement Docker layer caching across builds. Use build cache storage (registry, S3). Implement conditional builds (only affected services). Use parallel builds. Implement build matrix strategies. Monitor build times. Implement build timeout policies. Cache dependencies separately from code." },
-        { q: "Implement security scanning in CI/CD pipeline as enforcement gate.", a: "Run image scans before push. Fail builds on critical CVEs. Implement policy-as-code (OPA). Scan dependencies (SBOM). Check image signatures. Enforce minimal base images. Block containers from untrusted registries. Regular re-scanning of deployed images. Integration with security incident response." }
+        { q: "What is the difference between an Image, Container, and Engine?", a: "Image is a snapshot of a file system and parameters for running software. Container is an instance of an image including app and dependencies in isolation. Engine is Docker's core facilitating creation and management of containers." },
+        { q: "Docker command COPY vs ADD - which one should be used?", a: "COPY is more straightforward and recommended for general file copying. ADD has additional capabilities like extracting tarballs and copying remote URLs." },
+        { q: "Docker command CMD vs RUN - what is the difference?", a: "CMD provides default arguments for the entrypoint, defining what runs when container starts. RUN executes commands during the image build phase." },
+        { q: "How do you reduce Docker Image Size?", a: "Use minimal base image, combine RUN commands, clean up unnecessary files, leverage multi-stage builds to discard unneeded artifacts." },
+        { q: "Why and When to Use Docker?", a: "Docker offers lightweight, portable, and consistent environment for applications. Usage streamlines deployment ensuring uniformity across diverse environments." },
+        { q: "Explain Docker Components", a: "Docker Compose: tool for defining multi-container Docker applications. Dockerfile: script with build instructions. Docker Image: self-contained package with everything needed. Docker Container: instantiated and runnable image." },
+        { q: "What are Real Scenarios of Using Docker?", a: "Docker finds application in microservices architecture, CI/CD pipelines, and isolation and packaging of applications and their dependencies." },
+        { q: "Docker vs Hypervisor - what is the difference?", a: "Docker operates at container level sharing host OS kernel offering lightweight isolation. Hypervisors operate at virtual machine level with full OS isolation." },
+        { q: "What are Advantages and Disadvantages of Docker?", a: "Advantages: Portability, efficiency, rapid deployment, optimized resource utilization. Disadvantages: Security concerns, learning curve, complexity in larger deployments." },
+        { q: "What is Docker Namespace?", a: "A Linux kernel feature providing process isolation, ensuring processes in one namespace are unaware of those in another namespace." },
+        { q: "What is Docker Registry?", a: "A repository for Docker images enabling distribution and sharing. Docker Hub is a popular public registry." },
+        { q: "What is Entry Point in Dockerfile?", a: "An instruction defining the default command to execute when a container starts." },
+        { q: "How to implement CI/CD in Docker?", a: "Involves automating build, test, and deployment processes using tools like Jenkins, GitLab CI, or GitHub Actions with Docker containers." },
+        { q: "How do you handle Data Persistence in Docker?", a: "Data on container is lost by default when it exits. To persist data, use volumes or bind mounts." },
+        { q: "What is Docker Swarm?", a: "Docker's native clustering and orchestration solution for managing a group of Docker hosts as a single system." },
+        { q: "What is 'docker ps' command?", a: "View running containers. Shows container ID, image, command, status, ports." },
+        { q: "How to run a container with a specific name?", a: "Use docker run --name container_name to assign a custom name to container." },
+        { q: "How to export and import Docker containers?", a: "Export: docker export container_id > filename.tar. Import: docker import filename.tar to create new image." },
+        { q: "How to delete a container?", a: "Use docker rm container_id to remove container." },
+        { q: "What does 'docker system prune' do?", a: "Removes all stopped containers, unused networks, build caches, and dangling images to free up space." },
+        { q: "Practices to Reduce Docker Image Size", a: "Use minimal base image, consolidate commands in single layer, remove unnecessary dependencies/files, leverage multi-stage builds." },
+        { q: "What is a multi-stage Docker build?", a: "Technique using multiple FROM statements allowing smaller final images by discarding build dependencies and intermediate layers." },
+        { q: "How do you handle secrets in Docker containers?", a: "Use Docker secrets (Swarm), environment variables (sparingly), volume mounts for secret files, or external secret management systems." },
+        { q: "What is .dockerignore file?", a: "Similar to .gitignore, specifies files and directories to exclude from Docker build context improving build performance." },
+        { q: "How do you optimize Docker layer caching?", a: "Order Dockerfile instructions by frequency of change. Place frequently changing instructions last to maximize cache hits." },
+        { q: "What are the different Docker networking modes?", a: "bridge (default, containers on same host isolated), host (uses host network directly), overlay (multi-host networking in Swarm/K8s)." },
+        { q: "How do you limit container resources?", a: "Use --memory N for RAM limit, --cpus N for CPU limit, --memory-swap for swap space in docker run command." },
+        { q: "What is Docker volume vs bind mount?", a: "Volume is managed by Docker in dedicated area. Bind mount maps host directory directly to container. Volumes are more portable and safer." },
+        { q: "How do you debug a container that exits immediately?", a: "Use docker logs container_id to view logs, docker inspect to check config, or run with overridden command for debugging." },
+        { q: "What is docker-compose and when to use it?", a: "Tool for defining and running multi-container applications using YAML configuration. Use for local development and simple multi-container setups." }
     ],
     "Docker Commands": [
         { q: "What is docker run?", a: "Launches a new container from an image with specified config (ports, volumes, env, etc)." },
@@ -337,26 +386,40 @@ const devOpsData = {
         { q: "oc extract secret/configmap local inspection?", a: "oc extract secret/<name> --to=. exports files locally; oc extract configmap/<name> --keys=key.txt exports specific keys." }
     ],
     "Helm": [
-        { q: "Chart design patterns for monolithic vs microservices architecture?", a: "Monolithic: single chart with complex values schemas. Microservices: umbrella chart with subchart dependencies, enabling independent versioning & deployment strategies (e.g., managed by ArgoCD GitOps)" },
-        { q: "Handling multi-environment deployments: dev, staging, production?", a: "Use values overlay pattern with base values.yaml + envs/prod-values.yaml. Git-driven approach: separate branches/directories per env. Helm hooks + Kustomize overlays for environment-specific patches (taints, resource limits, replicas)" },
-        { q: "Values schema (values.schema.json) for production validation?", a: "Enforce type constraints, required fields, min/max bounds. Fails at install-time preventing invalid deployments. Example: image.tag required string matching semver pattern, replicas minimum 2 for HA" },
-        { q: "Chart testing strategy at scale with helm unittest and chart-testing?", a: "Unit tests validate template rendering with sample values.yaml files. Integration testing via 'helm lint' checks syntax. CI/CD: automated testing on PR, helm-ct validates across multiple Kubernetes versions & schemas" },
-        { q: "Secrets management: SOPS vs Sealed Secrets vs External Secrets Operator?", a: "SOPS: transparent encryption, git-driven, IDE friendly. Sealed Secrets: K8s native cluster-scoped encryption keys. ExternalSecrets: pulls from vault/AWS Secrets Manager at runtime. Production: ExternalSecrets decouples secrets from charts" },
-        { q: "Implementing Helm subcharts for shared infrastructure libraries?", a: "Library charts contain reusable templates (logging sidecars, observability, security policies) without installable resources. Dependencies in Chart.yaml with versions. Prevents duplication across 100+ microservice charts" },
-        { q: "Helm hooks for database migrations, pre-flight checks, and cleanup?", a: "pre-install/upgrade hooks validate schema, run migrations (Job). post-install hooks notify external systems. pre-delete for backup/cleanup jobs. Annotation: helm.sh/hook: pre-upgrade, helm.sh/hook-weight: -5 for execution order" },
-        { q: "Chart versioning and release management with SemVer and appVersion?", a: "Chart version: infrastructure code semver (bump for template changes). appVersion: application version (tracked separately). Enables independent updates and dependency lock-in for critical apps (e.g., DB version 5.7.x only)" },
-        { q: "Preventing breaking changes in chart upgrades: deprecations and migration paths?", a: "Document deprecated values in NOTES.txt. Support old + new values simultaneously for one release. helm-docs generation tracks all options. Changelog entries per version. Test against real customer configs before release" },
-        { q: "Helm release annotation and label management for compliance and auditing?", a: "Add labels: managed-by: helm, team: platform, env: prod. Annotations: deployed-by, deployment-timestamp, approval-status. Enables RBAC filtering, cost allocation, compliance auditing (who deployed what when)" },
-        { q: "Dynamic template rendering using Helm's sprig functions for complex logic?", a: "sprig provides string manipulation, date, random, crypto functions. Example: {{ include 'mychart.labels' . }} with conditional logic, regex replacement. Advanced: lookup() function queries existing K8s resources for dynamic templates" },
-        { q: "Multi-region Helm deployments with CloudFormation + Helm across AWS regions?", a: "Separate helm repos per region or single repo with regional overrides. Values overlays per region handling different instance types, endpoint URLs. Helm plugin chains CloudFormation stack outputs into values" },
-        { q: "Helm OCI registry workflow and private artifact management at scale?", a: "Push to ECR/ACR/Artifactory using 'helm push <chart.tgz> oci://registry/path'. Auth via 'helm registry login'. Enables supply chain scanning, immutable releases, audit trails like container images" },
-        { q: "Chart repository security: signing charts and verifying authenticity?", a: "GnuPG signing during chart upload (helm repo index --sign). Verification on install: helm install --verify validates chain. Provenance files track chart lineage and prevent tampering" },
-        { q: "Resource quota and namespace limits per Helm release for multi-tenant clusters?", a: "Use Helm values to set ResourceQuota and NetworkPolicies per namespace. Example: {{ .Values.resourceQuota.requests.cpu }}. Prevents noisy neighbor problems in shared clusters" },
-        { q: "Helm operator vs GitOps (ArgoCD, Flux) for declarative management at scale?", a: "Helm operator watches custom resources triggering releases. GitOps (ArgoCD): Git source-of-truth with automated reconciliation. Choice depends on operational model: Helm for programmatic control, GitOps for declarative CI/CD" },
-        { q: "Post-deployment validation and smoke testing with Helm hooks and tests?", a: "helm test runs test pods with 'helm.sh/hook: test'. Example: verify API endpoints, check database connectivity. Fails entire release if tests fail, blocking production traffic" },
-        { q: "Helm upgrade rollback strategies with atomic and keep-history flags?", a: "--atomic: automatic rollback on failure. --keep-history: retains failed release revision for debugging. Implement health checks + monitoring to detect failures within SLA window before rollback completes" },
-        { q: "Handling stateful applications (databases, message queues) with Helm and StatefulSets?", a: "Values control storage claims, pod ordinals (headless services). PersistentVolumes via storage classes. Backup hooks via helm.sh/hook: pre-delete. Monitor pod identity, ordered startup/shutdown" },
-        { q: "Compliance and policy enforcement: Kyverno/OPA policies with Helm templates?", a: "Mutating webhooks inject compliance labels/annotations via Helm. Validating policies enforce image registries, resource limits, security contexts. Example: all images must come from approved registries, enforce pod security standards" }
+        { q: "What is Helm?", a: "Helm is a package manager for Kubernetes that helps define, install, and upgrade Kubernetes applications. It simplifies deployment of complex applications by templating and managing configurations." },
+        { q: "What are Helm Charts?", a: "Helm Charts are packages of pre-configured Kubernetes resources. A chart is a collection of templates and values that define how to deploy an application on Kubernetes." },
+        { q: "What is the structure of a Helm chart, and what files are present in it?", a: "A Helm chart contains: Chart.yaml (metadata), values.yaml (default values), templates/ (Kubernetes manifests), charts/ (dependencies), README.md (documentation), LICENSE, and optional test/. Each defines the app's structure and deployment config." },
+        { q: "What is the values.yaml file in Helm Charts?", a: "values.yaml contains default configuration values used to customize the Helm chart. It defines parameters like image tags, replicas, resource limits, and settings that can be overridden during installation." },
+        { q: "How does the values.yaml file work in Helm, and why is it important?", a: "During rendering, Helm substitutes {{ .Values.key }} references with values from values.yaml. This enables separation of configuration from templates, allowing same chart reuse across environments by just changing values." },
+        { q: "What is a Release in Helm?", a: "A Release is an instance of a Helm chart deployed on a Kubernetes cluster. Each release has a unique name and tracks the deployment history, enabling easy upgrades and rollbacks." },
+        { q: "Explain what a Helm release is, and how it is different from a chart.", a: "A chart is a package template; a release is an actual deployment of that chart. Multiple releases of the same chart can run simultaneously with different configurations on the same cluster." },
+        { q: "How do you install a Helm chart?", a: "Use 'helm install <release-name> <chart-path>' command. Helm renders templates with default values, creates Kubernetes objects, and tracks the release. Add -f values.yaml to override defaults." },
+        { q: "Can you walk me through the process of installing a Helm chart on a Kubernetes cluster?", a: "1. Add chart repository: helm repo add <name> <url>. 2. Update repos: helm repo update. 3. Create custom values.yaml. 4. Run: helm install myrelease <chart> -f values.yaml. 5. Verify: helm status myrelease." },
+        { q: "How can you upgrade or rollback a Helm release?", a: "Upgrade: helm upgrade <release> <chart> -f new-values.yaml. Rollback: helm rollback <release> <revision>. Check history with: helm history <release>." },
+        { q: "What command is used for upgrading or rolling back a release?", a: "helm upgrade for upgrades and helm rollback for rollbacks. Both preserve release history enabling easy reversions if new version has issues." },
+        { q: "What are Helm Repositories?", a: "Helm repositories are remote servers storing packaged charts. Helm Hub is the central repository. Organizations can create private repositories for internal use." },
+        { q: "Explain the concept of Helm repositories and how you can create your own custom Helm repository.", a: "Repositories store chart packages. Create one by: 1. Building charts. 2. Creating index.yaml. 3. Hosting on HTTP server/S3. 4. Users add with 'helm repo add'." },
+        { q: "Explain the command helm template and its use case.", a: "helm template renders Helm templates locally without deploying to cluster. Useful for validating templates, previewing output, CI/CD automation, and debugging template issues before deployment." },
+        { q: "How does Helm handle secrets?", a: "Helm supports injecting secrets as environment variables or files in templates. Secrets can be stored separately and referenced during deployment or managed via external systems." },
+        { q: "How do you handle sensitive information in Helm, such as passwords or API keys?", a: "Use Kubernetes Secrets: reference with 'kubectl create secret generic' or use Secret templates. Avoid storing plain text in values.yaml. Use external secret management (Vault, AWS Secrets Manager)." },
+        { q: "Explain Helm Dependencies.", a: "Chart dependencies allow including other charts as subchart dependencies defined in Chart.yaml with 'dependencies' field. Use 'helm dependency update' to fetch dependencies." },
+        { q: "How can you manage Helm chart dependencies?", a: "Define in Chart.yaml: dependencies: - name: mysql version: 5.x repository: https://charts.helm.sh. Run 'helm dependency update' to pull subcharts." },
+        { q: "What are the use cases for chart dependencies?", a: "Enable code reuse, managing infrastructure libraries (logging, monitoring), sharing common patterns across teams, reducing duplication in microservice deployments." },
+        { q: "How do you customize a Helm Chart?", a: "Override values using -f flag, --set flag, or environment variables. Each method allows different customization levels without modifying the original chart." },
+        { q: "How do you override values in a Helm chart to customize it for a specific environment or use case?", a: "Methods: 1. helm install -f custom-values.yaml. 2. helm install --set key=value. 3. Combine multiple -f flags with order preference. 4. Use Kustomize or ArgoCD for advanced overlays." },
+        { q: "Explain the Helm Hooks.", a: "Helm hooks are annotations on Kubernetes resources triggering actions at specific lifecycle events (pre-install, post-install, pre-upgrade, post-upgrade, pre-delete, post-delete)." },
+        { q: "What are Helm hooks, and how do they work during lifecycle events like installs, upgrades, and deletes?", a: "Hooks execute Kubernetes Jobs or other resources at specified times. Example: pre-upgrade hook runs migrations before new version. Annotations like helm.sh/hook specify timing and helm.sh/hook-weight orders execution." },
+        { q: "How can you test a Helm Chart before deploying it?", a: "Use: helm lint for syntax validation. helm template for preview. helm test for integration testing. Include test/ directory with test pods for validation post-deployment." },
+        { q: "What testing mechanisms does Helm provide for ensuring the correctness of a chart before deploying it to a cluster?", a: "helm lint validates syntax/structure. helm template renders locally. helm test runs test suite pods. External tools: chart-testing, helm-unittest for comprehensive validation across versions." },
+        { q: "What are the differences between Helm v2 and Helm v3?", a: "Helm v3 removed Tiller (server component), improved security. v3 uses 3-way merge strategy for upgrades, better hooks, chart dependencies in Chart.yaml. v2 deprecated; all new projects use v3." },
+        { q: "What are the main changes in Helm 3 compared to Helm 2? What happened to Tiller in Helm v3?", a: "Helm v3 removed Tiller server component (security risk). Now runs entirely client-side. Uses 3-way merge strategy. Better dependency management. Improved plugin system." },
+        { q: "How do you handle Helm chart versioning and best practices for release management?", a: "Use semantic versioning for Chart.yaml version. Separate appVersion for app version. Document changes in CHANGELOG. Tag releases in Git. Maintain compatibility across versions." },
+        { q: "How do you manage Helm chart versioning?", a: "Follow semantic versioning (MAJOR.MINOR.PATCH). Increment MAJOR for breaking changes, MINOR for features, PATCH for fixes. Track in CHANGELOG. Use Git tags for releases." },
+        { q: "What strategies are available for handling rolling updates when deploying with Helm?", a: "Use Deployment strategy field: RollingUpdate (default, gradual rollout). Recreate (downtime). maxSurge and maxUnavailable control parallelism. Helm upgrades handle this via template rendering." },
+        { q: "What are the best practices for packaging and sharing Helm charts?", a: "Document thoroughly. Use consistent naming. Include examples. Validate with linting. Version releases. Publish to repository. Provide migration guides. Support multiple Kubernetes versions." },
+        { q: "Can you discuss the best practices for creating reusable and maintainable Helm charts?", a: "Modular design with templates and helpers. Clear values schema documentation. Semantic versioning. Comprehensive README and examples. NOTES.txt with post-deployment info. Regular testing." },
+        { q: "How do you use Helm charts to manage resources across multiple Kubernetes clusters?", a: "Use same chart with environment-specific values per cluster. CI/CD deploys across clusters. Use Helm plugins for multi-cluster management. Integrate with GitOps tools (ArgoCD, Flux) for declarative multi-cluster deployments." },
+        { q: "How would you manage Helm charts in a multi-cluster Kubernetes environment?", a: "Centralized chart repository accessible from all clusters. Environment-specific values per cluster. Use GitOps operator (ArgoCD) syncing from Git. Monitor deployments across clusters with centralized dashboard." }
     ],
     "Terraform": [
         { q: "State management challenges at enterprise scale: splitting state across 50+ teams?", a: "Monolithic state causes conflicts and long lock contention. Solution: separate state per team/component (terraform_remote_state data sources), hierarchical module structure, Terraform Cloud workspace isolation, cross-stack references via outputs. Example: networking state in separate stack referenced by application stacks" },
@@ -1219,8 +1282,27 @@ function bindUIControls() {
             renderTopic('Progress');
         });
     }
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) {
+        helpBtn.addEventListener('click', showHelpModal);
+    }
     document.querySelectorAll('.accent-btn').forEach(btn => {
         btn.addEventListener('click', () => applyAccent(btn.dataset.accent));
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.target === document.body || e.target.classList.contains('questions-container')) {
+            if (e.key === '?') showHelpModal();
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('helpModal');
+                if (modal) modal.classList.remove('show');
+            }
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('searchInput')?.focus();
+            }
+        }
     });
 }
 
@@ -1419,10 +1501,139 @@ function renderProgressDashboard() {
     });
 }
 
+// ---------------------- Study Statistics Tracking ----------------------
+function trackCardView() {
+    const today = new Date().toISOString().split('T')[0];
+    const stats = JSON.parse(localStorage.getItem('studyStats') || '{"today":0,"week":0,"allTime":0,"dates":{}}');
+    
+    const dates = stats.dates || {};
+    dates[today] = (dates[today] || 0) + 1;
+    
+    stats.today = dates[today];
+    stats.allTime = (stats.allTime || 0) + 1;
+    
+    // Calculate week total (last 7 days)
+    const weekStats = {};
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        weekStats[dateStr] = dates[dateStr] || 0;
+    }
+    stats.week = Object.values(weekStats).reduce((a, b) => a + b, 0);
+    
+    stats.dates = dates;
+    localStorage.setItem('studyStats', JSON.stringify(stats));
+    updateStatsDisplay();
+}
+
+function getStudyStats() {
+    return JSON.parse(localStorage.getItem('studyStats') || '{"today":0,"week":0,"allTime":0,"dates":{}}');
+}
+
+function updateStatsDisplay() {
+    const stats = getStudyStats();
+    const statsDisplay = document.getElementById('studyStatsDisplay');
+    if (statsDisplay) {
+        statsDisplay.textContent = `📚 Today: ${stats.today} | Week: ${stats.week} | Total: ${stats.allTime}`;
+    }
+}
+
+// ---------------------- Keyboard Shortcuts & Help ----------------------
+function showHelpModal() {
+    let modal = document.getElementById('helpModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'helpModal';
+        modal.className = 'help-modal';
+        modal.innerHTML = `
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h2>⌨️ Keyboard Shortcuts</h2>
+                    <button class="help-close" aria-label="Close help">✕</button>
+                </div>
+                <div class="help-modal-body">
+                    <div class="shortcuts-grid">
+                        <div class="shortcut-item">
+                            <kbd>?</kbd>
+                            <span>Show this help</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Space</kbd> / <kbd>Enter</kbd>
+                            <span>Flip current card</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>B</kbd>
+                            <span>Bookmark card</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>S</kbd>
+                            <span>Toggle shuffle</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>/</kbd>
+                            <span>Focus search</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd>
+                            <span>Close this modal</span>
+                        </div>
+                    </div>
+                    <p class="shortcuts-tip">💡 Tip: Use Tab to navigate between cards</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        const closeBtn = modal.querySelector('.help-close');
+        closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+    }
+    modal.classList.add('show');
+}
+
+// ---------------------- Bookmark Management ----------------------
+function getBookmarks(topic) {
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '{}');
+    return bookmarks[topic] || [];
+}
+
+function setBookmarks(topic, bookmarks) {
+    const allBookmarks = JSON.parse(localStorage.getItem('bookmarks') || '{}');
+    allBookmarks[topic] = bookmarks;
+    localStorage.setItem('bookmarks', JSON.stringify(allBookmarks));
+}
+
+function toggleBookmark(topic, questionText) {
+    const bookmarks = getBookmarks(topic);
+    const index = bookmarks.indexOf(questionText);
+    if (index > -1) {
+        bookmarks.splice(index, 1);
+    } else {
+        bookmarks.push(questionText);
+    }
+    setBookmarks(topic, bookmarks);
+    return bookmarks.includes(questionText);
+}
+
+function isBookmarked(topic, questionText) {
+    return getBookmarks(topic).includes(questionText);
+}
+
+// ---------------------- Shuffle Utility ----------------------
+function shuffleArray(arr) {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 function renderTopic(topic) {
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
+    if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
     localStorage.setItem('currentTopic', topic);
@@ -1432,15 +1643,41 @@ function renderTopic(topic) {
     // Re-enable search (might have been disabled by sequential quizzes)
     const search = document.getElementById('searchInput');
     if (search) { search.disabled = false; search.placeholder = 'Search...'; }
+    
+    // Add shuffle button
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'topic-controls';
+    const shuffleBtn = document.createElement('button');
+    shuffleBtn.className = 'shuffle-btn';
+    
+    // Check if shuffle is currently enabled
+    const isShuffle = localStorage.getItem('shuffleMode_' + topic) === 'true';
+    shuffleBtn.innerHTML = isShuffle ? '🔀 Shuffle (ON)' : '🔀 Shuffle (OFF)';
+    shuffleBtn.setAttribute('aria-label', 'Toggle shuffle cards');
+    
+    shuffleBtn.addEventListener('click', () => {
+        const currentState = localStorage.getItem('shuffleMode_' + topic) === 'true';
+        localStorage.setItem('shuffleMode_' + topic, !currentState);
+        renderTopic(topic); // Re-render with new shuffle state
+    });
+    controlsDiv.appendChild(shuffleBtn);
+    container.appendChild(controlsDiv);
+    
     const data = devOpsData[topic] || [];
     const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
-    const filtered = data.filter(item => {
+    let filtered = data.filter(item => {
         if (!searchTerm) return true;
         const haystack = [item.q];
         if (item.a) haystack.push(item.a);
         if (item.options) haystack.push(...item.options.map(o => String(o)));
         return haystack.some(t => t.toLowerCase().includes(searchTerm));
     });
+    
+    // Shuffle if enabled for this topic
+    const isShuffleEnabled = localStorage.getItem('shuffleMode_' + topic) === 'true';
+    if (isShuffleEnabled) {
+        filtered = shuffleArray(filtered);
+    }
 
     if (filtered.length === 0) {
         const msg = document.createElement('p');
@@ -1452,15 +1689,17 @@ function renderTopic(topic) {
 
     filtered.forEach((item, idx) => {
         const card = document.createElement('article');
-        card.className = 'qa-card';
         card.tabIndex = 0;
         card.setAttribute('aria-labelledby', `q-${idx}`);
+        
         if (item.options) {
-            // Multiple choice rendering (supports optional image)
+            // Multiple choice rendering (supports optional image) - NO FLIP
+            card.className = 'qa-card';
             const optionsHtml = item.options.map((opt, oi) => `
                 <button class="mc-option" data-opt-index="${oi}" type="button">${highlight(escapeHtml(opt), searchTerm)}</button>
             `).join('');
             const imageHtml = item.image ? `<img src="${escapeAttr(item.image)}" alt="${escapeAttr(item.alt || 'quiz image')}" class="quiz-image" loading="lazy">` : '';
+            const isBookmarkedCard = isBookmarked(topic, item.q);
             card.innerHTML = `
                 <h3 id="q-${idx}" class="question">${highlight(item.q, searchTerm)}</h3>
                 ${imageHtml}
@@ -1468,22 +1707,77 @@ function renderTopic(topic) {
                     ${optionsHtml}
                 </div>
                 <div class="card-tools">
+                    <button class="tool-btn bookmark-btn ${isBookmarkedCard ? 'bookmarked' : ''}" aria-label="Bookmark question" type="button" data-bookmark>
+                        ${isBookmarkedCard ? '❤️' : '🤍'}
+                    </button>
                     <button class="tool-btn quiz-reset" aria-label="Reset this question" type="button" style="display:none" data-reset>Reset</button>
                     <span class="index">#${idx + 1}</span>
                 </div>
             `;
+            // Add bookmark handler for MCQ
+            const bookmarkBtn = card.querySelector('[data-bookmark]');
+            bookmarkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isNowBookmarked = toggleBookmark(topic, item.q);
+                bookmarkBtn.classList.toggle('bookmarked', isNowBookmarked);
+                bookmarkBtn.innerHTML = isNowBookmarked ? '❤️' : '🤍';
+            });
         } else {
-            // Standard Q&A
+            // Standard Q&A - WITH FLIP ANIMATION
+            card.className = 'flip-card';
+            const questionFormatted = highlight(item.q, searchTerm);
+            const answerFormatted = highlight(formatMultiline(item.a), searchTerm);
+            const isBookmarkedCard = isBookmarked(topic, item.q);
+            
             card.innerHTML = `
-                <h3 id="q-${idx}" class="question">${highlight(item.q, searchTerm)}</h3>
-                <div class="answer">${highlight(formatMultiline(item.a), searchTerm)}</div>
-                <div class="card-tools">
-                    <span class="index">#${idx + 1}</span>
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="q-number">Question</div>
+                        <div class="question-text">${questionFormatted}</div>
+                        <div class="click-hint">👆 Click to reveal answer</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="a-number">Answer</div>
+                        <div class="answer-text">${answerFormatted}</div>
+                        <div class="click-hint">👆 Click to show question</div>
+                    </div>
+                    <button class="bookmark-btn-card ${isBookmarkedCard ? 'bookmarked' : ''}" aria-label="Bookmark card" data-bookmark-card>
+                        ${isBookmarkedCard ? '❤️' : '🤍'}
+                    </button>
                 </div>
             `;
+            
+            // Add click handler for flip animation (but not on bookmark button click)
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('[data-bookmark-card]')) {
+                    e.stopPropagation();
+                    card.classList.toggle('flipped');
+                }
+            });
+            
+            // Add bookmark handler for flip cards
+            const bookmarkBtn = card.querySelector('[data-bookmark-card]');
+            bookmarkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isNowBookmarked = toggleBookmark(topic, item.q);
+                bookmarkBtn.classList.toggle('bookmarked', isNowBookmarked);
+                bookmarkBtn.innerHTML = isNowBookmarked ? '❤️' : '🤍';
+            });
+            
+            // Add keyboard support for accessibility
+            card.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    card.classList.toggle('flipped');
+                }
+            });
         }
         container.appendChild(card);
     });
+    
+    // Track viewing of this set of cards
+    filtered.forEach(() => trackCardView());
+    
     wireQuizOptionHandlers(container);
     updateActiveTabButton(topic);
     updateHeaderTopic(topic, filtered.length, data.length);
@@ -2400,6 +2694,135 @@ function confirmQuizExit() {
     if (confirm('Are you sure you want to exit? Your progress will be lost.')) {
         renderTopicQuizMenu();
     }
+}
+
+// ---------------------- Favorites (Bookmarked Cards) ----------------------
+function renderFavorites() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    // Disable search for favorites
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Favorites Tab'; }
+    
+    const allBookmarks = JSON.parse(localStorage.getItem('bookmarks') || '{}');
+    const allTopics = Object.keys(devOpsData);
+    
+    // Collect all bookmarked questions with their topic info
+    const favoritesList = [];
+    for (const topic of allTopics) {
+        const bookmarks = allBookmarks[topic] || [];
+        const data = devOpsData[topic] || [];
+        
+        for (const questionText of bookmarks) {
+            const item = data.find(q => q.q === questionText);
+            if (item) {
+                favoritesList.push({
+                    topic,
+                    ...item
+                });
+            }
+        }
+    }
+    
+    // Display favorites
+    if (favoritesList.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'empty-state';
+        emptyMsg.innerHTML = `
+            <div class="empty-icon">❤️</div>
+            <h3>No Favorites Yet</h3>
+            <p>Bookmark questions by clicking the heart icon to review them later.</p>
+        `;
+        container.appendChild(emptyMsg);
+        updateActiveTabButton('Favorites');
+        updateHeaderTopic('Favorites', 0, 0);
+        return;
+    }
+    
+    favoritesList.forEach((item, idx) => {
+        const card = document.createElement('article');
+        card.className = 'favorite-card';
+        card.tabIndex = 0;
+        
+        if (item.options) {
+            // MCQ format
+            card.className = 'qa-card';
+            const optionsHtml = item.options.map((opt, oi) => `
+                <button class="mc-option" data-opt-index="${oi}" type="button">${escapeHtml(opt)}</button>
+            `).join('');
+            const imageHtml = item.image ? `<img src="${escapeAttr(item.image)}" alt="${escapeAttr(item.alt || 'quiz image')}" class="quiz-image" loading="lazy">` : '';
+            card.innerHTML = `
+                <div class="favorite-topic-badge">${escapeHtml(item.topic)}</div>
+                <h3 class="question">${escapeHtml(item.q)}</h3>
+                ${imageHtml}
+                <div class="mc-options" data-correct="${item.correct}">
+                    ${optionsHtml}
+                </div>
+                <div class="card-tools">
+                    <button class="tool-btn bookmark-btn bookmarked" aria-label="Remove from favorites" data-bookmark>❤️</button>
+                    <span class="index">#${idx + 1}</span>
+                </div>
+            `;
+            const bookmarkBtn = card.querySelector('[data-bookmark]');
+            bookmarkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleBookmark(item.topic, item.q);
+                renderFavorites();
+            });
+        } else {
+            // Flip card format
+            card.className = 'flip-card';
+            const questionFormatted = escapeHtml(item.q);
+            const answerFormatted = formatMultiline(item.a);
+            
+            card.innerHTML = `
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="favorite-topic-badge">${escapeHtml(item.topic)}</div>
+                        <div class="q-number">Question</div>
+                        <div class="question-text">${questionFormatted}</div>
+                        <div class="click-hint">👆 Click to reveal answer</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="a-number">Answer</div>
+                        <div class="answer-text">${answerFormatted}</div>
+                        <div class="click-hint">👆 Click to show question</div>
+                    </div>
+                    <button class="bookmark-btn-card bookmarked" aria-label="Remove from favorites" data-bookmark-card>❤️</button>
+                </div>
+            `;
+            
+            // Flip on click (but not on bookmark)
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('[data-bookmark-card]')) {
+                    e.stopPropagation();
+                    card.classList.toggle('flipped');
+                }
+            });
+            
+            // Remove from favorites
+            const bookmarkBtn = card.querySelector('[data-bookmark-card]');
+            bookmarkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleBookmark(item.topic, item.q);
+                renderFavorites();
+            });
+            
+            // Keyboard support
+            card.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    card.classList.toggle('flipped');
+                }
+            });
+        }
+        container.appendChild(card);
+    });
+    
+    wireQuizOptionHandlers(container);
+    updateActiveTabButton('Favorites');
+    updateHeaderTopic('Favorites', favoritesList.length, favoritesList.length);
 }
 
 // ---------------------- Brain Games ----------------------
