@@ -1633,6 +1633,7 @@ function renderTopic(topic) {
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
+    if (topic === 'Video Recorder') { showVideoRecorder(); return; }
     if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
@@ -2870,9 +2871,1213 @@ function renderBrainGames() {
                 <p class="game-description">Match countries with their flags</p>
                 <button class="game-play-btn">Play Now</button>
             </div>
+            <div class="game-card" onclick="startMapGame()">
+                <div class="game-icon">🗺️</div>
+                <h3 class="game-title">Geography Explorer</h3>
+                <p class="game-description">Explore India & World maps and identify locations</p>
+                <button class="game-play-btn">Play Now</button>
+            </div>
         </div>
     `;
     container.appendChild(gamesDiv);
+}
+
+// ---------------------- Map Game ----------------------
+function startMapGame() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    
+    const gameDiv = document.createElement('div');
+    gameDiv.className = 'map-game-container';
+    gameDiv.innerHTML = `
+        <div class="game-header-map">
+            <button class="back-btn-map" onclick="renderBrainGames()">
+                <span class="back-icon">←</span> Back to Games
+            </button>
+            <div class="game-title-section">
+                <h2 class="map-game-title">🗺️ Interactive Geography Challenge</h2>
+                <p class="map-game-subtitle">Test your geography knowledge!</p>
+            </div>
+        </div>
+        
+        <div class="map-tabs-container">
+            <button class="map-tab-btn active" onclick="showIndiaMap()" id="indiaTab">
+                <span class="tab-emoji">🇮🇳</span>
+                <span class="tab-text">Explore India</span>
+                <span class="tab-badge">22 States</span>
+            </button>
+            <button class="map-tab-btn" onclick="showWorldMap()" id="worldTab">
+                <span class="tab-emoji">🌍</span>
+                <span class="tab-text">Explore World</span>
+                <span class="tab-badge">20 Countries</span>
+            </button>
+        </div>
+        
+        <div class="map-game-stats">
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-info">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="mapScore">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <span class="stat-label">Correct</span>
+                    <span class="stat-value" id="mapCorrect">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🖱️</div>
+                <div class="stat-info">
+                    <span class="stat-label">Attempts</span>
+                    <span class="stat-value" id="mapClicks">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value" id="mapAccuracy">0%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mapQuestion" class="map-question-banner"></div>
+        <div id="mapCanvas" class="map-canvas-wrapper"></div>
+    `;
+    container.appendChild(gameDiv);
+    
+    // Start with India map
+    showIndiaMap();
+}
+
+let mapGameState = {
+    score: 0,
+    correct: 0,
+    clicks: 0,
+    currentMap: 'india',
+    currentTarget: null
+};
+
+function showIndiaMap() {
+    // Update tab styling
+    document.querySelectorAll('.map-tab-btn').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('indiaTab')?.classList.add('active');
+    
+    mapGameState.currentMap = 'india';
+    const mapCanvas = document.getElementById('mapCanvas');
+    
+    const indiaStates = [
+        { name: 'Jammu & Kashmir', path: 'M180,40 L200,35 L220,40 L235,50 L240,70 L235,85 L220,90 L200,85 L185,75 L180,60 Z', color: '#FF6B6B', capital: 'Srinagar', labelX: 210, labelY: 65 },
+        { name: 'Himachal Pradesh', path: 'M220,90 L235,85 L250,95 L255,110 L245,125 L230,128 L220,120 L215,105 Z', color: '#4ECDC4', capital: 'Shimla', labelX: 235, labelY: 110 },
+        { name: 'Punjab', path: 'M185,105 L200,100 L220,105 L220,120 L210,135 L195,138 L185,130 L180,115 Z', color: '#45B7D1', capital: 'Chandigarh', labelX: 200, labelY: 120 },
+        { name: 'Uttarakhand', path: 'M220,120 L230,128 L245,125 L255,135 L250,150 L235,152 L225,145 L220,130 Z', color: '#96CEB4', capital: 'Dehradun', labelX: 237, labelY: 138 },
+        { name: 'Delhi', path: 'M205,145 L215,143 L218,153 L213,158 L205,156 L202,150 Z', color: '#E74C3C', capital: 'New Delhi', labelX: 210, labelY: 150 },
+        { name: 'Haryana', path: 'M185,138 L210,135 L218,145 L220,155 L210,170 L195,172 L185,165 L180,150 Z', color: '#FFEAA7', capital: 'Chandigarh', labelX: 200, labelY: 153 },
+        { name: 'Rajasthan', path: 'M95,160 L145,155 L185,165 L195,190 L190,230 L175,270 L150,285 L120,280 L95,260 L85,220 L90,185 Z', color: '#FAB1A0', capital: 'Jaipur', labelX: 145, labelY: 220 },
+        { name: 'Uttar Pradesh', path: 'M195,172 L220,170 L250,175 L280,185 L295,200 L300,220 L295,240 L280,250 L260,248 L240,245 L220,235 L200,220 L190,200 Z', color: '#74B9FF', capital: 'Lucknow', labelX: 250, labelY: 210 },
+        { name: 'Bihar', path: 'M295,240 L315,235 L340,240 L355,255 L350,270 L330,275 L310,270 L295,260 Z', color: '#A29BFE', capital: 'Patna', labelX: 325, labelY: 255 },
+        { name: 'West Bengal', path: 'M330,275 L350,270 L370,280 L380,295 L375,315 L360,325 L345,320 L330,305 L325,285 Z', color: '#00B894', capital: 'Kolkata', labelX: 355, labelY: 298 },
+        { name: 'Sikkim', path: 'M340,200 L350,198 L355,208 L350,215 L342,213 Z', color: '#A8E6CF', capital: 'Gangtok', labelX: 347, labelY: 208 },
+        { name: 'Gujarat', path: 'M65,240 L95,235 L120,245 L135,265 L130,295 L115,320 L95,335 L75,330 L60,310 L55,280 L58,255 Z', color: '#FD79A8', capital: 'Gandhinagar', labelX: 95, labelY: 285 },
+        { name: 'Madhya Pradesh', path: 'M150,285 L190,275 L220,280 L250,285 L270,295 L275,320 L265,345 L240,350 L210,345 L185,335 L165,320 L155,300 Z', color: '#FDCB6E', capital: 'Bhopal', labelX: 220, labelY: 315 },
+        { name: 'Chhattisgarh', path: 'M270,295 L295,290 L315,300 L320,325 L310,350 L290,360 L275,355 L265,340 Z', color: '#E17055', capital: 'Raipur', labelX: 295, labelY: 325 },
+        { name: 'Jharkhand', path: 'M310,270 L330,275 L345,285 L345,310 L335,330 L320,335 L310,325 L300,310 L295,290 Z', color: '#6C5CE7', capital: 'Ranchi', labelX: 322, labelY: 305 },
+        { name: 'Odisha', path: 'M320,335 L345,330 L360,345 L365,370 L355,390 L335,395 L320,385 L310,365 L312,345 Z', color: '#00CEC9', capital: 'Bhubaneswar', labelX: 340, labelY: 365 },
+        { name: 'Maharashtra', path: 'M115,320 L155,325 L185,335 L210,350 L215,380 L205,410 L180,425 L150,420 L125,400 L105,370 L100,345 Z', color: '#0984E3', capital: 'Mumbai', labelX: 160, labelY: 370 },
+        { name: 'Goa', path: 'M135,425 L150,420 L155,435 L148,445 L138,443 Z', color: '#00B894', capital: 'Panaji', labelX: 145, labelY: 433 },
+        { name: 'Karnataka', path: 'M150,420 L180,425 L210,435 L225,460 L220,490 L200,510 L175,515 L155,505 L145,480 L140,455 Z', color: '#E84393', capital: 'Bengaluru', labelX: 185, labelY: 470 },
+        { name: 'Telangana', path: 'M210,350 L240,355 L260,365 L265,390 L255,410 L235,415 L215,405 L208,380 Z', color: '#D63031', capital: 'Hyderabad', labelX: 240, labelY: 385 },
+        { name: 'Andhra Pradesh', path: 'M235,415 L265,410 L290,420 L305,445 L300,475 L280,495 L260,500 L240,490 L225,470 L220,445 Z', color: '#FF7675', capital: 'Amaravati', labelX: 268, labelY: 455 },
+        { name: 'Kerala', path: 'M155,505 L175,515 L180,535 L175,560 L165,575 L150,578 L140,565 L138,545 L143,525 Z', color: '#00CEC9', capital: 'Thiruvananthapuram', labelX: 160, labelY: 545 },
+        { name: 'Tamil Nadu', path: 'M175,515 L200,510 L225,520 L245,540 L250,565 L240,585 L220,590 L200,585 L180,570 L175,545 Z', color: '#6C5CE7', capital: 'Chennai', labelX: 215, labelY: 555 }
+    ];
+    
+    mapCanvas.innerHTML = `
+        <div class="map-interactive-container india-map-bg">
+            <svg class="india-map-svg" viewBox="0 0 450 620" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="shadow">
+                        <feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.4"/>
+                    </filter>
+                    <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#2d3436;stop-opacity:0.8" />
+                        <stop offset="100%" style="stop-color:#636e72;stop-opacity:0.8" />
+                    </linearGradient>
+                </defs>
+                
+                <!-- India Border -->
+                <path d="M180,40 L240,35 L300,50 L340,80 L380,120 L390,180 L385,250 L370,310 L350,360 L320,410 L280,460 L250,510 L220,550 L180,580 L150,578 L120,560 L100,520 L85,470 L75,410 L65,350 L55,290 L60,230 L75,180 L95,130 L120,90 L150,60 Z" 
+                      fill="none" 
+                      stroke="url(#borderGradient)" 
+                      stroke-width="3" 
+                      stroke-dasharray="8,4"
+                      opacity="0.6"/>
+                
+                ${indiaStates.map((state, idx) => `
+                    <g class="state-group" style="animation-delay: ${idx * 0.03}s">
+                        <path 
+                            d="${state.path}" 
+                            fill="${state.color}" 
+                            class="map-region-path" 
+                            data-name="${state.name}"
+                            onmouseover="showRegionName(event, '${state.name}', '${state.capital}')"
+                            onmouseout="hideRegionName()"
+                            onclick="checkMapAnswer('${state.name}')"
+                            filter="url(#shadow)">
+                        </path>
+                        <text 
+                            x="${state.labelX}" 
+                            y="${state.labelY}" 
+                            class="map-label-new" 
+                            font-size="11"
+                            fill="#ffffff"
+                            font-weight="bold"
+                            text-anchor="middle"
+                            pointer-events="none"
+                            style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);">
+                            ${state.name.length > 15 ? state.name.substring(0, 12) + '...' : state.name}
+                        </text>
+                    </g>
+                `).join('')}
+            </svg>
+            <div id="regionTooltip" class="region-tooltip-new"></div>
+        </div>
+    `;
+    
+    askNewMapQuestion(indiaStates);
+}
+
+function showWorldMap() {
+    // Update tab styling
+    document.querySelectorAll('.map-tab-btn').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('worldTab')?.classList.add('active');
+    
+    mapGameState.currentMap = 'world';
+    const mapCanvas = document.getElementById('mapCanvas');
+    
+    const worldCountries = [
+        // North America
+        { name: 'USA', path: 'M60,140 L85,135 L110,132 L135,138 L155,145 L175,150 L185,165 L190,185 L188,205 L180,220 L165,228 L145,230 L125,225 L105,215 L85,200 L70,180 L62,160 Z', color: '#FF6B6B', capital: 'Washington D.C.', labelX: 135, labelY: 180 },
+        { name: 'Canada', path: 'M35,65 L65,58 L95,55 L125,58 L155,62 L180,68 L200,78 L210,95 L208,115 L200,132 L185,142 L165,148 L140,148 L115,143 L90,135 L70,125 L50,110 L38,90 L33,75 Z', color: '#4ECDC4', capital: 'Ottawa', labelX: 125, labelY: 105 },
+        { name: 'Mexico', path: 'M65,225 L95,220 L120,218 L140,223 L152,235 L155,250 L148,265 L135,272 L115,275 L95,270 L78,258 L68,242 Z', color: '#45B7D1', capital: 'Mexico City', labelX: 115, labelY: 245 },
+        { name: 'Cuba', path: 'M155,265 L175,263 L188,268 L190,278 L182,283 L165,282 L153,275 Z', color: '#FF7675', capital: 'Havana', labelX: 172, labelY: 273 },
+        
+        // South America
+        { name: 'Brazil', path: 'M205,295 L240,290 L270,295 L295,308 L310,330 L318,360 L320,390 L315,420 L300,445 L280,460 L255,468 L230,465 L210,450 L195,425 L188,395 L190,365 L195,335 L200,310 Z', color: '#96CEB4', capital: 'Brasília', labelX: 260, labelY: 380 },
+        { name: 'Argentina', path: 'M220,460 L240,465 L252,480 L258,505 L260,530 L255,550 L242,565 L228,568 L215,560 L208,540 L205,515 L208,490 L213,475 Z', color: '#FFEAA7', capital: 'Buenos Aires', labelX: 235, labelY: 515 },
+        { name: 'Chile', path: 'M195,465 L208,468 L215,490 L218,520 L215,545 L210,565 L203,580 L195,570 L190,545 L188,515 L190,485 Z', color: '#FD79A8', capital: 'Santiago', labelX: 205, labelY: 520 },
+        { name: 'Peru', path: 'M180,340 L200,335 L215,345 L220,365 L218,385 L210,400 L195,405 L180,398 L175,378 L176,358 Z', color: '#A29BFE', capital: 'Lima', labelX: 198, labelY: 370 },
+        { name: 'Colombia', path: 'M155,295 L175,290 L190,298 L195,315 L188,328 L175,333 L160,330 L152,315 L150,305 Z', color: '#74B9FF', capital: 'Bogotá', labelX: 172, labelY: 312 },
+        { name: 'Venezuela', path: 'M175,285 L195,282 L210,288 L215,300 L208,312 L195,315 L180,310 L173,298 Z', color: '#55EFC4', capital: 'Caracas', labelX: 195, labelY: 298 },
+        
+        // Europe
+        { name: 'UK', path: 'M420,108 L432,105 L442,110 L445,122 L442,135 L432,140 L422,138 L416,128 L417,118 Z', color: '#E74C3C', capital: 'London', labelX: 431, labelY: 122 },
+        { name: 'Ireland', path: 'M405,115 L413,112 L420,118 L420,128 L415,135 L407,133 L402,125 Z', color: '#00B894', capital: 'Dublin', labelX: 412, labelY: 123 },
+        { name: 'France', path: 'M430,142 L450,138 L465,145 L470,160 L465,175 L450,180 L435,178 L425,168 L423,155 Z', color: '#FAB1A0', capital: 'Paris', labelX: 448, labelY: 160 },
+        { name: 'Spain', path: 'M410,172 L435,168 L455,175 L460,192 L450,205 L430,208 L410,202 L405,187 Z', color: '#A29BFE', capital: 'Madrid', labelX: 433, labelY: 188 },
+        { name: 'Portugal', path: 'M395,175 L408,172 L413,185 L410,198 L400,202 L392,195 L390,183 Z', color: '#FD79A8', capital: 'Lisbon', labelX: 402, labelY: 187 },
+        { name: 'Italy', path: 'M465,168 L478,165 L488,172 L490,188 L485,205 L475,215 L468,210 L463,195 L462,180 Z', color: '#FF7675', capital: 'Rome', labelX: 477, labelY: 190 },
+        { name: 'Germany', path: 'M455,125 L472,120 L488,125 L493,140 L488,155 L475,162 L460,160 L450,148 L448,135 Z', color: '#74B9FF', capital: 'Berlin', labelX: 472, labelY: 142 },
+        { name: 'Poland', path: 'M485,115 L500,112 L515,118 L518,132 L512,145 L498,148 L485,143 L480,128 Z', color: '#FDCB6E', capital: 'Warsaw', labelX: 500, labelY: 130 },
+        { name: 'Ukraine', path: 'M510,135 L535,130 L555,138 L560,152 L552,165 L535,168 L518,162 L508,150 Z', color: '#00CEC9', capital: 'Kyiv', labelX: 535, labelY: 150 },
+        { name: 'Sweden', path: 'M465,75 L478,70 L490,78 L493,95 L488,110 L478,115 L467,108 L462,92 Z', color: '#DFE6E9', capital: 'Stockholm', labelX: 480, labelY: 95 },
+        { name: 'Norway', path: 'M448,60 L462,55 L472,65 L475,82 L468,95 L458,98 L448,90 L445,75 Z', color: '#B2BEC3', capital: 'Oslo', labelX: 460, labelY: 78 },
+        { name: 'Greece', path: 'M495,195 L508,192 L518,200 L520,212 L512,220 L500,218 L492,208 Z', color: '#0984E3', capital: 'Athens', labelX: 507, labelY: 207 },
+        { name: 'Turkey', path: 'M510,208 L540,205 L565,212 L575,225 L568,238 L548,240 L525,235 L512,225 Z', color: '#E17055', capital: 'Ankara', labelX: 543, labelY: 222 },
+        { name: 'Netherlands', path: 'M445,118 L456,115 L465,122 L463,132 L455,135 L446,130 Z', color: '#FD79A8', capital: 'Amsterdam', labelX: 455, labelY: 125 },
+        { name: 'Belgium', path: 'M442,135 L453,132 L460,138 L458,146 L450,148 L442,143 Z', color: '#6C5CE7', capital: 'Brussels', labelX: 451, labelY: 140 },
+        { name: 'Switzerland', path: 'M455,155 L465,152 L473,158 L471,166 L463,168 L455,163 Z', color: '#E84393', capital: 'Bern', labelX: 463, labelY: 160 },
+        
+        // Asia
+        { name: 'Russia', path: 'M475,55 L550,50 L625,55 L700,65 L760,80 L800,95 L820,115 L825,140 L815,160 L785,172 L745,178 L695,180 L645,175 L590,168 L540,160 L495,150 L470,138 L460,120 L458,100 L465,80 Z', color: '#FDCB6E', capital: 'Moscow', labelX: 640, labelY: 115 },
+        { name: 'China', path: 'M610,155 L655,150 L700,158 L740,170 L770,188 L785,215 L780,245 L760,268 L725,278 L685,280 L645,272 L615,258 L600,235 L595,210 L598,185 L605,168 Z', color: '#6C5CE7', capital: 'Beijing', labelX: 690, labelY: 220 },
+        { name: 'Japan', path: 'M800,175 L815,172 L828,182 L835,200 L832,218 L820,228 L805,230 L792,222 L788,205 L792,188 Z', color: '#00B894', capital: 'Tokyo', labelX: 813, labelY: 202 },
+        { name: 'India', path: 'M590,215 L620,208 L645,218 L665,235 L672,260 L668,285 L650,302 L625,308 L605,300 L590,280 L582,255 L585,235 Z', color: '#00CEC9', capital: 'New Delhi', labelX: 630, labelY: 260 },
+        { name: 'Pakistan', path: 'M570,215 L592,210 L605,222 L608,240 L598,255 L582,258 L568,248 L565,232 Z', color: '#55EFC4', capital: 'Islamabad', labelX: 585, labelY: 235 },
+        { name: 'Bangladesh', path: 'M652,255 L665,252 L673,262 L672,275 L663,280 L653,275 L649,265 Z', color: '#81ECEC', capital: 'Dhaka', labelX: 662, labelY: 267 },
+        { name: 'Myanmar', path: 'M665,258 L678,255 L688,268 L688,285 L680,295 L668,293 L662,280 Z', color: '#FD79A8', capital: 'Naypyidaw', labelX: 676, labelY: 277 },
+        { name: 'Thailand', path: 'M685,265 L698,262 L708,275 L710,292 L702,302 L690,300 L683,288 Z', color: '#0984E3', capital: 'Bangkok', labelX: 697, labelY: 282 },
+        { name: 'Vietnam', path: 'M705,268 L718,265 L728,280 L730,298 L722,310 L710,308 L703,295 Z', color: '#E17055', capital: 'Hanoi', labelX: 717, labelY: 287 },
+        { name: 'Malaysia', path: 'M695,310 L715,308 L728,318 L728,332 L718,338 L703,335 L693,325 Z', color: '#A29BFE', capital: 'Kuala Lumpur', labelX: 713, labelY: 323 },
+        { name: 'Indonesia', path: 'M705,345 L745,342 L780,348 L798,358 L795,372 L770,378 L735,380 L705,375 L692,365 L690,352 Z', color: '#FF7675', capital: 'Jakarta', labelX: 745, labelY: 363 },
+        { name: 'Philippines', path: 'M755,290 L768,288 L778,298 L780,315 L772,325 L760,323 L752,312 L750,300 Z', color: '#74B9FF', capital: 'Manila', labelX: 765, labelY: 307 },
+        { name: 'South Korea', path: 'M775,188 L785,185 L793,195 L793,208 L785,215 L775,212 L770,200 Z', color: '#FDCB6E', capital: 'Seoul', labelX: 783, labelY: 200 },
+        { name: 'North Korea', path: 'M765,175 L778,172 L788,180 L788,192 L778,198 L768,195 L763,185 Z', color: '#636E72', capital: 'Pyongyang', labelX: 776, labelY: 185 },
+        { name: 'Mongolia', path: 'M660,135 L705,130 L740,138 L755,152 L748,168 L715,172 L675,168 L655,158 L650,145 Z', color: '#DFE6E9', capital: 'Ulaanbaatar', labelX: 705, labelY: 152 },
+        { name: 'Afghanistan', path: 'M555,210 L575,205 L590,212 L592,228 L582,240 L565,242 L550,235 L548,222 Z', color: '#B2BEC3', capital: 'Kabul', labelX: 570, labelY: 223 },
+        { name: 'Iran', path: 'M535,215 L560,210 L580,218 L585,235 L575,250 L555,255 L535,248 L528,232 Z', color: '#00B894', capital: 'Tehran', labelX: 558, labelY: 233 },
+        { name: 'Iraq', path: 'M520,225 L540,220 L555,230 L555,245 L545,253 L528,250 L518,240 Z', color: '#00CEC9', capital: 'Baghdad', labelX: 540, labelY: 238 },
+        { name: 'Saudi Arabia', path: 'M515,242 L545,238 L568,248 L580,265 L578,285 L560,295 L535,293 L515,280 L508,262 Z', color: '#E17055', capital: 'Riyadh', labelX: 545, labelY: 268 },
+        { name: 'UAE', path: 'M568,275 L582,272 L592,280 L590,290 L580,293 L568,288 Z', color: '#FDCB6E', capital: 'Abu Dhabi', labelX: 580, labelY: 282 },
+        { name: 'Israel', path: 'M505,235 L512,232 L518,238 L517,248 L510,250 L504,245 Z', color: '#74B9FF', capital: 'Jerusalem', labelX: 511, labelY: 241 },
+        
+        // Oceania
+        { name: 'Australia', path: 'M690,395 L735,388 L780,395 L815,410 L840,435 L848,465 L842,495 L820,520 L785,535 L745,540 L705,535 L675,518 L655,495 L648,465 L650,435 L665,410 Z', color: '#D63031', capital: 'Canberra', labelX: 750, labelY: 465 },
+        { name: 'New Zealand', path: 'M855,505 L868,502 L878,515 L878,535 L868,545 L855,542 L848,528 L848,515 Z', color: '#00B894', capital: 'Wellington', labelX: 863, labelY: 523 },
+        
+        // Africa
+        { name: 'Egypt', path: 'M490,235 L510,230 L525,238 L530,255 L522,270 L505,273 L490,265 L485,250 Z', color: '#FDCB6E', capital: 'Cairo', labelX: 510, labelY: 253 },
+        { name: 'Libya', path: 'M465,245 L490,240 L508,248 L512,265 L500,278 L475,280 L460,270 L458,255 Z', color: '#DFE6E9', capital: 'Tripoli', labelX: 485, labelY: 260 },
+        { name: 'Algeria', path: 'M430,235 L465,230 L485,240 L488,260 L475,275 L450,278 L428,270 L420,252 Z', color: '#B2BEC3', capital: 'Algiers', labelX: 455, labelY: 255 },
+        { name: 'Morocco', path: 'M405,230 L428,225 L442,235 L443,250 L430,260 L412,258 L402,245 Z', color: '#74B9FF', capital: 'Rabat', labelX: 423, labelY: 243 },
+        { name: 'Nigeria', path: 'M442,295 L465,292 L482,302 L485,318 L475,330 L455,332 L440,322 L436,308 Z', color: '#00B894', capital: 'Abuja', labelX: 462, labelY: 312 },
+        { name: 'Kenya', path: 'M525,345 L542,342 L555,352 L558,368 L548,380 L532,382 L520,370 L518,355 Z', color: '#00CEC9', capital: 'Nairobi', labelX: 540, labelY: 362 },
+        { name: 'Ethiopia', path: 'M520,315 L540,312 L555,322 L558,338 L548,350 L530,352 L518,340 L515,325 Z', color: '#55EFC4', capital: 'Addis Ababa', labelX: 538, labelY: 332 },
+        { name: 'South Africa', path: 'M480,485 L510,480 L535,490 L545,510 L540,535 L520,548 L495,550 L475,540 L465,520 L468,500 Z', color: '#E84393', capital: 'Pretoria', labelX: 508, labelY: 515 },
+        { name: 'Ghana', path: 'M420,305 L435,302 L448,312 L448,325 L438,333 L423,330 L417,318 Z', color: '#FD79A8', capital: 'Accra', labelX: 433, labelY: 318 },
+        { name: 'Tanzania', path: 'M510,365 L528,362 L542,372 L545,388 L535,400 L518,402 L505,390 L503,375 Z', color: '#A29BFE', capital: 'Dodoma', labelX: 525, labelY: 382 },
+        { name: 'Congo', path: 'M470,340 L492,335 L510,345 L512,362 L500,375 L480,378 L465,368 L463,352 Z', color: '#81ECEC', capital: 'Kinshasa', labelX: 488, labelY: 357 },
+        { name: 'Madagascar', path: 'M565,405 L578,402 L588,415 L590,440 L582,458 L568,460 L558,445 L558,422 Z', color: '#FF7675', capital: 'Antananarivo', labelX: 575, labelY: 432 }
+    ];
+    
+    mapCanvas.innerHTML = `
+        <div class="map-interactive-container world-map-bg">
+            <svg class="world-map-svg" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <filter id="glow-world">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="shadow-world">
+                        <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+                    </filter>
+                    <linearGradient id="worldBorderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:0.6" />
+                        <stop offset="50%" style="stop-color:#45B7D1;stop-opacity:0.6" />
+                        <stop offset="100%" style="stop-color:#96CEB4;stop-opacity:0.6" />
+                    </linearGradient>
+                </defs>
+                
+                <!-- World Map Outline - Continents -->
+                <path d="M35,55 L210,50 L850,52 L880,90 L878,545 L850,570 L33,570 L30,65 Z" 
+                      fill="none" 
+                      stroke="url(#worldBorderGradient)" 
+                      stroke-width="3" 
+                      stroke-dasharray="10,5"
+                      opacity="0.5"/>
+                
+                ${worldCountries.map((country, idx) => `
+                    <g class="country-group" style="animation-delay: ${idx * 0.03}s">
+                        <path 
+                            class="map-region-path" 
+                            d="${country.path}"
+                            fill="${country.color}"
+                            filter="url(#shadow-world)"
+                            onmouseover="showRegionName(event, '${country.name}', '${country.capital}')"
+                            onmouseout="hideRegionName()"
+                            onclick="checkMapAnswer('${country.name}')"
+                        />
+                        <text 
+                            x="${country.labelX}" 
+                            y="${country.labelY}" 
+                            text-anchor="middle" 
+                            class="region-label"
+                            style="font-size: 12px; pointer-events: none; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.4);"
+                        >
+                            ${country.name}
+                        </text>
+                    </g>
+                `).join('')}
+            </svg>
+            <div id="regionTooltip" class="region-tooltip-new"></div>
+        </div>
+    `;
+    
+    askNewMapQuestion(worldCountries);
+}
+
+function showRegionName(event, name, capital) {
+    const tooltip = document.getElementById('regionTooltip');
+    if (tooltip) {
+        tooltip.innerHTML = `
+            <div class="tooltip-content">
+                <div class="tooltip-name">📍 ${name}</div>
+                ${capital ? `<div class="tooltip-capital">🏛️ Capital: ${capital}</div>` : ''}
+            </div>
+        `;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (event.pageX + 15) + 'px';
+        tooltip.style.top = (event.pageY - 50) + 'px';
+    }
+}
+
+function hideRegionName() {
+    const tooltip = document.getElementById('regionTooltip');
+    if (tooltip) {
+        tooltip.style.display = 'none';
+    }
+}
+
+// IndexedDB Setup for Video Storage
+const DB_NAME = 'VideoRecorderDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'recordings';
+let db = null;
+
+// Initialize IndexedDB
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => {
+            console.error('IndexedDB failed to open:', request.error);
+            reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+            db = request.result;
+            console.log('IndexedDB opened successfully');
+            resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                console.log('IndexedDB object store created');
+            }
+        };
+    });
+}
+
+// Save recording to IndexedDB
+function saveRecordingToDB(recording) {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('Database not initialized'));
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        
+        // Store the blob separately
+        const recordingData = {
+            id: recording.id,
+            timestamp: recording.timestamp,
+            blob: recording.blob,
+            duration: recording.duration,
+            durationMs: recording.durationMs,
+            size: recording.size,
+            sizeFormatted: recording.sizeFormatted,
+            name: recording.name
+        };
+        
+        const request = objectStore.put(recordingData);
+        
+        request.onsuccess = () => {
+            console.log('Recording saved to IndexedDB:', recording.id);
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('Failed to save recording to IndexedDB:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// Load all recordings from IndexedDB
+function loadRecordingsFromDB() {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('Database not initialized'));
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.getAll();
+        
+        request.onsuccess = () => {
+            const recordings = request.result.map(rec => ({
+                ...rec,
+                url: URL.createObjectURL(rec.blob)
+            }));
+            console.log('Loaded recordings from IndexedDB:', recordings.length);
+            resolve(recordings);
+        };
+        
+        request.onerror = () => {
+            console.error('Failed to load recordings from IndexedDB:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// Delete recording from IndexedDB
+function deleteRecordingFromDB(id) {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('Database not initialized'));
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.delete(id);
+        
+        request.onsuccess = () => {
+            console.log('Recording deleted from IndexedDB:', id);
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('Failed to delete recording from IndexedDB:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// Clear all recordings from IndexedDB
+function clearAllRecordingsFromDB() {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('Database not initialized'));
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.clear();
+        
+        request.onsuccess = () => {
+            console.log('All recordings cleared from IndexedDB');
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('Failed to clear recordings from IndexedDB:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// Video Recorder State
+let videoRecorderState = {
+    mediaRecorder: null,
+    recordedChunks: [],
+    stream: null,
+    recordings: [],
+    isRecording: false,
+    isPaused: false,
+    recordingStartTime: null,
+    timerInterval: null
+};
+
+function showVideoRecorder() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = `
+        <div class="video-recorder-container">
+            <div class="recorder-header">
+                <h2 class="recorder-title">🎥 Video Recorder</h2>
+                <p class="recorder-subtitle">Record, review, and save your videos</p>
+            </div>
+
+            <div class="recorder-main">
+                <div class="camera-section">
+                    <div class="camera-preview-container">
+                        <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
+                        <div id="recordingIndicator" class="recording-indicator" style="display: none;">
+                            <span class="rec-dot"></span>
+                            <span class="rec-text">REC</span>
+                            <span id="recordingTimer" class="rec-timer">00:00</span>
+                        </div>
+                        <div id="cameraPlaceholder" class="camera-placeholder">
+                            <div class="placeholder-icon">📹</div>
+                            <p>Click "Start Camera" to begin</p>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls">
+                        <button id="startCameraBtn" class="control-button primary">
+                            <span class="btn-icon">📷</span>
+                            <span class="btn-text">Start Camera</span>
+                        </button>
+                        <button id="stopCameraBtn" class="control-button secondary" style="display: none;">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">Stop Camera</span>
+                        </button>
+                        <button id="startRecordingBtn" class="control-button success" style="display: none;" disabled>
+                            <span class="btn-icon">⏺️</span>
+                            <span class="btn-text">Start Recording</span>
+                        </button>
+                        <button id="pauseRecordingBtn" class="control-button warning" style="display: none;">
+                            <span class="btn-icon">⏸️</span>
+                            <span class="btn-text">Pause</span>
+                        </button>
+                        <button id="stopRecordingBtn" class="control-button danger" style="display: none;">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">Stop Recording</span>
+                        </button>
+                    </div>
+
+                    <div class="camera-info">
+                        <div class="info-item">
+                            <span class="info-icon">ℹ️</span>
+                            <span class="info-text">Supports video and audio recording</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">💾</span>
+                            <span class="info-text">Download recordings as MP4 files</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recordings-section">
+                    <div class="recordings-header">
+                        <div class="recordings-header-top">
+                            <h3 class="recordings-title">📂 Saved Recordings</h3>
+                            <div class="recordings-header-actions">
+                                <span id="recordingsCount" class="recordings-count">0 videos</span>
+                                <button id="deleteAllBtn" class="header-action-btn danger" style="display: none;" title="Delete All">
+                                    <span>🗑️</span>
+                                    <span>Delete All</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="recordings-controls">
+                            <input type="text" id="recordingsSearch" class="recordings-search" placeholder="🔍 Search recordings...">
+                            <select id="recordingsSort" class="recordings-sort">
+                                <option value="newest">📅 Newest First</option>
+                                <option value="oldest">📅 Oldest First</option>
+                                <option value="longest">⏱️ Longest First</option>
+                                <option value="shortest">⏱️ Shortest First</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="recordingsList" class="recordings-list">
+                        <div class="empty-recordings">
+                            <div class="empty-icon">📹</div>
+                            <p>No recordings yet</p>
+                            <p class="empty-subtitle">Start recording to save your first video</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Initialize event listeners
+    document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+    document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+    document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
+    document.getElementById('pauseRecordingBtn').addEventListener('click', pauseRecording);
+    document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
+
+    // Initialize IndexedDB and load saved recordings
+    initIndexedDB()
+        .then(() => {
+            console.log('✅ IndexedDB initialized - recordings will be saved permanently');
+            loadSavedRecordings();
+        })
+        .catch(err => {
+            console.error('❌ IndexedDB initialization failed:', err);
+            showToast('⚠️ Storage unavailable - recordings will be session-only', 'warning');
+            loadSavedRecordings();
+        });
+}
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: true
+        });
+        
+        videoRecorderState.stream = stream;
+        const preview = document.getElementById('cameraPreview');
+        const placeholder = document.getElementById('cameraPlaceholder');
+        
+        preview.srcObject = stream;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        
+        // Update button visibility
+        document.getElementById('startCameraBtn').style.display = 'none';
+        document.getElementById('stopCameraBtn').style.display = 'inline-flex';
+        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
+        document.getElementById('startRecordingBtn').disabled = false;
+        
+        showToast('✅ Camera started successfully', 'success');
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        showToast('❌ Failed to access camera. Please check permissions.', 'error');
+    }
+}
+
+function stopCamera() {
+    if (videoRecorderState.stream) {
+        videoRecorderState.stream.getTracks().forEach(track => track.stop());
+        videoRecorderState.stream = null;
+        
+        const preview = document.getElementById('cameraPreview');
+        const placeholder = document.getElementById('cameraPlaceholder');
+        
+        preview.srcObject = null;
+        preview.style.display = 'none';
+        placeholder.style.display = 'flex';
+        
+        // Reset recording if active
+        if (videoRecorderState.isRecording) {
+            stopRecording();
+        }
+        
+        // Update button visibility
+        document.getElementById('startCameraBtn').style.display = 'inline-flex';
+        document.getElementById('stopCameraBtn').style.display = 'none';
+        document.getElementById('startRecordingBtn').style.display = 'none';
+        document.getElementById('pauseRecordingBtn').style.display = 'none';
+        document.getElementById('stopRecordingBtn').style.display = 'none';
+        
+        showToast('📷 Camera stopped', 'info');
+    }
+}
+
+function startRecording() {
+    if (!videoRecorderState.stream) return;
+    
+    videoRecorderState.recordedChunks = [];
+    videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, {
+        mimeType: 'video/webm;codecs=vp9'
+    });
+    
+    videoRecorderState.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            videoRecorderState.recordedChunks.push(event.data);
+        }
+    };
+    
+    videoRecorderState.mediaRecorder.onstop = () => {
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: 'video/webm' });
+        saveRecording(blob);
+    };
+    
+    videoRecorderState.mediaRecorder.start(100);
+    videoRecorderState.isRecording = true;
+    videoRecorderState.isPaused = false;
+    videoRecorderState.recordingStartTime = Date.now();
+    
+    // Show recording indicator and timer
+    document.getElementById('recordingIndicator').style.display = 'flex';
+    startRecordingTimer();
+    
+    // Update button visibility
+    document.getElementById('startRecordingBtn').style.display = 'none';
+    document.getElementById('pauseRecordingBtn').style.display = 'inline-flex';
+    document.getElementById('stopRecordingBtn').style.display = 'inline-flex';
+    
+    showToast('🔴 Recording started', 'success');
+}
+
+function pauseRecording() {
+    if (videoRecorderState.mediaRecorder && videoRecorderState.isRecording) {
+        if (videoRecorderState.isPaused) {
+            videoRecorderState.mediaRecorder.resume();
+            videoRecorderState.isPaused = false;
+            document.getElementById('pauseRecordingBtn').innerHTML = '<span class="btn-icon">⏸️</span><span class="btn-text">Pause</span>';
+            showToast('▶️ Recording resumed', 'info');
+        } else {
+            videoRecorderState.mediaRecorder.pause();
+            videoRecorderState.isPaused = true;
+            document.getElementById('pauseRecordingBtn').innerHTML = '<span class="btn-icon">▶️</span><span class="btn-text">Resume</span>';
+            showToast('⏸️ Recording paused', 'info');
+        }
+    }
+}
+
+function stopRecording() {
+    if (videoRecorderState.mediaRecorder && videoRecorderState.isRecording) {
+        videoRecorderState.mediaRecorder.stop();
+        videoRecorderState.isRecording = false;
+        videoRecorderState.isPaused = false;
+        
+        // Hide recording indicator
+        document.getElementById('recordingIndicator').style.display = 'none';
+        stopRecordingTimer();
+        
+        // Update button visibility
+        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
+        document.getElementById('pauseRecordingBtn').style.display = 'none';
+        document.getElementById('stopRecordingBtn').style.display = 'none';
+        
+        showToast('✅ Recording saved', 'success');
+    }
+}
+
+function startRecordingTimer() {
+    videoRecorderState.timerInterval = setInterval(() => {
+        const elapsed = Date.now() - videoRecorderState.recordingStartTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        const timerElement = document.getElementById('recordingTimer');
+        if (timerElement) {
+            timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+
+function stopRecordingTimer() {
+    if (videoRecorderState.timerInterval) {
+        clearInterval(videoRecorderState.timerInterval);
+        videoRecorderState.timerInterval = null;
+    }
+}
+
+function saveRecording(blob) {
+    const durationMs = Date.now() - videoRecorderState.recordingStartTime;
+    const recording = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        url: URL.createObjectURL(blob),
+        blob: blob,
+        duration: formatRecordingDuration(durationMs),
+        durationMs: durationMs,
+        size: blob.size,
+        sizeFormatted: formatFileSize(blob.size),
+        name: `Recording ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    };
+    
+    videoRecorderState.recordings.unshift(recording);
+    console.log('Recording saved:', recording);
+    console.log('Total recordings:', videoRecorderState.recordings.length);
+    
+    // Save to IndexedDB
+    saveRecordingToDB(recording)
+        .then(() => {
+            showToast('💾 Recording saved to storage!', 'success');
+            updateRecordingsList();
+        })
+        .catch(err => {
+            console.error('Failed to save to IndexedDB:', err);
+            showToast('⚠️ Recording saved (session only)', 'warning');
+            updateRecordingsList();
+        });
+}
+
+function loadSavedRecordings() {
+    // Load recordings from IndexedDB
+    loadRecordingsFromDB()
+        .then(recordings => {
+            videoRecorderState.recordings = recordings;
+            console.log('Loaded recordings from storage:', recordings.length);
+            updateRecordingsList();
+            if (recordings.length > 0) {
+                showToast(`📦 Loaded ${recordings.length} saved recording${recordings.length > 1 ? 's' : ''}`, 'info');
+            }
+        })
+        .catch(err => {
+            console.error('Failed to load recordings from IndexedDB:', err);
+            updateRecordingsList();
+        });
+}
+
+function updateRecordingsList() {
+    const list = document.getElementById('recordingsList');
+    const count = document.getElementById('recordingsCount');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const searchInput = document.getElementById('recordingsSearch');
+    const sortSelect = document.getElementById('recordingsSort');
+    
+    // Get search and sort values
+    const searchTerm = searchInput?.value.toLowerCase() || '';
+    const sortBy = sortSelect?.value || 'newest';
+    
+    // Filter recordings
+    let filtered = videoRecorderState.recordings.filter(rec => 
+        rec.name.toLowerCase().includes(searchTerm) ||
+        new Date(rec.timestamp).toLocaleString().toLowerCase().includes(searchTerm)
+    );
+    
+    // Sort recordings
+    filtered.sort((a, b) => {
+        switch(sortBy) {
+            case 'oldest': return new Date(a.timestamp) - new Date(b.timestamp);
+            case 'longest': return b.durationMs - a.durationMs;
+            case 'shortest': return a.durationMs - b.durationMs;
+            default: return new Date(b.timestamp) - new Date(a.timestamp);
+        }
+    });
+    
+    const totalSize = videoRecorderState.recordings.reduce((sum, r) => sum + r.size, 0);
+    count.textContent = `${videoRecorderState.recordings.length} video${videoRecorderState.recordings.length !== 1 ? 's' : ''} • ${formatFileSize(totalSize)}`;
+    
+    if (deleteAllBtn) {
+        deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
+    }
+    
+    if (filtered.length === 0) {
+        if (searchTerm) {
+            list.innerHTML = `
+                <div class="empty-recordings">
+                    <div class="empty-icon">🔍</div>
+                    <p>No recordings found</p>
+                    <p class="empty-subtitle">Try a different search term</p>
+                </div>
+            `;
+        } else {
+            list.innerHTML = `
+                <div class="empty-recordings">
+                    <div class="empty-icon">📹</div>
+                    <p>No recordings yet</p>
+                    <p class="empty-subtitle">Start recording to save your first video</p>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    list.innerHTML = filtered.map((recording, index) => `
+        <div class="recording-item" data-id="${recording.id}">
+            <div class="recording-preview" data-action="play">
+                <video class="recording-thumbnail" src="${recording.url}" preload="metadata"></video>
+                <div class="play-overlay">
+                    <div class="play-icon">▶️</div>
+                    <div class="play-text">Play</div>
+                </div>
+                <div class="recording-badge">#${index + 1}</div>
+            </div>
+            <div class="recording-info">
+                <div class="recording-title-row">
+                    <input type="text" class="recording-name-input" value="${recording.name}" 
+                           data-action="edit-name" />
+                    <button class="edit-name-btn" data-action="focus-name" title="Edit name">
+                        ✏️
+                    </button>
+                </div>
+                <div class="recording-meta-grid">
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">📅</span>
+                        <span class="meta-text">${new Date(recording.timestamp).toLocaleDateString('en-US', { 
+                            month: 'short', day: 'numeric', year: 'numeric' 
+                        })}</span>
+                    </div>
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">🕐</span>
+                        <span class="meta-text">${new Date(recording.timestamp).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', minute: '2-digit' 
+                        })}</span>
+                    </div>
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">⏱️</span>
+                        <span class="meta-text">${recording.duration}</span>
+                    </div>
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">💾</span>
+                        <span class="meta-text">${recording.sizeFormatted}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="recording-actions">
+                <button class="action-btn play-btn" data-action="play" title="Play Video">
+                    <span class="btn-icon">▶️</span>
+                    <span class="btn-label">Play</span>
+                </button>
+                <button class="action-btn download-btn" data-action="download" title="Download Video">
+                    <span class="btn-icon">💾</span>
+                    <span class="btn-label">Download</span>
+                </button>
+                <button class="action-btn delete-btn" data-action="delete" title="Delete Video">
+                    <span class="btn-icon">🗑️</span>
+                    <span class="btn-label">Delete</span>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    // Remove old event listeners by cloning
+    const newList = list.cloneNode(false);
+    newList.innerHTML = list.innerHTML;
+    list.parentNode.replaceChild(newList, list);
+    
+    // Add event delegation for recording actions
+    newList.addEventListener('click', (e) => {
+        console.log('Click detected:', e.target);
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+            console.log('No data-action found');
+            return;
+        }
+        
+        const recordingItem = target.closest('.recording-item');
+        if (!recordingItem) {
+            console.log('No recording-item found');
+            return;
+        }
+        
+        const recordingId = parseInt(recordingItem.dataset.id);
+        const action = target.dataset.action;
+        
+        console.log('Action:', action, 'Recording ID:', recordingId);
+        
+        switch(action) {
+            case 'play':
+                playRecording(recordingId);
+                break;
+            case 'download':
+                downloadRecording(recordingId);
+                break;
+            case 'delete':
+                deleteRecording(recordingId);
+                break;
+            case 'focus-name':
+                const input = recordingItem.querySelector('.recording-name-input');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+                break;
+        }
+    });
+    
+    // Handle name changes
+    newList.addEventListener('change', (e) => {
+        if (e.target.classList.contains('recording-name-input')) {
+            const recordingItem = e.target.closest('.recording-item');
+            if (recordingItem) {
+                const recordingId = parseInt(recordingItem.dataset.id);
+                updateRecordingName(recordingId, e.target.value);
+            }
+        }
+    });
+    
+    // Attach event listeners
+    if (searchInput) {
+        searchInput.removeEventListener('input', updateRecordingsList);
+        searchInput.addEventListener('input', updateRecordingsList);
+    }
+    if (sortSelect) {
+        sortSelect.removeEventListener('change', updateRecordingsList);
+        sortSelect.addEventListener('change', updateRecordingsList);
+    }
+    if (deleteAllBtn) {
+        deleteAllBtn.onclick = deleteAllRecordings;
+    }
+}
+
+function playRecording(id) {
+    console.log('playRecording called with id:', id);
+    console.log('Available recordings:', videoRecorderState.recordings);
+    
+    const recording = videoRecorderState.recordings.find(r => r.id === id);
+    
+    if (!recording) {
+        console.error('Recording not found:', id);
+        console.error('Available IDs:', videoRecorderState.recordings.map(r => r.id));
+        showToast('❌ Recording not found', 'error');
+        return;
+    }
+    
+    console.log('Playing recording:', recording);
+    
+    // Create modal for playback
+    const modal = document.createElement('div');
+    modal.className = 'recording-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📹 ${recording.name || 'Recording Playback'}</h3>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <video class="playback-video" src="${recording.url}" controls autoplay playsinline></video>
+            </div>
+            <div class="modal-footer">
+                <span class="modal-info">
+                    📅 ${new Date(recording.timestamp).toLocaleString()} • 
+                    ⏱️ ${recording.duration} • 
+                    💾 ${recording.sizeFormatted}
+                </span>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners
+    const overlay = modal.querySelector('.modal-overlay');
+    const closeBtn = modal.querySelector('.modal-close');
+    
+    const closeModal = () => {
+        const video = modal.querySelector('.playback-video');
+        if (video) video.pause();
+        modal.remove();
+    };
+    
+    overlay.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeModal);
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    document.body.appendChild(modal);
+    console.log('Modal added to body');
+}
+
+function downloadRecording(id) {
+    const recording = videoRecorderState.recordings.find(r => r.id === id);
+    if (!recording) return;
+    
+    const a = document.createElement('a');
+    a.href = recording.url;
+    a.download = `recording_${new Date(recording.timestamp).toISOString().replace(/[:.]/g, '-')}.webm`;
+    a.click();
+    
+    showToast('💾 Downloading recording...', 'success');
+}
+
+function deleteRecording(id) {
+    if (confirm('Are you sure you want to delete this recording?')) {
+        const index = videoRecorderState.recordings.findIndex(r => r.id === id);
+        if (index !== -1) {
+            URL.revokeObjectURL(videoRecorderState.recordings[index].url);
+            videoRecorderState.recordings.splice(index, 1);
+            
+            // Delete from IndexedDB
+            deleteRecordingFromDB(id)
+                .then(() => {
+                    showToast('🗑️ Recording deleted', 'info');
+                    updateRecordingsList();
+                })
+                .catch(err => {
+                    console.error('Failed to delete from IndexedDB:', err);
+                    showToast('🗑️ Recording deleted (session only)', 'warning');
+                    updateRecordingsList();
+                });
+        }
+    }
+}
+
+function formatRecordingDuration(ms) {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function updateRecordingName(id, newName) {
+    const recording = videoRecorderState.recordings.find(r => r.id === id);
+    if (recording && newName.trim()) {
+        recording.name = newName.trim();
+        
+        // Update in IndexedDB
+        saveRecordingToDB(recording)
+            .then(() => {
+                showToast('📝 Recording renamed', 'success');
+            })
+            .catch(err => {
+                console.error('Failed to update name in IndexedDB:', err);
+                showToast('📝 Recording renamed (session only)', 'warning');
+            });
+    }
+}
+
+function editRecordingName(id) {
+    const item = document.querySelector(`[data-id="${id}"]`);
+    const input = item?.querySelector('.recording-name-input');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+function deleteAllRecordings() {
+    if (confirm(`Are you sure you want to delete all ${videoRecorderState.recordings.length} recordings? This action cannot be undone.`)) {
+        videoRecorderState.recordings.forEach(rec => URL.revokeObjectURL(rec.url));
+        videoRecorderState.recordings = [];
+        
+        // Clear IndexedDB
+        clearAllRecordingsFromDB()
+            .then(() => {
+                showToast('🗑️ All recordings deleted', 'info');
+                updateRecordingsList();
+            })
+            .catch(err => {
+                console.error('Failed to clear IndexedDB:', err);
+                showToast('🗑️ All recordings deleted (session only)', 'warning');
+                updateRecordingsList();
+            });
+    }
+}
+
+function askNewMapQuestion(regions) {
+    const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+    mapGameState.currentTarget = randomRegion.name;
+    
+    const questionDiv = document.getElementById('mapQuestion');
+    if (questionDiv) {
+        questionDiv.innerHTML = `
+            <div class="map-question-card">
+                <div class="question-pulse"></div>
+                <div class="question-content">
+                    <span class="question-label">🎯 Find this location:</span>
+                    <span class="target-location">${randomRegion.name}</span>
+                    ${randomRegion.capital ? `<span class="target-hint">💡 Capital: ${randomRegion.capital}</span>` : ''}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function checkMapAnswer(clickedRegion) {
+    mapGameState.clicks++;
+    document.getElementById('mapClicks').textContent = mapGameState.clicks;
+    
+    const accuracy = Math.round((mapGameState.correct / mapGameState.clicks) * 100);
+    document.getElementById('mapAccuracy').textContent = accuracy + '%';
+    
+    if (clickedRegion === mapGameState.currentTarget) {
+        mapGameState.score += 10;
+        mapGameState.correct++;
+        document.getElementById('mapScore').textContent = mapGameState.score;
+        document.getElementById('mapCorrect').textContent = mapGameState.correct;
+        document.getElementById('mapAccuracy').textContent = Math.round((mapGameState.correct / mapGameState.clicks) * 100) + '%';
+        
+        showToast('🎉 Perfect! ' + clickedRegion, 'success');
+        
+        // Ask new question
+        setTimeout(() => {
+            if (mapGameState.currentMap === 'india') {
+                const indiaStates = Array.from(document.querySelectorAll('.map-region')).map(el => ({
+                    name: el.getAttribute('data-name')
+                }));
+                askNewMapQuestion(indiaStates);
+            } else {
+                const worldCountries = Array.from(document.querySelectorAll('.map-region')).map(el => ({
+                    name: el.getAttribute('data-name')
+                }));
+                askNewMapQuestion(worldCountries);
+            }
+        }, 1000);
+    } else {
+        showToast('❌ Wrong! That was ' + clickedRegion, 'error');
+    }
 }
 
 // Memory Match Game
@@ -3482,3 +4687,563 @@ window.renderTopicQuizMenu = renderTopicQuizMenu;
 window.confirmQuizExit = confirmQuizExit;
 window.renderBrainGames = renderBrainGames;
 
+// ---------------------- Video Recorder ----------------------
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStream = null;
+let recordingTimer = null;
+let recordingSeconds = 0;
+
+function renderVideoRecorder() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+    const search = document.getElementById('searchInput');
+    if (search) { search.disabled = true; search.placeholder = 'Video recorder active'; }
+
+    const recorder = document.createElement('div');
+    recorder.className = 'video-recorder-container';
+    recorder.innerHTML = `
+        <div class="recorder-header">
+            <div class="header-content">
+                <h2>🎥 Video Recorder - Self Preparation</h2>
+                <p>Practice DevOps interview questions and improve your communication skills</p>
+            </div>
+            <div class="header-stats-mini">
+                <div class="mini-stat">
+                    <span class="mini-label">Videos:</span>
+                    <span class="mini-value" id="videoCountHeader">0</span>
+                </div>
+                <div class="mini-stat">
+                    <span class="mini-label">Duration:</span>
+                    <span class="mini-value" id="recordingTimeHeader">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="recorder-layout">
+            <!-- Main Preview Section -->
+            <div class="recorder-preview-main">
+                <div class="preview-container">
+                    <video id="videoPreview" class="video-preview" autoplay muted playsinline webkit-playsinline="true" crossorigin="anonymous"></video>
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <div class="placeholder-content">
+                            <span class="placeholder-icon">📹</span>
+                            <span class="placeholder-text">Camera Feed</span>
+                            <span class="placeholder-hint">Grant camera permissions to start</span>
+                        </div>
+                    </div>
+                    <div class="recording-indicator" id="recordingIndicator" style="display:none;">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text">RECORDING</span>
+                    </div>
+                </div>
+
+                <!-- Recording Controls Overlay -->
+                <div class="controls-overlay">
+                    <div class="primary-controls">
+                        <button id="startRecordBtn" class="recorder-btn-large start-btn-large" title="Start recording">
+                            <span class="btn-icon-large">⏺️</span>
+                            <span class="btn-text">Start</span>
+                        </button>
+                        <button id="stopRecordBtn" class="recorder-btn-large stop-btn-large" disabled title="Stop recording">
+                            <span class="btn-icon-large">⏹️</span>
+                            <span class="btn-text">Stop</span>
+                        </button>
+                        <button id="pauseRecordBtn" class="recorder-btn-large pause-btn-large" disabled title="Pause recording">
+                            <span class="btn-icon-large">⏸️</span>
+                            <span class="btn-text">Pause</span>
+                        </button>
+                    </div>
+                    
+                    <div class="recording-timer">
+                        <div class="timer-display">
+                            <span class="timer-label">Time:</span>
+                            <span class="timer-value" id="recordingTime">00:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="recorder-sidebar">
+                <!-- Device Settings -->
+                <div class="settings-panel">
+                    <h4 class="panel-title">⚙️ Device Settings</h4>
+                    <div class="settings-group">
+                        <label for="videoSelect">Camera:</label>
+                        <select id="videoSelect" class="device-select">
+                            <option value="">Auto-Select</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label for="audioSelect">Microphone:</label>
+                        <select id="audioSelect" class="device-select">
+                            <option value="">Auto-Select</option>
+                        </select>
+                    </div>
+                    <div class="settings-checkbox">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="recordAudioCheckbox" checked>
+                            <span>Include Audio</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tips Panel -->
+                <div class="tips-panel">
+                    <h4 class="panel-title">💡 Recording Tips</h4>
+                    <ul class="tips-list">
+                        <li>✓ Sit in well-lit area</li>
+                        <li>✓ Look directly at camera</li>
+                        <li>✓ Speak clearly & confidently</li>
+                        <li>✓ Practice technical answers</li>
+                        <li>✓ Review your performance</li>
+                        <li>✓ Improve communication</li>
+                    </ul>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-panel">
+                    <h4 class="panel-title">📊 Statistics</h4>
+                    <div class="stat-mini">
+                        <span class="stat-mini-label">Total Videos:</span>
+                        <span class="stat-mini-value" id="videoCount">0</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="stat-mini-label">Total Duration:</span>
+                        <span class="stat-mini-value" id="totalDuration">0 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recordings List Section -->
+        <div class="recordings-section">
+            <div class="recordings-header">
+                <h3>📹 Your Recordings</h3>
+                <div class="recordings-header-actions">
+                    <span class="recordings-count" id="recordingsCount">0 videos</span>
+                    <button id="clearAllBtn" class="clear-all-btn" style="display:none;">Clear All</button>
+                </div>
+            </div>
+            <div class="recordings-list" id="recordingsList">
+                <div class="empty-recordings">
+                    <span class="empty-icon">🎬</span>
+                    <p>No recordings yet</p>
+                    <span class="empty-hint">Start recording to practice your DevOps answers!</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(recorder);
+    initVideoRecorder();
+}
+
+function initVideoRecorder() {
+    const startBtn = document.getElementById('startRecordBtn');
+    const stopBtn = document.getElementById('stopRecordBtn');
+    const pauseBtn = document.getElementById('pauseRecordBtn');
+    const videoPreview = document.getElementById('videoPreview');
+    const videoSelect = document.getElementById('videoSelect');
+    const audioSelect = document.getElementById('audioSelect');
+    const recordAudioCheckbox = document.getElementById('recordAudioCheckbox');
+    const recordingIndicator = document.getElementById('recordingIndicator');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    
+    // Validate that all elements exist
+    if (!startBtn || !stopBtn || !pauseBtn || !videoPreview || !videoSelect || !audioSelect || !recordAudioCheckbox) {
+        console.error('❌ ERROR: Some video recorder elements not found!');
+        console.error('startBtn:', startBtn, 'stopBtn:', stopBtn, 'pauseBtn:', pauseBtn);
+        console.error('videoPreview:', videoPreview, 'videoSelect:', videoSelect, 'audioSelect:', audioSelect);
+        showToast('❌ Video Recorder failed to load. Please refresh the page.', 'error');
+        return;
+    }
+    
+    let recordingTimer = null;
+    let recordingSeconds = 0;
+    let totalDurationSeconds = 0;
+
+    // Load video devices with better error handling
+    navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+            const audioDevices = devices.filter(d => d.kind === 'audioinput');
+
+            console.log('Found video devices:', videoDevices.length, 'audio devices:', audioDevices.length);
+
+            videoDevices.forEach((device, idx) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Camera ${idx + 1}`;
+                videoSelect.appendChild(option);
+            });
+
+            audioDevices.forEach((device, idx) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Microphone ${idx + 1}`;
+                audioSelect.appendChild(option);
+            });
+
+            if (videoDevices.length === 0) {
+                console.warn('No camera devices found. Permissions may not be granted.');
+                showToast('⚠️ No camera found. Check permissions.', 'warning');
+            }
+        })
+        .catch(err => {
+            console.error('Error enumerating devices:', err);
+            showToast('⚠️ Could not access camera/microphone devices', 'warning');
+        });
+
+    startBtn.addEventListener('click', async () => {
+        try {
+            console.log('Start recording button clicked');
+            console.log('Record audio checkbox:', recordAudioCheckbox.checked);
+            console.log('Video select value:', videoSelect.value);
+            console.log('Audio select value:', audioSelect.value);
+
+            const constraints = {
+                video: videoSelect.value ? { deviceId: { exact: videoSelect.value } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: recordAudioCheckbox.checked ? 
+                    (audioSelect.value ? { deviceId: { exact: audioSelect.value } } : true) : false
+            };
+
+            console.log('Requesting media with constraints:', constraints);
+            recordingStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('Got media stream:', recordingStream);
+            
+            videoPreview.srcObject = recordingStream;
+            document.getElementById('previewPlaceholder').style.display = 'none';
+            recordingIndicator.style.display = 'flex';
+
+            // Setup MediaRecorder with fallback for unsupported codec
+            let mimeType = 'video/webm;codecs=vp9,opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.warn('VP9 codec not supported, trying VP8');
+                mimeType = 'video/webm;codecs=vp8,opus';
+            }
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.warn('VP8 codec not supported, using default');
+                mimeType = 'video/webm';
+            }
+            
+            console.log('Using MIME type:', mimeType);
+            const options = { mimeType };
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(recordingStream, options);
+
+            mediaRecorder.ondataavailable = (e) => {
+                console.log('Data available:', e.data.size);
+                recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                console.log('Recording stopped, chunks:', recordedChunks.length);
+                const blob = new Blob(recordedChunks, { type: mimeType });
+                console.log('Blob created, size:', blob.size);
+                saveRecording(blob, recordingSeconds);
+                recordingStream.getTracks().forEach(t => t.stop());
+                videoPreview.srcObject = null;
+                document.getElementById('previewPlaceholder').style.display = 'flex';
+                recordingIndicator.style.display = 'none';
+                totalDurationSeconds += recordingSeconds;
+                updateTotalDuration();
+            };
+
+            mediaRecorder.onerror = (err) => {
+                console.error('MediaRecorder error:', err);
+                showToast('❌ Recording error: ' + err.error, 'error');
+            };
+
+            mediaRecorder.start();
+            console.log('MediaRecorder started');
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            pauseBtn.disabled = false;
+            videoSelect.disabled = true;
+            audioSelect.disabled = true;
+
+            // Start timer
+            recordingSeconds = 0;
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                const mins = Math.floor(recordingSeconds / 60);
+                const secs = recordingSeconds % 60;
+                const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                document.getElementById('recordingTime').textContent = timeStr;
+                document.getElementById('recordingTimeHeader').textContent = timeStr;
+            }, 1000);
+
+            showToast('🎥 Recording started', 'success');
+        } catch (err) {
+            console.error('Error accessing media:', err);
+            let errorMsg = '❌ Recording failed: ';
+            if (err.name === 'NotAllowedError') {
+                errorMsg += 'Camera/Microphone access denied. Grant permissions in browser settings.';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                errorMsg += 'No camera or microphone found.';
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                errorMsg += 'Camera/Microphone is already in use by another application.';
+            } else {
+                errorMsg += err.message || err.name;
+            }
+            showToast(errorMsg, 'error');
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            pauseBtn.disabled = true;
+            videoSelect.disabled = false;
+            audioSelect.disabled = false;
+            clearInterval(recordingTimer);
+            document.getElementById('recordingTime').textContent = '00:00';
+            showToast('💾 Recording saved', 'success');
+        }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+        if (mediaRecorder) {
+            if (mediaRecorder.state === 'recording') {
+                mediaRecorder.pause();
+                pauseBtn.innerHTML = '<span class="btn-icon-large">▶️</span><span class="btn-text">Resume</span>';
+                showToast('⏸️ Recording paused', 'info');
+            } else if (mediaRecorder.state === 'paused') {
+                mediaRecorder.resume();
+                pauseBtn.innerHTML = '<span class="btn-icon-large">⏸️</span><span class="btn-text">Pause</span>';
+                showToast('▶️ Recording resumed', 'info');
+            }
+        }
+    });
+
+    clearAllBtn.addEventListener('click', () => {
+        if (confirm('Delete all recordings? This cannot be undone.')) {
+            const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+            recordings.forEach(r => localStorage.removeItem(`videoBlob_${r.id}`));
+            localStorage.setItem('videoRecordings', '[]');
+            totalDurationSeconds = 0;
+            document.getElementById('videoCount').textContent = '0';
+            updateTotalDuration();
+            updateRecordingsList();
+            showToast('🗑️ All recordings deleted', 'info');
+        }
+    });
+
+    loadRecordings();
+}
+
+function saveRecording(blob, duration) {
+    const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+    const recording = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        duration: formatDuration(duration),
+        durationSeconds: duration,
+        size: (blob.size / 1024 / 1024).toFixed(2), // MB
+        blob: blob
+    };
+
+    // Store blob as base64 (for demo - in production use IndexedDB or backend)
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        recording.data = e.target.result;
+        recordings.push(recording);
+        localStorage.setItem('videoRecordings', JSON.stringify(recordings.map(r => ({
+            id: r.id,
+            timestamp: r.timestamp,
+            duration: r.duration,
+            durationSeconds: r.durationSeconds,
+            size: r.size
+        }))));
+        localStorage.setItem(`videoBlob_${recording.id}`, recording.data);
+        
+        document.getElementById('videoCount').textContent = recordings.length;
+        document.getElementById('videoCountHeader').textContent = recordings.length;
+        if (recordings.length > 0) {
+            document.getElementById('clearAllBtn').style.display = 'inline-block';
+        }
+        updateRecordingsList();
+        showToast('✅ Video saved to local storage', 'success');
+    };
+    reader.readAsDataURL(blob);
+}
+
+function updateTotalDuration() {
+    const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+    const totalSeconds = recordings.reduce((sum, r) => sum + (r.durationSeconds || 0), 0);
+    document.getElementById('totalDuration').textContent = formatDuration(totalSeconds);
+}
+
+function formatDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return `${mins}m ${secs}s`;
+}
+
+function updateRecordingsList() {
+    const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+    const list = document.getElementById('recordingsList');
+    document.getElementById('recordingsCount').textContent = `${recordings.length} video${recordings.length !== 1 ? 's' : ''}`;
+
+    if (recordings.length === 0) {
+        list.innerHTML = `
+            <div class="empty-recordings">
+                <span class="empty-icon">🎬</span>
+                <p>No recordings yet</p>
+                <span class="empty-hint">Start recording to practice your DevOps answers!</span>
+            </div>
+        `;
+        document.getElementById('clearAllBtn').style.display = 'none';
+        return;
+    }
+
+    list.innerHTML = recordings.reverse().map((recording, idx) => `
+        <div class="recording-item" data-id="${recording.id}">
+            <div class="recording-index">#${recordings.length - idx}</div>
+            <div class="recording-details">
+                <div class="recording-title">Recording #${recording.id}</div>
+                <div class="recording-meta">
+                    <span class="meta-item">
+                        <span class="meta-icon">📅</span>
+                        <span class="meta-text">${recording.timestamp}</span>
+                    </span>
+                    <span class="meta-item">
+                        <span class="meta-icon">⏱️</span>
+                        <span class="meta-text">${recording.duration}</span>
+                    </span>
+                    <span class="meta-item">
+                        <span class="meta-icon">💾</span>
+                        <span class="meta-text">${recording.size}MB</span>
+                    </span>
+                </div>
+            </div>
+            <div class="recording-actions">
+                <button class="action-btn play-btn" onclick="playRecording(${recording.id})" title="Play recording">
+                    <span>▶️</span>
+                    <span>Play</span>
+                </button>
+                <button class="action-btn download-btn" onclick="downloadRecording(${recording.id})" title="Download recording">
+                    <span>⬇️</span>
+                    <span>Download</span>
+                </button>
+                <button class="action-btn delete-btn" onclick="deleteRecording(${recording.id})" title="Delete recording">
+                    <span>🗑️</span>
+                    <span>Delete</span>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function playRecording(id) {
+    const blobData = localStorage.getItem(`videoBlob_${id}`);
+    if (!blobData) {
+        showToast('Recording data not found ❌', 'error');
+        return;
+    }
+
+    const blob = dataURLtoBlob(blobData);
+    const videoUrl = URL.createObjectURL(blob);
+    
+    // Create modal to play video
+    const modal = document.createElement('div');
+    modal.className = 'video-modal';
+    modal.innerHTML = `
+        <div class="video-modal-content">
+            <button class="video-modal-close" onclick="this.closest('.video-modal').remove()">✕</button>
+            <video controls style="width: 100%; max-height: 80vh;">
+                <source src="${videoUrl}" type="video/webm">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    `;
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    document.body.appendChild(modal);
+}
+
+function downloadRecording(id) {
+    const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+    const recording = recordings.find(r => r.id === id);
+    const blobData = localStorage.getItem(`videoBlob_${id}`);
+
+    if (!blobData) {
+        showToast('Recording data not found ❌', 'error');
+        return;
+    }
+
+    const blob = dataURLtoBlob(blobData);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `video-recording-${recording.timestamp.replace(/[\/:\\s]/g, '_')}.webm`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('Download started 📥', 'success');
+}
+
+function deleteRecording(id) {
+    if (confirm('Are you sure you want to delete this recording? This cannot be undone.')) {
+        const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+        const filtered = recordings.filter(r => r.id !== id);
+        localStorage.setItem('videoRecordings', JSON.stringify(filtered));
+        localStorage.removeItem(`videoBlob_${id}`);
+        document.getElementById('videoCount').textContent = filtered.length;
+        updateRecordingsList();
+        showToast('Recording deleted 🗑️', 'info');
+    }
+}
+
+function loadRecordings() {
+    const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
+    document.getElementById('videoCount').textContent = recordings.length;
+    document.getElementById('videoCountHeader').textContent = recordings.length;
+    if (recordings.length > 0) {
+        document.getElementById('clearAllBtn').style.display = 'inline-block';
+    }
+    updateTotalDuration();
+    updateRecordingsList();
+}
+
+function dataURLtoBlob(dataURL) {
+    const arr = dataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+// Expose functions to global scope for debugging and inline handlers
+window.playRecording = playRecording;
+window.downloadRecording = downloadRecording;
+window.deleteRecording = deleteRecording;
+window.updateRecordingName = updateRecordingName;
+window.editRecordingName = editRecordingName;
+window.deleteAllRecordings = deleteAllRecordings;
+
+// Debug helper function
+window.debugRecorder = function() {
+    console.log('=== Video Recorder Debug Info ===');
+    console.log('Total recordings:', videoRecorderState.recordings.length);
+    console.log('Recordings:', videoRecorderState.recordings);
+    console.log('Is recording:', videoRecorderState.isRecording);
+    console.log('Stream active:', !!videoRecorderState.stream);
+    
+    if (videoRecorderState.recordings.length > 0) {
+        console.log('Testing playback of first recording...');
+        playRecording(videoRecorderState.recordings[0].id);
+    } else {
+        console.log('No recordings available to test');
+    }
+    console.log('================================');
+};
