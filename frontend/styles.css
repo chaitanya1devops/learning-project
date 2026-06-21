@@ -946,6 +946,7 @@ mark {
 .question { font-size:1rem; font-weight:600; }
 .answer { font-size:.8rem; }
 
+
 /* ==================== TOPIC QUIZ SYSTEM STYLES ==================== */
 
 /* Quiz Menu Enhancements */
@@ -5360,3 +5361,231 @@ mark {
     padding: 1rem;
   }
 }
+
+/* Video recorder UI refresh: keep active recorder aligned with app theme tokens */
+.video-recorder-container {
+  width: 100%;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.video-recorder-container .recorder-header {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.03));
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.video-recorder-container .recorder-title {
+  font-size: clamp(1.9rem, 4vw, 2.75rem);
+  line-height: 1.1;
+}
+
+.video-recorder-container .recorder-subtitle,
+.video-recorder-container .info-item,
+.video-recorder-container .empty-recordings,
+.video-recorder-container .modal-info {
+  color: var(--text-dim);
+}
+
+.video-recorder-container .recorder-main {
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.8fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+.video-recorder-container .camera-section,
+.video-recorder-container .recordings-section {
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  box-shadow: var(--shadow-sm);
+}
+
+.video-recorder-container .camera-preview-container {
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), var(--shadow-sm);
+}
+
+.recordings-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.recordings-header-top,
+.recordings-header-actions,
+.recordings-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recordings-header-top {
+  justify-content: space-between;
+}
+
+.recordings-controls {
+  flex-wrap: wrap;
+}
+
+.recordings-search,
+.recordings-sort,
+.recording-name-input {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+}
+
+.recordings-search,
+.recordings-sort {
+  min-height: 42px;
+  padding: 0.65rem 0.8rem;
+}
+
+.recordings-search {
+  flex: 1 1 220px;
+}
+
+.recordings-sort {
+  flex: 0 1 190px;
+}
+
+.recording-item {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: center;
+}
+
+.recording-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.recording-name-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  font-weight: 700;
+}
+
+.edit-name-btn {
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0.5rem 0.65rem;
+}
+
+.recording-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.meta-item-detailed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.recording-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.action-btn {
+  width: 100%;
+  min-height: 40px;
+  height: auto;
+  gap: 0.4rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.btn-label {
+  font-size: 0.82rem;
+}
+
+.header-action-btn.danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 94, 108, 0.35);
+  background: rgba(255, 94, 108, 0.12);
+  color: var(--danger);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.45rem 0.75rem;
+}
+
+.recording-modal .modal-content {
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+}
+
+@media (max-width: 1024px) {
+  .video-recorder-container .recorder-main {
+    grid-template-columns: 1fr;
+  }
+
+  .video-recorder-container .recordings-section {
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .recordings-header-top,
+  .recordings-header-actions,
+  .recordings-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recordings-search,
+  .recordings-sort {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .recording-item {
+    grid-template-columns: 1fr;
+  }
+
+  .recording-preview {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  .recording-meta-grid,
+  .recording-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .header { padding:.7rem .9rem; }
+  .header-inner { gap:.8rem; }
+  .header-left { min-width:140px; }
+  .title { font-size:.95rem; }
+  .subtitle { font-size:.7rem; }
+  .progress-btn { padding:.3rem .5rem; font-size:.65rem; }
+  .control-btn { padding:.25rem .45rem; font-size:.7rem; }
+  .accent-btn { width:20px; height:20px; }
+}
+
+/* Typography refinements */
+.question { font-size:1rem; font-weight:600; }
+.answer { font-size:.8rem; }
