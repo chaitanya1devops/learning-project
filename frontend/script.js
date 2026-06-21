@@ -3433,7 +3433,7 @@ function showVideoRecorder() {
                         </div>
                         <div class="info-item">
                             <span class="info-icon">💾</span>
-                            <span class="info-text">Download recordings as MP4 files</span>
+                            <span class="info-text">Download recordings as WebM files</span>
                         </div>
                     </div>
                 </div>
@@ -3548,13 +3548,40 @@ function stopCamera() {
     }
 }
 
+function getBestRecordingMimeType() {
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+        return '';
+    }
+
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
 function startRecording() {
     if (!videoRecorderState.stream) return;
-    
+
+    if (!window.MediaRecorder) {
+        showToast('❌ MediaRecorder is not supported in this browser.', 'error');
+        return;
+    }
+
     videoRecorderState.recordedChunks = [];
-    videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, {
-        mimeType: 'video/webm;codecs=vp9'
-    });
+    const mimeType = getBestRecordingMimeType();
+    const recorderOptions = mimeType ? { mimeType } : undefined;
+
+    try {
+        videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, recorderOptions);
+    } catch (error) {
+        console.error('Failed to create MediaRecorder:', error);
+        showToast('❌ Could not start recorder with this camera/audio configuration.', 'error');
+        return;
+    }
     
     videoRecorderState.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -3563,7 +3590,7 @@ function startRecording() {
     };
     
     videoRecorderState.mediaRecorder.onstop = () => {
-        const blob = new Blob(videoRecorderState.recordedChunks, { type: 'video/webm' });
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: mimeType || 'video/webm' });
         saveRecording(blob);
     };
     
@@ -4837,10 +4864,10 @@ function renderVideoRecorder() {
     `;
 
     container.appendChild(recorder);
-    initVideoRecorder();
+    initLegacyVideoRecorder();
 }
 
-function initVideoRecorder() {
+function initLegacyVideoRecorder() {
     const startBtn = document.getElementById('startRecordBtn');
     const stopBtn = document.getElementById('stopRecordBtn');
     const pauseBtn = document.getElementById('pauseRecordBtn');
@@ -4942,7 +4969,7 @@ function initVideoRecorder() {
                 console.log('Recording stopped, chunks:', recordedChunks.length);
                 const blob = new Blob(recordedChunks, { type: mimeType });
                 console.log('Blob created, size:', blob.size);
-                saveRecording(blob, recordingSeconds);
+                saveLegacyRecording(blob, recordingSeconds);
                 recordingStream.getTracks().forEach(t => t.stop());
                 videoPreview.srcObject = null;
                 document.getElementById('previewPlaceholder').style.display = 'flex';
@@ -5028,7 +5055,7 @@ function initVideoRecorder() {
             totalDurationSeconds = 0;
             document.getElementById('videoCount').textContent = '0';
             updateTotalDuration();
-            updateRecordingsList();
+            updateLegacyRecordingsList();
             showToast('🗑️ All recordings deleted', 'info');
         }
     });
@@ -5036,7 +5063,7 @@ function initVideoRecorder() {
     loadRecordings();
 }
 
-function saveRecording(blob, duration) {
+function saveLegacyRecording(blob, duration) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = {
         id: Date.now(),
@@ -5066,7 +5093,7 @@ function saveRecording(blob, duration) {
         if (recordings.length > 0) {
             document.getElementById('clearAllBtn').style.display = 'inline-block';
         }
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('✅ Video saved to local storage', 'success');
     };
     reader.readAsDataURL(blob);
@@ -5085,7 +5112,7 @@ function formatDuration(seconds) {
     return `${mins}m ${secs}s`;
 }
 
-function updateRecordingsList() {
+function updateLegacyRecordingsList() {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const list = document.getElementById('recordingsList');
     document.getElementById('recordingsCount').textContent = `${recordings.length} video${recordings.length !== 1 ? 's' : ''}`;
@@ -5123,15 +5150,15 @@ function updateRecordingsList() {
                 </div>
             </div>
             <div class="recording-actions">
-                <button class="action-btn play-btn" onclick="playRecording(${recording.id})" title="Play recording">
+                <button class="action-btn play-btn" onclick="playLegacyRecording(${recording.id})" title="Play recording">
                     <span>▶️</span>
                     <span>Play</span>
                 </button>
-                <button class="action-btn download-btn" onclick="downloadRecording(${recording.id})" title="Download recording">
+                <button class="action-btn download-btn" onclick="downloadLegacyRecording(${recording.id})" title="Download recording">
                     <span>⬇️</span>
                     <span>Download</span>
                 </button>
-                <button class="action-btn delete-btn" onclick="deleteRecording(${recording.id})" title="Delete recording">
+                <button class="action-btn delete-btn" onclick="deleteLegacyRecording(${recording.id})" title="Delete recording">
                     <span>🗑️</span>
                     <span>Delete</span>
                 </button>
@@ -5140,7 +5167,7 @@ function updateRecordingsList() {
     `).join('');
 }
 
-function playRecording(id) {
+function playLegacyRecording(id) {
     const blobData = localStorage.getItem(`videoBlob_${id}`);
     if (!blobData) {
         showToast('Recording data not found ❌', 'error');
@@ -5168,7 +5195,7 @@ function playRecording(id) {
     document.body.appendChild(modal);
 }
 
-function downloadRecording(id) {
+function downloadLegacyRecording(id) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = recordings.find(r => r.id === id);
     const blobData = localStorage.getItem(`videoBlob_${id}`);
@@ -5188,14 +5215,14 @@ function downloadRecording(id) {
     showToast('Download started 📥', 'success');
 }
 
-function deleteRecording(id) {
+function deleteLegacyRecording(id) {
     if (confirm('Are you sure you want to delete this recording? This cannot be undone.')) {
         const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
         const filtered = recordings.filter(r => r.id !== id);
         localStorage.setItem('videoRecordings', JSON.stringify(filtered));
         localStorage.removeItem(`videoBlob_${id}`);
         document.getElementById('videoCount').textContent = filtered.length;
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('Recording deleted 🗑️', 'info');
     }
 }
@@ -5208,7 +5235,7 @@ function loadRecordings() {
         document.getElementById('clearAllBtn').style.display = 'inline-block';
     }
     updateTotalDuration();
-    updateRecordingsList();
+    updateLegacyRecordingsList();
 }
 
 function dataURLtoBlob(dataURL) {
@@ -5227,6 +5254,9 @@ function dataURLtoBlob(dataURL) {
 window.playRecording = playRecording;
 window.downloadRecording = downloadRecording;
 window.deleteRecording = deleteRecording;
+window.playLegacyRecording = playLegacyRecording;
+window.downloadLegacyRecording = downloadLegacyRecording;
+window.deleteLegacyRecording = deleteLegacyRecording;
 window.updateRecordingName = updateRecordingName;
 window.editRecordingName = editRecordingName;
 window.deleteAllRecordings = deleteAllRecordings;
