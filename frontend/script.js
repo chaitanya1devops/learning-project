@@ -1323,6 +1323,264 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressUI();
 });
 
+
+// ---------------------- DevOps Cloud Interview Guide ----------------------
+// Source: https://github.com/iam-veeramalla/devops-cloud-interview-guide
+// Keep this as a manifest of upstream markdown Q&A notes. The viewer fetches
+// the raw markdown on demand so the app can show the complete upstream answers
+// without bloating the initial static bundle.
+const DEVOPS_CLOUD_GUIDE_REPO = 'https://github.com/iam-veeramalla/devops-cloud-interview-guide';
+const DEVOPS_CLOUD_GUIDE_RAW_BASE = 'https://raw.githubusercontent.com/iam-veeramalla/devops-cloud-interview-guide/main/';
+const devOpsCloudGuideFiles = [
+    '02-git/01-git-fork-vs-git clone.md',
+    '02-git/02-fork-instead-of-clone.md',
+    '02-git/03-git-fork-in-action.md',
+    '02-git/04-git-fetch-vs-git-pull.md',
+    '02-git/05-git-fetch-vs-pull-demo.md',
+    '02-git/06-git-fetch-vs-pull-most-used-command.md',
+    '02-git/07-git-merge-vs-rebase.md',
+    '02-git/08-git-merge-vs-rebase-practical.md',
+    '02-git/09-git-merge-vs-rebase-short-explanation.md',
+    '02-git/10-git-branching-strategy.md',
+    '02-git/11-explain-3-challenges-with-git.md',
+    '02-git/12-git-recent-challenege.md',
+    '02-git/13-git-merge-conflicts.md',
+    '02-git/14-git-strategies-ours-and-theirs.md',
+    '02-git/15-git-tags.md',
+    '02-git/16-git-combine-multiple-commits.md',
+    '02-git/17-most-used-git-commands.md',
+    '02-git/18-gitignore.md',
+    '02-git/19-dot-git-folder.md',
+    '02-git/20-restore-dot-git.md',
+    '02-git/21-remove-secrets-from-git.md',
+    '03-linux/01-most-used-linux-commands.md',
+    '03-linux/02-restore-lost-pem-file.md',
+    '03-linux/03-var-folderi-is-full.md',
+    '03-linux/04-server-slow-high-cpu-usage.md',
+    '03-linux/05-app-returns-connection-refused.md',
+    '03-linux/06-ssh-stopped-working.md',
+    '03-linux/07-list-log-files-older-than-7-days.md',
+    '03-linux/08-remove-log-files-older-than-30-days.md',
+    '03-linux/09-cronjob-log-rotation-automation.md',
+    '03-linux/10-create-users-from-csv.md',
+    '03-linux/11-service-health-monitor.md',
+    '03-linux/12-delete-files-larger-than-100mb.md',
+    '03-linux/13-users-loggedin-today.md',
+    '03-linux/14-website-doesnot-load.md',
+    '03-linux/15-remove-first-and-last-lines-from-a-file.md',
+    '04-networking/01-explain-dns.md',
+    '04-networking/02-explain-osi-model-with-example.md',
+    '04-networking/03-forward-vs-reverse-proxy.md',
+    '04-networking/04-slowness-in-app.md',
+    '04-networking/05-curl-works-with-ip-not-domain.md',
+    '04-networking/06-502-bad-gateway.md',
+    '04-networking/07-localhost-vs-127.md',
+    '04-networking/08-public-vs-private-subnet.md',
+    '04-networking/09-change-private-subnet-to-public.md',
+    '05-cicd/01-jenkins-shared-libraries.md',
+    '05-cicd/02-popular-maven-builds-targets.md',
+    '05-cicd/03-artifactory.md',
+    '05-cicd/04-configure-jfrog-in-maven.md',
+    '05-cicd/05-build-fails-in-ci-but-not-local.md',
+    '05-cicd/06-ci-passed-but-app-broken-in-prod.md',
+    '05-cicd/07-ci-slows-down.md',
+    '05-cicd/08-ci-does-not-trigger-on-feature-branch.md',
+    '05-cicd/09-ci-cannot-download-dependencies.md',
+    '05-cicd/10-python-build-fails.md',
+    '05-cicd/11-python-build-process.md',
+    '05-cicd/12-static-code-analysis-advantages.md',
+    '05-cicd/13-static-code-analysis-slows-down.md',
+    '05-cicd/14-argocd-app-out-of-sync.md',
+    '05-cicd/15-jenkins-send-notification-on-build-failure.md',
+    '06-terraform/01-for_each-vs-for.md',
+    '06-terraform/02-terraform-modules.md',
+    '07-docker/01-docker-container-exits-immediately.md',
+    '07-docker/02-docker-expose.md',
+    '07-docker/03-container-not-accessible-localhost.md',
+    '07-docker/04-data-lost-on-restart.md',
+    '07-docker/05-code-changes-not-reflected-new-image.md',
+    '07-docker/06-app-crashed-permission-denied.md',
+    '07-docker/07-host-ranout-of-disk-space.md',
+    '07-docker/08-debug-live-container.md',
+    '07-docker/09-container-registry.md',
+    '07-docker/10-cmd-vs-entrypoint.md',
+    '07-docker/11-docker-commands.md',
+    '07-docker/12-forcefully-remove-a-container.md',
+    '08-kubernetes/01-cluster-architecture.md',
+    '08-kubernetes/02-components-interaction.md',
+    '08-kubernetes/03-kubernetes-services.md',
+    '08-kubernetes/04-pod-ip-communication.md',
+    '08-kubernetes/05-types-of-services.md',
+    '08-kubernetes/06-labels-selectors.md',
+    '08-kubernetes/07-nodeport-vs-lb.md',
+    '08-kubernetes/08-service-relates-to-kubeproxy.md',
+    '08-kubernetes/09-disadvantages-of-lb-service-type.md',
+    '08-kubernetes/10-headless-service.md',
+    '08-kubernetes/11-pod-access-service-in-diff-namespace.md',
+    '08-kubernetes/12-network-policies.md',
+    '08-kubernetes/13-deployment-strategy.md',
+    '08-kubernetes/14-rollback-strategy.md',
+    '08-kubernetes/15-avoid-rollbacks.md',
+    '08-kubernetes/16-all-deployment-strategies.md',
+    '08-kubernetes/17-core-dns.md',
+    '08-kubernetes/18-taints-tolerations.md',
+    '08-kubernetes/19-crashloopbackoff.md',
+    '08-kubernetes/20-liveness-vs-readiness.md',
+    '08-kubernetes/21-lb-vs-ingress.md',
+    '08-kubernetes/22-clusterip-works-ingress-fails.md',
+    '08-kubernetes/23-ingress-controller-vs-ingress.md',
+    '08-kubernetes/24-custom-ingress-controller.md',
+    '08-kubernetes/25-one-replica-not-working.md',
+    '08-kubernetes/26-configmap-changes-not-reflected.md',
+    '08-kubernetes/27-node-affinity.md',
+    '08-kubernetes/28-node-affinity-vs-node-label.md',
+    '08-kubernetes/29-container-runtime.md',
+    '09-observability/README.md',
+    '10-aws/README.md',
+    '11-azure/README.md',
+    '12-python/01-common-packages-used.md',
+    '12-python/02-day-to-day-python-task.md',
+    '12-python/03-find-and-print-404-logs.md',
+    '13-project-related/README.md'
+];
+
+function getDevOpsCloudGuideRawUrl(path) {
+    return DEVOPS_CLOUD_GUIDE_RAW_BASE + path.split('/').map(encodeURIComponent).join('/');
+}
+
+function getDevOpsCloudGuideTopic(path) {
+    return path.split('/')[0].replace(/^\d+-/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function getDevOpsCloudGuideFallbackQuestion(path) {
+    return path.split('/').pop().replace(/\.md$/i, '').replace(/^\d+-/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function parseDevOpsCloudGuideMarkdown(markdown, path) {
+    const normalized = markdown.replace(/\r\n/g, '\n').trim();
+    const questionMatch = normalized.match(/^#\s*Question\s*([\s\S]*?)(?=\n#{2,3}\s|$)/i)
+        || normalized.match(/^#\s+(.+?)(?=\n|$)/i);
+    const answerMatch = normalized.match(/##\s*✅?\s*Answer\s*([\s\S]*)/i);
+    const question = (questionMatch?.[1] || questionMatch?.[0] || getDevOpsCloudGuideFallbackQuestion(path))
+        .replace(/^#\s*Question\s*/i, '')
+        .replace(/^#\s*/i, '')
+        .trim();
+    const answer = (answerMatch?.[1] || normalized.replace(questionMatch?.[0] || '', '').trim() || 'Upstream notes for this topic are still being updated.')
+        .replace(/^[-\s]*/, '')
+        .trim();
+
+    return {
+        q: question || getDevOpsCloudGuideFallbackQuestion(path),
+        a: answer,
+        topic: getDevOpsCloudGuideTopic(path),
+        path,
+        sourceUrl: `${DEVOPS_CLOUD_GUIDE_REPO}/blob/main/${path.split('/').map(encodeURIComponent).join('/')}`
+    };
+}
+
+async function loadDevOpsCloudGuideItems() {
+    if (window.devOpsCloudGuideCache) return window.devOpsCloudGuideCache;
+
+    const responses = await Promise.allSettled(devOpsCloudGuideFiles.map(async (path) => {
+        const response = await fetch(getDevOpsCloudGuideRawUrl(path));
+        if (!response.ok) throw new Error(`${response.status} ${path}`);
+        return parseDevOpsCloudGuideMarkdown(await response.text(), path);
+    }));
+
+    const items = responses
+        .filter(result => result.status === 'fulfilled')
+        .map(result => result.value);
+    const failures = responses
+        .filter(result => result.status === 'rejected')
+        .map(result => result.reason?.message || String(result.reason));
+
+    window.devOpsCloudGuideCache = { items, failures };
+    return window.devOpsCloudGuideCache;
+}
+
+function renderDevOpsCloudGuideItems(items, failures = []) {
+    const container = document.getElementById('questionsContainer');
+    const searchTerm = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
+    const filtered = items.filter(item => {
+        if (!searchTerm) return true;
+        return [item.q, item.a, item.topic, item.path].some(value => String(value).toLowerCase().includes(searchTerm));
+    });
+
+    const grouped = filtered.reduce((acc, item) => {
+        if (!acc[item.topic]) acc[item.topic] = [];
+        acc[item.topic].push(item);
+        return acc;
+    }, {});
+
+    container.innerHTML = `
+        <section class="external-guide-header">
+            <h2>☁️ devops-cloud-interview-guide</h2>
+            <p>Loaded ${items.length} upstream Q&A notes from <a href="${DEVOPS_CLOUD_GUIDE_REPO}" target="_blank" rel="noopener noreferrer">iam-veeramalla/devops-cloud-interview-guide</a>.</p>
+            ${failures.length ? `<p class="empty-msg">${failures.length} notes could not be loaded. Check network access to raw.githubusercontent.com.</p>` : ''}
+        </section>
+    `;
+
+    if (filtered.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-msg';
+        empty.textContent = `No guide matches for "${searchTerm}".`;
+        container.appendChild(empty);
+        return;
+    }
+
+    Object.entries(grouped).forEach(([topic, topicItems]) => {
+        const heading = document.createElement('h2');
+        heading.className = 'section-heading';
+        heading.textContent = `${topic} (${topicItems.length})`;
+        container.appendChild(heading);
+
+        topicItems.forEach((item, idx) => {
+            const card = document.createElement('article');
+            card.className = 'flip-card';
+            card.tabIndex = 0;
+            card.innerHTML = `
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <div class="q-number">${escapeHtml(item.topic)} • #${idx + 1}</div>
+                        <div class="question-text">${highlight(escapeHtml(item.q), searchTerm)}</div>
+                        <div class="click-hint">👆 Click to reveal answer</div>
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="a-number">Answer</div>
+                        <div class="answer-text">${highlight(formatMultiline(item.a), searchTerm)}</div>
+                        <p class="source-link"><a href="${escapeAttr(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">View upstream note</a></p>
+                        <div class="click-hint">👆 Click to show question</div>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => card.classList.toggle('flipped'));
+            container.appendChild(card);
+        });
+    });
+}
+
+async function renderDevOpsCloudGuide() {
+    const container = document.getElementById('questionsContainer');
+    const search = document.getElementById('searchInput');
+    if (search) {
+        search.disabled = false;
+        search.placeholder = 'Search devops-cloud-interview-guide...';
+        search.oninput = async () => {
+            const { items, failures } = await loadDevOpsCloudGuideItems();
+            renderDevOpsCloudGuideItems(items, failures);
+        };
+    }
+
+    container.innerHTML = '<p class="empty-msg">Loading devops-cloud-interview-guide questions and answers…</p>';
+    try {
+        const { items, failures } = await loadDevOpsCloudGuideItems();
+        renderDevOpsCloudGuideItems(items, failures);
+    } catch (error) {
+        console.error('Failed to load devops-cloud-interview-guide:', error);
+        container.innerHTML = `<p class="empty-msg">Could not load devops-cloud-interview-guide. Please check network access to raw.githubusercontent.com.</p>`;
+    }
+}
+
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
     const container = document.getElementById('questionsContainer');
@@ -1634,6 +1892,7 @@ function renderTopic(topic) {
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
     if (topic === 'Video Recorder') { showVideoRecorder(); return; }
+    if (topic === 'DevOps Cloud Interview Guide') { currentTopic = topic; localStorage.setItem('currentTopic', topic); renderDevOpsCloudGuide(); return; }
     if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
@@ -3433,7 +3692,7 @@ function showVideoRecorder() {
                         </div>
                         <div class="info-item">
                             <span class="info-icon">💾</span>
-                            <span class="info-text">Download recordings as MP4 files</span>
+                            <span class="info-text">Download recordings as WebM files</span>
                         </div>
                     </div>
                 </div>
@@ -3548,13 +3807,40 @@ function stopCamera() {
     }
 }
 
+function getBestRecordingMimeType() {
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+        return '';
+    }
+
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
 function startRecording() {
     if (!videoRecorderState.stream) return;
-    
+
+    if (!window.MediaRecorder) {
+        showToast('❌ MediaRecorder is not supported in this browser.', 'error');
+        return;
+    }
+
     videoRecorderState.recordedChunks = [];
-    videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, {
-        mimeType: 'video/webm;codecs=vp9'
-    });
+    const mimeType = getBestRecordingMimeType();
+    const recorderOptions = mimeType ? { mimeType } : undefined;
+
+    try {
+        videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, recorderOptions);
+    } catch (error) {
+        console.error('Failed to create MediaRecorder:', error);
+        showToast('❌ Could not start recorder with this camera/audio configuration.', 'error');
+        return;
+    }
     
     videoRecorderState.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -3563,7 +3849,7 @@ function startRecording() {
     };
     
     videoRecorderState.mediaRecorder.onstop = () => {
-        const blob = new Blob(videoRecorderState.recordedChunks, { type: 'video/webm' });
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: mimeType || 'video/webm' });
         saveRecording(blob);
     };
     
@@ -3718,6 +4004,15 @@ function updateRecordingsList() {
     
     if (deleteAllBtn) {
         deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
+        deleteAllBtn.onclick = deleteAllRecordings;
+    }
+    if (searchInput) {
+        searchInput.removeEventListener('input', updateRecordingsList);
+        searchInput.addEventListener('input', updateRecordingsList);
+    }
+    if (sortSelect) {
+        sortSelect.removeEventListener('change', updateRecordingsList);
+        sortSelect.addEventListener('change', updateRecordingsList);
     }
     
     if (filtered.length === 0) {
@@ -3753,7 +4048,7 @@ function updateRecordingsList() {
             </div>
             <div class="recording-info">
                 <div class="recording-title-row">
-                    <input type="text" class="recording-name-input" value="${recording.name}" 
+                    <input type="text" class="recording-name-input" value="${escapeAttr(recording.name || 'Untitled recording')}"
                            data-action="edit-name" />
                     <button class="edit-name-btn" data-action="focus-name" title="Edit name">
                         ✏️
@@ -3806,23 +4101,18 @@ function updateRecordingsList() {
     
     // Add event delegation for recording actions
     newList.addEventListener('click', (e) => {
-        console.log('Click detected:', e.target);
         const target = e.target.closest('[data-action]');
         if (!target) {
-            console.log('No data-action found');
             return;
         }
         
         const recordingItem = target.closest('.recording-item');
         if (!recordingItem) {
-            console.log('No recording-item found');
             return;
         }
         
         const recordingId = parseInt(recordingItem.dataset.id);
         const action = target.dataset.action;
-        
-        console.log('Action:', action, 'Recording ID:', recordingId);
         
         switch(action) {
             case 'play':
@@ -3854,35 +4144,15 @@ function updateRecordingsList() {
             }
         }
     });
-    
-    // Attach event listeners
-    if (searchInput) {
-        searchInput.removeEventListener('input', updateRecordingsList);
-        searchInput.addEventListener('input', updateRecordingsList);
-    }
-    if (sortSelect) {
-        sortSelect.removeEventListener('change', updateRecordingsList);
-        sortSelect.addEventListener('change', updateRecordingsList);
-    }
-    if (deleteAllBtn) {
-        deleteAllBtn.onclick = deleteAllRecordings;
-    }
 }
 
 function playRecording(id) {
-    console.log('playRecording called with id:', id);
-    console.log('Available recordings:', videoRecorderState.recordings);
-    
     const recording = videoRecorderState.recordings.find(r => r.id === id);
     
     if (!recording) {
-        console.error('Recording not found:', id);
-        console.error('Available IDs:', videoRecorderState.recordings.map(r => r.id));
         showToast('❌ Recording not found', 'error');
         return;
     }
-    
-    console.log('Playing recording:', recording);
     
     // Create modal for playback
     const modal = document.createElement('div');
@@ -3891,7 +4161,7 @@ function playRecording(id) {
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📹 ${recording.name || 'Recording Playback'}</h3>
+                <h3>📹 ${escapeHtml(recording.name || 'Recording Playback')}</h3>
                 <button class="modal-close">✕</button>
             </div>
             <div class="modal-body">
@@ -3930,7 +4200,6 @@ function playRecording(id) {
     document.addEventListener('keydown', handleEscape);
     
     document.body.appendChild(modal);
-    console.log('Modal added to body');
 }
 
 function downloadRecording(id) {
@@ -4837,10 +5106,10 @@ function renderVideoRecorder() {
     `;
 
     container.appendChild(recorder);
-    initVideoRecorder();
+    initLegacyVideoRecorder();
 }
 
-function initVideoRecorder() {
+function initLegacyVideoRecorder() {
     const startBtn = document.getElementById('startRecordBtn');
     const stopBtn = document.getElementById('stopRecordBtn');
     const pauseBtn = document.getElementById('pauseRecordBtn');
@@ -4942,7 +5211,7 @@ function initVideoRecorder() {
                 console.log('Recording stopped, chunks:', recordedChunks.length);
                 const blob = new Blob(recordedChunks, { type: mimeType });
                 console.log('Blob created, size:', blob.size);
-                saveRecording(blob, recordingSeconds);
+                saveLegacyRecording(blob, recordingSeconds);
                 recordingStream.getTracks().forEach(t => t.stop());
                 videoPreview.srcObject = null;
                 document.getElementById('previewPlaceholder').style.display = 'flex';
@@ -5028,7 +5297,7 @@ function initVideoRecorder() {
             totalDurationSeconds = 0;
             document.getElementById('videoCount').textContent = '0';
             updateTotalDuration();
-            updateRecordingsList();
+            updateLegacyRecordingsList();
             showToast('🗑️ All recordings deleted', 'info');
         }
     });
@@ -5036,7 +5305,7 @@ function initVideoRecorder() {
     loadRecordings();
 }
 
-function saveRecording(blob, duration) {
+function saveLegacyRecording(blob, duration) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = {
         id: Date.now(),
@@ -5066,7 +5335,7 @@ function saveRecording(blob, duration) {
         if (recordings.length > 0) {
             document.getElementById('clearAllBtn').style.display = 'inline-block';
         }
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('✅ Video saved to local storage', 'success');
     };
     reader.readAsDataURL(blob);
@@ -5085,7 +5354,7 @@ function formatDuration(seconds) {
     return `${mins}m ${secs}s`;
 }
 
-function updateRecordingsList() {
+function updateLegacyRecordingsList() {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const list = document.getElementById('recordingsList');
     document.getElementById('recordingsCount').textContent = `${recordings.length} video${recordings.length !== 1 ? 's' : ''}`;
@@ -5123,15 +5392,15 @@ function updateRecordingsList() {
                 </div>
             </div>
             <div class="recording-actions">
-                <button class="action-btn play-btn" onclick="playRecording(${recording.id})" title="Play recording">
+                <button class="action-btn play-btn" onclick="playLegacyRecording(${recording.id})" title="Play recording">
                     <span>▶️</span>
                     <span>Play</span>
                 </button>
-                <button class="action-btn download-btn" onclick="downloadRecording(${recording.id})" title="Download recording">
+                <button class="action-btn download-btn" onclick="downloadLegacyRecording(${recording.id})" title="Download recording">
                     <span>⬇️</span>
                     <span>Download</span>
                 </button>
-                <button class="action-btn delete-btn" onclick="deleteRecording(${recording.id})" title="Delete recording">
+                <button class="action-btn delete-btn" onclick="deleteLegacyRecording(${recording.id})" title="Delete recording">
                     <span>🗑️</span>
                     <span>Delete</span>
                 </button>
@@ -5140,7 +5409,7 @@ function updateRecordingsList() {
     `).join('');
 }
 
-function playRecording(id) {
+function playLegacyRecording(id) {
     const blobData = localStorage.getItem(`videoBlob_${id}`);
     if (!blobData) {
         showToast('Recording data not found ❌', 'error');
@@ -5168,7 +5437,7 @@ function playRecording(id) {
     document.body.appendChild(modal);
 }
 
-function downloadRecording(id) {
+function downloadLegacyRecording(id) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = recordings.find(r => r.id === id);
     const blobData = localStorage.getItem(`videoBlob_${id}`);
@@ -5188,14 +5457,14 @@ function downloadRecording(id) {
     showToast('Download started 📥', 'success');
 }
 
-function deleteRecording(id) {
+function deleteLegacyRecording(id) {
     if (confirm('Are you sure you want to delete this recording? This cannot be undone.')) {
         const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
         const filtered = recordings.filter(r => r.id !== id);
         localStorage.setItem('videoRecordings', JSON.stringify(filtered));
         localStorage.removeItem(`videoBlob_${id}`);
         document.getElementById('videoCount').textContent = filtered.length;
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('Recording deleted 🗑️', 'info');
     }
 }
@@ -5208,7 +5477,7 @@ function loadRecordings() {
         document.getElementById('clearAllBtn').style.display = 'inline-block';
     }
     updateTotalDuration();
-    updateRecordingsList();
+    updateLegacyRecordingsList();
 }
 
 function dataURLtoBlob(dataURL) {
@@ -5227,6 +5496,9 @@ function dataURLtoBlob(dataURL) {
 window.playRecording = playRecording;
 window.downloadRecording = downloadRecording;
 window.deleteRecording = deleteRecording;
+window.playLegacyRecording = playLegacyRecording;
+window.downloadLegacyRecording = downloadLegacyRecording;
+window.deleteLegacyRecording = deleteLegacyRecording;
 window.updateRecordingName = updateRecordingName;
 window.editRecordingName = editRecordingName;
 window.deleteAllRecordings = deleteAllRecordings;
