@@ -3384,126 +3384,105 @@ function showVideoRecorder() {
     if (search) {
         search.value = '';
         search.disabled = true;
-        search.placeholder = 'Daily Video Studio active';
+        search.placeholder = 'Video recorder active';
     }
 
     container.innerHTML = `
-        <div class="video-recorder-container video-studio" aria-live="polite">
-            <header class="studio-header">
-                <div class="studio-brand">
-                    <div class="studio-logo" aria-hidden="true">🎬</div>
-                    <div>
-                        <h2 class="recorder-title">Daily Video Studio</h2>
-                        <p class="recorder-subtitle">Record, practice, review, and improve</p>
-                    </div>
+        <div class="video-recorder-container video-studio simple-recorder" aria-live="polite">
+            <header class="simple-recorder-header">
+                <div>
+                    <h2 class="recorder-title">Video Practice Recorder</h2>
+                    <p class="recorder-subtitle">Record a practice answer, review it, and save it locally on your device.</p>
                 </div>
-                <div class="studio-header-actions">
-                    <span id="privacyBadge" class="privacy-badge">🔒 Stored locally only</span>
+                <div class="simple-header-meta">
+                    <span class="privacy-badge">🔒 Local only</span>
                     <span id="storageUsage" class="storage-usage">Storage: checking…</span>
-                    <button id="studioThemeToggle" class="studio-icon-btn" type="button" title="Toggle theme" aria-label="Toggle theme">🌗</button>
-                    <button id="settingsBtn" class="studio-icon-btn" type="button" title="Settings" aria-label="Open settings">⚙️</button>
-                    <button id="installAppBtn" class="studio-secondary-btn" type="button" hidden>Install App</button>
                 </div>
             </header>
 
-            <section class="studio-dashboard" aria-label="Daily practice dashboard">
-                <div class="dashboard-card"><span>Today</span><strong id="todayRecordings">0</strong><small>recordings</small></div>
-                <div class="dashboard-card"><span>Practice time</span><strong id="todayPracticeTime">0m</strong><small>today</small></div>
-                <div class="dashboard-card"><span>Streak</span><strong id="practiceStreak">0</strong><small>days</small></div>
-                <div class="dashboard-card"><span>Avg rating</span><strong id="averageRating">–</strong><small>self review</small></div>
-            </section>
-
-            <div class="recorder-main studio-layout">
-                <section class="camera-section studio-panel" aria-label="Recording studio">
-                    <div class="mode-strip" role="radiogroup" aria-label="Recording mode">
-                        ${['Interview Practice','Daily Video Journal','Presentation Practice','Communication Practice','YouTube Content','Custom Recording'].map((mode, index) => `
-                            <button class="mode-pill ${index === 0 ? 'active' : ''}" type="button" data-mode="${mode}" aria-pressed="${index === 0}">${mode}</button>
-                        `).join('')}
+            <div class="simple-recorder-grid">
+                <section class="camera-section studio-panel" aria-label="Recording area">
+                    <div class="simple-setup-card">
+                        <label>Recording title
+                            <input id="recordingTitle" type="text" placeholder="e.g., Tell me about yourself">
+                        </label>
+                        <label>Category
+                            <select id="recordingCategory">
+                                <option>Interview Practice</option>
+                                <option>Daily Journal</option>
+                                <option>Presentation</option>
+                                <option>Communication</option>
+                                <option>Custom</option>
+                            </select>
+                        </label>
+                        <label>Countdown
+                            <select id="countdownSelect"><option value="0">Off</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select>
+                        </label>
+                        <label>Target
+                            <select id="targetDuration"><option value="60">1 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select>
+                        </label>
+                        <label class="simple-wide">Practice prompt or notes
+                            <textarea id="practicePrompt" rows="3" placeholder="Paste the question or talking points you want to practice…"></textarea>
+                        </label>
+                        <label class="simple-wide">Tags
+                            <input id="recordingTags" type="text" placeholder="interview, sre, weekly-review">
+                        </label>
+                        <input id="sessionGoal" type="hidden" value="">
                     </div>
-                    <p id="modeGuidance" class="mode-guidance">Answer one focused interview prompt. Aim for a clear Situation, Action, Result structure.</p>
 
-                    <div class="session-grid">
-                        <label>Title<input id="recordingTitle" type="text" placeholder="e.g., Kubernetes interview practice"></label>
-                        <label>Category<select id="recordingCategory"><option>Interview Practice</option><option>Daily Journal</option><option>Presentation</option><option>Communication</option><option>YouTube</option><option>Custom</option></select></label>
-                        <label>Target duration<select id="targetDuration"><option value="60">1 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></label>
-                        <label>Countdown<select id="countdownSelect"><option value="0">Off</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select></label>
-                        <label class="session-wide">Goal<input id="sessionGoal" type="text" placeholder="What do you want to improve in this take?"></label>
-                        <label class="session-wide">Tags<input id="recordingTags" type="text" placeholder="comma-separated tags"></label>
-                    </div>
-
-                    <div class="device-row" aria-label="Device selection">
+                    <div class="device-row simple-device-row" aria-label="Device selection">
                         <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
                         <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
                     </div>
 
-                    <div class="camera-preview-container" id="previewFrame">
+                    <div class="camera-preview-container simple-preview" id="previewFrame">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
                             <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
                         <div id="countdownOverlay" class="countdown-overlay" hidden></div>
-                        <div id="teleprompterOverlay" class="teleprompter-overlay" hidden></div>
                         <div id="cameraPlaceholder" class="camera-placeholder">
                             <div class="placeholder-icon">🎥</div>
-                            <p>Start your camera when you are ready</p>
-                            <small>Your recordings stay on this device and are not uploaded.</small>
+                            <p>Start camera to preview yourself</p>
+                            <small>Recordings are stored locally and are not uploaded.</small>
                         </div>
                     </div>
 
-                    <div class="status-grid">
+                    <div class="status-grid simple-status-row">
                         <span id="cameraStatus" class="status-chip">Camera: off</span>
                         <span id="microphoneStatus" class="status-chip">Mic: off</span>
-                        <span id="recordingStatus" class="status-chip">Status: ready</span>
+                        <span id="recordingStatus" class="status-chip">Ready</span>
                         <span id="selectedDevices" class="status-chip">Default devices</span>
                     </div>
                     <div class="audio-meter" aria-label="Microphone level"><span id="audioMeterBar"></span></div>
                     <div class="target-progress"><span id="targetProgressBar"></span></div>
 
-                    <div class="camera-controls sticky-controls">
-                        <button id="startCameraBtn" class="control-button primary" type="button" title="Turn camera on (C)">📷 Start Camera</button>
+                    <div class="camera-controls simple-controls">
+                        <button id="startCameraBtn" class="control-button primary" type="button" title="Turn camera on (C)">Start Camera</button>
                         <button id="stopCameraBtn" class="control-button secondary" type="button" style="display:none" title="Turn camera off (C)">Camera Off</button>
-                        <button id="muteMicBtn" class="control-button secondary" type="button" disabled title="Mute or unmute microphone (M)">🎙️ Mute</button>
-                        <button id="mirrorToggleBtn" class="control-button secondary" type="button" title="Mirror preview">🪞 Mirror</button>
-                        <button id="fullscreenBtn" class="control-button secondary" type="button" title="Full screen preview (F)">⛶ Full Screen</button>
-                        <button id="startRecordingBtn" class="control-button success" type="button" disabled title="Start recording (Space)">⏺ Start</button>
-                        <button id="pauseRecordingBtn" class="control-button warning" type="button" style="display:none" title="Pause or resume (Space)">⏸ Pause</button>
-                        <button id="stopRecordingBtn" class="control-button danger" type="button" style="display:none" title="Stop recording (S)">⏹ Stop</button>
-                        <button id="retakeBtn" class="control-button secondary" type="button" style="display:none" title="Retake (R)">↺ Retake</button>
+                        <button id="muteMicBtn" class="control-button secondary" type="button" disabled title="Mute or unmute microphone (M)">Mute Mic</button>
+                        <button id="mirrorToggleBtn" class="control-button secondary" type="button" title="Mirror preview">Mirror</button>
+                        <button id="fullscreenBtn" class="control-button secondary" type="button" title="Full screen preview (F)">Full Screen</button>
+                        <button id="startRecordingBtn" class="control-button success" type="button" disabled title="Start recording (Space)">Start Recording</button>
+                        <button id="pauseRecordingBtn" class="control-button warning" type="button" style="display:none" title="Pause or resume (Space)">Pause</button>
+                        <button id="stopRecordingBtn" class="control-button danger" type="button" style="display:none" title="Stop recording (S)">Stop</button>
+                        <button id="retakeBtn" class="control-button secondary" type="button" style="display:none" title="Retake (R)">Retake</button>
                     </div>
-
                     <div id="recorderError" class="recorder-error" role="alert" hidden></div>
                 </section>
 
-                <aside class="studio-side-panel">
-                    <section class="practice-panel studio-panel">
-                        <div class="panel-heading"><h3>Practice Prompt</h3><button id="togglePromptBtn" type="button" class="studio-secondary-btn">Collapse</button></div>
-                        <div id="practicePanelBody">
-                            <label>Built-in prompts<select id="promptSelect"><option>Tell me about yourself</option><option>Explain your current role</option><option>Describe a difficult problem you solved</option><option>Daily reflection</option><option>Presentation introduction</option><option>One-minute speaking challenge</option></select></label>
-                            <textarea id="practicePrompt" rows="5" placeholder="Paste your question, script, or speaking topic here…">Tell me about yourself and the kind of DevOps work you enjoy.</textarea>
-                            <div class="teleprompter-controls">
-                                <label>Font <input id="promptFontSize" type="range" min="18" max="42" value="26"></label>
-                                <label>Speed <input id="promptSpeed" type="range" min="10" max="90" value="35"></label>
-                                <button id="teleprompterStartBtn" type="button" class="studio-secondary-btn">Start</button>
-                                <button id="teleprompterPauseBtn" type="button" class="studio-secondary-btn">Pause</button>
-                                <button id="teleprompterResetBtn" type="button" class="studio-secondary-btn">Restart</button>
-                                <button id="teleprompterMirrorBtn" type="button" class="studio-secondary-btn">Mirror Text</button>
-                            </div>
+                <aside class="recordings-section studio-panel simple-library" aria-label="Saved recordings">
+                    <div class="recordings-header">
+                        <div class="recordings-header-top"><h3 class="recordings-title">Saved recordings</h3><span id="recordingsCount" class="recordings-count">0 videos</span></div>
+                        <div class="recordings-controls">
+                            <input type="text" id="recordingsSearch" class="recordings-search" placeholder="Search…" aria-label="Search recordings">
+                            <select id="categoryFilter" class="recordings-sort" aria-label="Filter by category"><option value="all">All categories</option><option>Interview Practice</option><option>Daily Journal</option><option>Presentation</option><option>Communication</option><option>Custom</option></select>
+                            <select id="favoriteFilter" class="recordings-sort" aria-label="Filter favourites"><option value="all">All</option><option value="favorites">Favourites</option></select>
+                            <select id="recordingsSort" class="recordings-sort" aria-label="Sort recordings"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="longest">Longest</option><option value="shortest">Shortest</option><option value="largest">Largest</option><option value="smallest">Smallest</option></select>
+                            <button id="deleteAllBtn" class="header-action-btn danger" type="button" style="display:none">Delete All</button>
                         </div>
-                    </section>
-
-                    <section class="recordings-section studio-panel">
-                        <div class="recordings-header">
-                            <div class="recordings-header-top"><h3 class="recordings-title">Saved Recordings</h3><span id="recordingsCount" class="recordings-count">0 videos</span></div>
-                            <div class="recordings-controls">
-                                <input type="text" id="recordingsSearch" class="recordings-search" placeholder="Search recordings…" aria-label="Search recordings">
-                                <select id="categoryFilter" class="recordings-sort" aria-label="Filter by category"><option value="all">All categories</option><option>Interview Practice</option><option>Daily Journal</option><option>Presentation</option><option>Communication</option><option>YouTube</option><option>Custom</option></select>
-                                <select id="favoriteFilter" class="recordings-sort" aria-label="Filter favourites"><option value="all">All</option><option value="favorites">Favourites</option></select>
-                                <select id="recordingsSort" class="recordings-sort" aria-label="Sort recordings"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="longest">Longest</option><option value="shortest">Shortest</option><option value="largest">Largest</option><option value="smallest">Smallest</option></select>
-                                <button id="deleteAllBtn" class="header-action-btn danger" type="button" style="display:none">Delete All</button>
-                            </div>
-                        </div>
-                        <div id="recordingsList" class="recordings-list"></div>
-                    </section>
+                    </div>
+                    <div id="recordingsList" class="recordings-list"></div>
                 </aside>
             </div>
         </div>
@@ -3519,7 +3498,6 @@ function showVideoRecorder() {
         });
     populateMediaDevices();
     updateStorageUsage();
-    updatePracticeDashboard();
 }
 
 function bindVideoStudioControls() {
