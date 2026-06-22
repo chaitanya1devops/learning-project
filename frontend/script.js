@@ -1323,6 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressUI();
 });
 
+
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
     const container = document.getElementById('questionsContainer');
@@ -1630,10 +1631,11 @@ function shuffleArray(arr) {
 }
 
 function renderTopic(topic) {
+    cleanupVideoRecorder();
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
-    if (topic === 'Video Recorder') { showVideoRecorder(); return; }
+    if (topic === 'Video Recorder') { currentTopic = topic; localStorage.setItem('currentTopic', topic); showVideoRecorder(); return; }
     if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
@@ -3265,17 +3267,8 @@ function saveRecordingToDB(recording) {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const objectStore = transaction.objectStore(STORE_NAME);
         
-        // Store the blob separately
-        const recordingData = {
-            id: recording.id,
-            timestamp: recording.timestamp,
-            blob: recording.blob,
-            duration: recording.duration,
-            durationMs: recording.durationMs,
-            size: recording.size,
-            sizeFormatted: recording.sizeFormatted,
-            name: recording.name
-        };
+        const recordingData = { ...recording };
+        delete recordingData.url;
         
         const request = objectStore.put(recordingData);
         
@@ -3376,211 +3369,579 @@ let videoRecorderState = {
     isRecording: false,
     isPaused: false,
     recordingStartTime: null,
-    timerInterval: null
+    timerInterval: null,
+    audioContext: null,
+    audioAnalyser: null,
+    audioMeterInterval: null,
+    teleprompterInterval: null,
+    lastRecording: null,
+    pendingMetadata: null
 };
 
 function showVideoRecorder() {
     const container = document.getElementById('questionsContainer');
-    container.innerHTML = `
-        <div class="video-recorder-container">
-            <div class="recorder-header">
-                <h2 class="recorder-title">🎥 Video Recorder</h2>
-                <p class="recorder-subtitle">Record, review, and save your videos</p>
-            </div>
+    const search = document.getElementById('searchInput');
+    if (search) {
+        search.value = '';
+        search.disabled = true;
+        search.placeholder = 'Video recorder active';
+    }
 
-            <div class="recorder-main">
-                <div class="camera-section">
-                    <div class="camera-preview-container">
+    container.innerHTML = `
+        <div class="video-recorder-container video-studio simple-recorder" aria-live="polite">
+            <header class="simple-recorder-header">
+                <div>
+                    <h2 class="recorder-title">Video Practice Recorder</h2>
+                    <p class="recorder-subtitle">Record a practice answer, review it, and save it locally on your device.</p>
+                </div>
+                <div class="simple-header-meta">
+                    <span class="privacy-badge">🔒 Local only</span>
+                    <span id="storageUsage" class="storage-usage">Storage: checking…</span>
+                </div>
+            </header>
+
+            <div class="simple-recorder-grid">
+                <section class="camera-section studio-panel" aria-label="Recording area">
+                    <div class="simple-setup-card">
+                        <label>Recording title
+                            <input id="recordingTitle" type="text" placeholder="e.g., Tell me about yourself">
+                        </label>
+                        <label>Category
+                            <select id="recordingCategory">
+                                <option>Interview Practice</option>
+                                <option>Daily Journal</option>
+                                <option>Presentation</option>
+                                <option>Communication</option>
+                                <option>Custom</option>
+                            </select>
+                        </label>
+                        <label>Countdown
+                            <select id="countdownSelect"><option value="0">Off</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select>
+                        </label>
+                        <label>Target
+                            <select id="targetDuration"><option value="60">1 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select>
+                        </label>
+                        <label class="simple-wide">Practice prompt or notes
+                            <textarea id="practicePrompt" rows="3" placeholder="Paste the question or talking points you want to practice…"></textarea>
+                        </label>
+                        <label class="simple-wide">Tags
+                            <input id="recordingTags" type="text" placeholder="interview, sre, weekly-review">
+                        </label>
+                        <input id="sessionGoal" type="hidden" value="">
+                    </div>
+
+                    <div class="device-row simple-device-row" aria-label="Device selection">
+                        <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
+                        <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
+                    </div>
+
+                    <div class="camera-preview-container simple-preview" id="previewFrame">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
-                            <span class="rec-dot"></span>
-                            <span class="rec-text">REC</span>
-                            <span id="recordingTimer" class="rec-timer">00:00</span>
+                            <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
+                        <div id="countdownOverlay" class="countdown-overlay" hidden></div>
                         <div id="cameraPlaceholder" class="camera-placeholder">
-                            <div class="placeholder-icon">📹</div>
-                            <p>Click "Start Camera" to begin</p>
+                            <div class="placeholder-icon">🎥</div>
+                            <p>Start camera to preview yourself</p>
+                            <small>Recordings are stored locally and are not uploaded.</small>
                         </div>
                     </div>
 
-                    <div class="camera-controls">
-                        <button id="startCameraBtn" class="control-button primary">
-                            <span class="btn-icon">📷</span>
-                            <span class="btn-text">Start Camera</span>
-                        </button>
-                        <button id="stopCameraBtn" class="control-button secondary" style="display: none;">
-                            <span class="btn-icon">⏹️</span>
-                            <span class="btn-text">Stop Camera</span>
-                        </button>
-                        <button id="startRecordingBtn" class="control-button success" style="display: none;" disabled>
-                            <span class="btn-icon">⏺️</span>
-                            <span class="btn-text">Start Recording</span>
-                        </button>
-                        <button id="pauseRecordingBtn" class="control-button warning" style="display: none;">
-                            <span class="btn-icon">⏸️</span>
-                            <span class="btn-text">Pause</span>
-                        </button>
-                        <button id="stopRecordingBtn" class="control-button danger" style="display: none;">
-                            <span class="btn-icon">⏹️</span>
-                            <span class="btn-text">Stop Recording</span>
-                        </button>
+                    <div class="status-grid simple-status-row">
+                        <span id="cameraStatus" class="status-chip">Camera: off</span>
+                        <span id="microphoneStatus" class="status-chip">Mic: off</span>
+                        <span id="recordingStatus" class="status-chip">Ready</span>
+                        <span id="selectedDevices" class="status-chip">Default devices</span>
                     </div>
+                    <div class="audio-meter" aria-label="Microphone level"><span id="audioMeterBar"></span></div>
+                    <div class="target-progress"><span id="targetProgressBar"></span></div>
 
-                    <div class="camera-info">
-                        <div class="info-item">
-                            <span class="info-icon">ℹ️</span>
-                            <span class="info-text">Supports video and audio recording</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-icon">💾</span>
-                            <span class="info-text">Download recordings as MP4 files</span>
-                        </div>
+                    <div class="camera-controls simple-controls">
+                        <button id="startCameraBtn" class="control-button primary" type="button" title="Turn camera on (C)">Start Camera</button>
+                        <button id="stopCameraBtn" class="control-button secondary" type="button" style="display:none" title="Turn camera off (C)">Camera Off</button>
+                        <button id="muteMicBtn" class="control-button secondary" type="button" disabled title="Mute or unmute microphone (M)">Mute Mic</button>
+                        <button id="mirrorToggleBtn" class="control-button secondary" type="button" title="Mirror preview">Mirror</button>
+                        <button id="fullscreenBtn" class="control-button secondary" type="button" title="Full screen preview (F)">Full Screen</button>
+                        <button id="startRecordingBtn" class="control-button success" type="button" disabled title="Start recording (Space)">Start Recording</button>
+                        <button id="pauseRecordingBtn" class="control-button warning" type="button" style="display:none" title="Pause or resume (Space)">Pause</button>
+                        <button id="stopRecordingBtn" class="control-button danger" type="button" style="display:none" title="Stop recording (S)">Stop</button>
+                        <button id="retakeBtn" class="control-button secondary" type="button" style="display:none" title="Retake (R)">Retake</button>
                     </div>
-                </div>
+                    <div id="recorderError" class="recorder-error" role="alert" hidden></div>
+                </section>
 
-                <div class="recordings-section">
+                <aside class="recordings-section studio-panel simple-library" aria-label="Saved recordings">
                     <div class="recordings-header">
-                        <div class="recordings-header-top">
-                            <h3 class="recordings-title">📂 Saved Recordings</h3>
-                            <div class="recordings-header-actions">
-                                <span id="recordingsCount" class="recordings-count">0 videos</span>
-                                <button id="deleteAllBtn" class="header-action-btn danger" style="display: none;" title="Delete All">
-                                    <span>🗑️</span>
-                                    <span>Delete All</span>
-                                </button>
-                            </div>
-                        </div>
+                        <div class="recordings-header-top"><h3 class="recordings-title">Saved recordings</h3><span id="recordingsCount" class="recordings-count">0 videos</span></div>
                         <div class="recordings-controls">
-                            <input type="text" id="recordingsSearch" class="recordings-search" placeholder="🔍 Search recordings...">
-                            <select id="recordingsSort" class="recordings-sort">
-                                <option value="newest">📅 Newest First</option>
-                                <option value="oldest">📅 Oldest First</option>
-                                <option value="longest">⏱️ Longest First</option>
-                                <option value="shortest">⏱️ Shortest First</option>
-                            </select>
+                            <input type="text" id="recordingsSearch" class="recordings-search" placeholder="Search…" aria-label="Search recordings">
+                            <select id="categoryFilter" class="recordings-sort" aria-label="Filter by category"><option value="all">All categories</option><option>Interview Practice</option><option>Daily Journal</option><option>Presentation</option><option>Communication</option><option>Custom</option></select>
+                            <select id="favoriteFilter" class="recordings-sort" aria-label="Filter favourites"><option value="all">All</option><option value="favorites">Favourites</option></select>
+                            <select id="recordingsSort" class="recordings-sort" aria-label="Sort recordings"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="longest">Longest</option><option value="shortest">Shortest</option><option value="largest">Largest</option><option value="smallest">Smallest</option></select>
+                            <button id="deleteAllBtn" class="header-action-btn danger" type="button" style="display:none">Delete All</button>
                         </div>
                     </div>
-                    <div id="recordingsList" class="recordings-list">
-                        <div class="empty-recordings">
-                            <div class="empty-icon">📹</div>
-                            <p>No recordings yet</p>
-                            <p class="empty-subtitle">Start recording to save your first video</p>
-                        </div>
-                    </div>
-                </div>
+                    <div id="recordingsList" class="recordings-list"></div>
+                </aside>
             </div>
         </div>
     `;
 
-    // Initialize event listeners
-    document.getElementById('startCameraBtn').addEventListener('click', startCamera);
-    document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
-    document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
-    document.getElementById('pauseRecordingBtn').addEventListener('click', pauseRecording);
-    document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
-
-    // Initialize IndexedDB and load saved recordings
+    bindVideoStudioControls();
     initIndexedDB()
-        .then(() => {
-            console.log('✅ IndexedDB initialized - recordings will be saved permanently');
-            loadSavedRecordings();
-        })
+        .then(() => loadSavedRecordings())
         .catch(err => {
-            console.error('❌ IndexedDB initialization failed:', err);
-            showToast('⚠️ Storage unavailable - recordings will be session-only', 'warning');
+            console.error('IndexedDB initialization failed:', err);
+            showRecorderError('Storage is unavailable. Recordings can be reviewed this session but may not persist.');
             loadSavedRecordings();
         });
+    populateMediaDevices();
+    updateStorageUsage();
+}
+
+function bindVideoStudioControls() {
+    document.getElementById('startCameraBtn')?.addEventListener('click', startCamera);
+    document.getElementById('stopCameraBtn')?.addEventListener('click', stopCamera);
+    document.getElementById('startRecordingBtn')?.addEventListener('click', startRecording);
+    document.getElementById('pauseRecordingBtn')?.addEventListener('click', pauseRecording);
+    document.getElementById('stopRecordingBtn')?.addEventListener('click', stopRecording);
+    document.getElementById('retakeBtn')?.addEventListener('click', () => { stopCamera(); startCamera(); });
+    document.getElementById('studioThemeToggle')?.addEventListener('click', () => document.getElementById('themeToggle')?.click());
+    document.getElementById('settingsBtn')?.addEventListener('click', showRecorderSettings);
+    document.getElementById('muteMicBtn')?.addEventListener('click', toggleMicrophoneMute);
+    document.getElementById('mirrorToggleBtn')?.addEventListener('click', toggleMirrorPreview);
+    document.getElementById('fullscreenBtn')?.addEventListener('click', () => document.getElementById('previewFrame')?.requestFullscreen?.());
+    document.getElementById('promptSelect')?.addEventListener('change', (e) => applyPromptTemplate(e.target.value));
+    document.getElementById('teleprompterStartBtn')?.addEventListener('click', startTeleprompter);
+    document.getElementById('teleprompterPauseBtn')?.addEventListener('click', pauseTeleprompter);
+    document.getElementById('teleprompterResetBtn')?.addEventListener('click', resetTeleprompter);
+    document.getElementById('teleprompterMirrorBtn')?.addEventListener('click', () => document.getElementById('teleprompterOverlay')?.classList.toggle('mirrored'));
+    document.getElementById('togglePromptBtn')?.addEventListener('click', () => document.getElementById('practicePanelBody')?.classList.toggle('collapsed'));
+    document.querySelectorAll('.mode-pill').forEach(btn => btn.addEventListener('click', () => selectRecordingMode(btn.dataset.mode)));
+    document.getElementById('cameraSelect')?.addEventListener('change', restartCameraIfActive);
+    document.getElementById('microphoneSelect')?.addEventListener('change', restartCameraIfActive);
+    document.addEventListener('keydown', handleRecorderShortcuts);
+}
+
+
+function showRecorderError(message) {
+    const errorBox = document.getElementById('recorderError');
+    if (errorBox) {
+        errorBox.textContent = message;
+        errorBox.hidden = false;
+    }
+    showToast(`⚠️ ${message}`, 'warning');
+}
+
+function clearRecorderError() {
+    const errorBox = document.getElementById('recorderError');
+    if (errorBox) {
+        errorBox.textContent = '';
+        errorBox.hidden = true;
+    }
+}
+
+function selectRecordingMode(mode) {
+    document.querySelectorAll('.mode-pill').forEach(btn => {
+        const active = btn.dataset.mode === mode;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+    });
+    const guidance = {
+        'Interview Practice': 'Answer one focused interview prompt. Use a clear Situation, Action, Result structure.',
+        'Daily Video Journal': 'Reflect on the day: what happened, what you learned, and what you will do next.',
+        'Presentation Practice': 'Practice a structured opening, key message, evidence, and concise close.',
+        'Communication Practice': 'Focus on clarity, pace, confidence, and reducing filler words.',
+        'YouTube Content': 'Record with an engaging hook, useful body, and clear call to action.',
+        'Custom Recording': 'Create your own recording setup and prompt.'
+    };
+    const modeGuidance = document.getElementById('modeGuidance');
+    if (modeGuidance) modeGuidance.textContent = guidance[mode] || guidance['Custom Recording'];
+    const category = document.getElementById('recordingCategory');
+    if (category) category.value = mode === 'Daily Video Journal' ? 'Daily Journal' : mode.replace(' Practice', '');
+}
+
+function applyPromptTemplate(prompt) {
+    const templates = {
+        'Tell me about yourself': 'Tell me about yourself, your current focus, and the value you bring to a DevOps team.',
+        'Explain your current role': 'Explain your current role, key responsibilities, tools you use, and measurable impact.',
+        'Describe a difficult problem you solved': 'Describe a difficult technical problem, your debugging approach, the solution, and what you learned.',
+        'Daily reflection': 'What went well today? What was challenging? What will you improve tomorrow?',
+        'Presentation introduction': 'Open with a hook, introduce the topic, explain why it matters, and preview the agenda.',
+        'One-minute speaking challenge': 'Speak for one minute on one idea with a clear beginning, middle, and end.'
+    };
+    const textarea = document.getElementById('practicePrompt');
+    if (textarea) textarea.value = templates[prompt] || prompt;
+}
+
+async function populateMediaDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameraSelect = document.getElementById('cameraSelect');
+        const microphoneSelect = document.getElementById('microphoneSelect');
+        if (!cameraSelect || !microphoneSelect) return;
+        cameraSelect.innerHTML = '<option value="">Default camera</option>';
+        microphoneSelect.innerHTML = '<option value="">Default microphone</option>';
+        devices.filter(device => device.kind === 'videoinput').forEach((device, index) => {
+            cameraSelect.append(new Option(device.label || `Camera ${index + 1}`, device.deviceId));
+        });
+        devices.filter(device => device.kind === 'audioinput').forEach((device, index) => {
+            microphoneSelect.append(new Option(device.label || `Microphone ${index + 1}`, device.deviceId));
+        });
+    } catch (error) {
+        console.warn('Could not enumerate devices', error);
+    }
+}
+
+async function restartCameraIfActive() {
+    if (!videoRecorderState.stream || videoRecorderState.isRecording) return;
+    stopCamera();
+    await startCamera();
+}
+
+function getSessionMetadata() {
+    const tags = (document.getElementById('recordingTags')?.value || '')
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(Boolean);
+    return {
+        title: document.getElementById('recordingTitle')?.value.trim() || `Practice recording ${new Date().toLocaleString()}`,
+        category: document.getElementById('recordingCategory')?.value || 'Interview Practice',
+        goal: document.getElementById('sessionGoal')?.value.trim() || '',
+        targetDuration: parseInt(document.getElementById('targetDuration')?.value || '60', 10),
+        tags,
+        prompt: document.getElementById('practicePrompt')?.value || '',
+        rating: 0,
+        notes: '',
+        favorite: false,
+        checklist: {}
+    };
+}
+
+async function updateStorageUsage() {
+    const storage = document.getElementById('storageUsage');
+    if (!storage || !navigator.storage?.estimate) return;
+    try {
+        const estimate = await navigator.storage.estimate();
+        const used = formatFileSize(estimate.usage || 0);
+        const quota = estimate.quota ? formatFileSize(estimate.quota) : 'available storage';
+        storage.textContent = `Storage: ${used} / ${quota}`;
+    } catch {
+        storage.textContent = 'Storage: local device';
+    }
+}
+
+function updatePracticeDashboard() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todays = videoRecorderState.recordings.filter(rec => (rec.timestamp || '').slice(0, 10) === today);
+    const totalMs = todays.reduce((sum, rec) => sum + (rec.durationMs || 0), 0);
+    const ratings = videoRecorderState.recordings.map(rec => Number(rec.rating || 0)).filter(Boolean);
+    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    setText('todayRecordings', todays.length);
+    setText('todayPracticeTime', `${Math.round(totalMs / 60000)}m`);
+    setText('practiceStreak', calculatePracticeStreak());
+    setText('averageRating', ratings.length ? (ratings.reduce((a,b) => a + b, 0) / ratings.length).toFixed(1) : '–');
+}
+
+function calculatePracticeStreak() {
+    const days = new Set(videoRecorderState.recordings.map(rec => (rec.timestamp || '').slice(0, 10)));
+    let streak = 0;
+    const cursor = new Date();
+    while (days.has(cursor.toISOString().slice(0, 10))) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+}
+
+function toggleMicrophoneMute() {
+    if (!videoRecorderState.stream) return;
+    const audioTracks = videoRecorderState.stream.getAudioTracks();
+    const nextMuted = audioTracks.some(track => track.enabled);
+    audioTracks.forEach(track => { track.enabled = !nextMuted; });
+    const btn = document.getElementById('muteMicBtn');
+    if (btn) btn.textContent = nextMuted ? '🔇 Unmute' : '🎙️ Mute';
+    const status = document.getElementById('microphoneStatus');
+    if (status) status.textContent = nextMuted ? 'Mic: muted' : 'Mic: on';
+}
+
+function toggleMirrorPreview() {
+    document.getElementById('cameraPreview')?.classList.toggle('mirrored');
+}
+
+function startAudioMeter(stream) {
+    stopAudioMeter();
+    const audioTracks = stream.getAudioTracks();
+    if (!audioTracks.length || !window.AudioContext) return;
+    videoRecorderState.audioContext = new AudioContext();
+    const source = videoRecorderState.audioContext.createMediaStreamSource(new MediaStream(audioTracks));
+    videoRecorderState.audioAnalyser = videoRecorderState.audioContext.createAnalyser();
+    source.connect(videoRecorderState.audioAnalyser);
+    const data = new Uint8Array(videoRecorderState.audioAnalyser.frequencyBinCount);
+    videoRecorderState.audioMeterInterval = setInterval(() => {
+        videoRecorderState.audioAnalyser.getByteFrequencyData(data);
+        const avg = data.reduce((sum, value) => sum + value, 0) / data.length;
+        const bar = document.getElementById('audioMeterBar');
+        if (bar) bar.style.width = `${Math.min(100, Math.round(avg))}%`;
+    }, 120);
+}
+
+function stopAudioMeter() {
+    if (videoRecorderState.audioMeterInterval) clearInterval(videoRecorderState.audioMeterInterval);
+    videoRecorderState.audioMeterInterval = null;
+    if (videoRecorderState.audioContext) videoRecorderState.audioContext.close().catch(() => {});
+    videoRecorderState.audioContext = null;
+    const bar = document.getElementById('audioMeterBar');
+    if (bar) bar.style.width = '0%';
+}
+
+function startTeleprompter() {
+    const overlay = document.getElementById('teleprompterOverlay');
+    const prompt = document.getElementById('practicePrompt')?.value || '';
+    if (!overlay || !prompt.trim()) return;
+    overlay.hidden = false;
+    overlay.textContent = prompt;
+    overlay.style.fontSize = `${document.getElementById('promptFontSize')?.value || 26}px`;
+    overlay.scrollTop = 0;
+    const speed = Number(document.getElementById('promptSpeed')?.value || 35);
+    pauseTeleprompter();
+    videoRecorderState.teleprompterInterval = setInterval(() => {
+        overlay.scrollTop += Math.max(1, speed / 25);
+    }, 120);
+}
+
+function pauseTeleprompter() {
+    if (videoRecorderState.teleprompterInterval) clearInterval(videoRecorderState.teleprompterInterval);
+    videoRecorderState.teleprompterInterval = null;
+}
+
+function resetTeleprompter() {
+    pauseTeleprompter();
+    const overlay = document.getElementById('teleprompterOverlay');
+    if (overlay) {
+        overlay.scrollTop = 0;
+        overlay.hidden = true;
+    }
+}
+
+function showRecorderSettings() {
+    const modal = document.createElement('div');
+    modal.className = 'recording-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content settings-modal">
+            <div class="modal-header"><h3>Studio Settings</h3><button class="modal-close" type="button">✕</button></div>
+            <div class="modal-body settings-grid">
+                <label>Default countdown<select id="settingsCountdown"><option>Off</option><option>3 seconds</option><option>5 seconds</option><option>10 seconds</option></select></label>
+                <label>Video resolution<select><option>1280 × 720</option><option>1920 × 1080</option></select></label>
+                <label>Daily goal<select><option>One recording per day</option><option>Five minutes per day</option><option>Custom target</option></select></label>
+                <p class="privacy-note">Your recordings are stored locally in IndexedDB. Clearing browser data may remove recordings.</p>
+            </div>
+        </div>`;
+    const close = () => modal.remove();
+    modal.querySelector('.modal-overlay').addEventListener('click', close);
+    modal.querySelector('.modal-close').addEventListener('click', close);
+    document.body.appendChild(modal);
+}
+
+function handleRecorderShortcuts(event) {
+    if (currentTopic !== 'Video Recorder') return;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
+    if (event.code === 'Space') { event.preventDefault(); videoRecorderState.isRecording ? pauseRecording() : startRecording(); }
+    if (event.key.toLowerCase() === 's') stopRecording();
+    if (event.key.toLowerCase() === 'm') toggleMicrophoneMute();
+    if (event.key.toLowerCase() === 'c') videoRecorderState.stream ? stopCamera() : startCamera();
+    if (event.key.toLowerCase() === 'f') document.getElementById('previewFrame')?.requestFullscreen?.();
+    if (event.key.toLowerCase() === 'r') document.getElementById('retakeBtn')?.click();
 }
 
 async function startCamera() {
+    clearRecorderError();
+    if (!navigator.mediaDevices?.getUserMedia) {
+        showRecorderError('This browser does not support camera recording. Try a recent Chrome, Edge, Firefox, or Safari.');
+        return;
+    }
     try {
+        const cameraId = document.getElementById('cameraSelect')?.value;
+        const microphoneId = document.getElementById('microphoneSelect')?.value;
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720 },
-            audio: true
+            video: cameraId ? { deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: microphoneId ? { deviceId: { exact: microphoneId } } : true
         });
-        
+
         videoRecorderState.stream = stream;
         const preview = document.getElementById('cameraPreview');
         const placeholder = document.getElementById('cameraPlaceholder');
-        
-        preview.srcObject = stream;
-        preview.style.display = 'block';
-        placeholder.style.display = 'none';
-        
-        // Update button visibility
+        if (preview) {
+            preview.srcObject = stream;
+            preview.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+
         document.getElementById('startCameraBtn').style.display = 'none';
         document.getElementById('stopCameraBtn').style.display = 'inline-flex';
-        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
         document.getElementById('startRecordingBtn').disabled = false;
-        
+        document.getElementById('muteMicBtn').disabled = stream.getAudioTracks().length === 0;
+        document.getElementById('cameraStatus').textContent = stream.getVideoTracks().length ? 'Camera: on' : 'Camera: unavailable';
+        document.getElementById('microphoneStatus').textContent = stream.getAudioTracks().length ? 'Mic: on' : 'Mic: unavailable';
+        document.getElementById('recordingStatus').textContent = 'Status: previewing';
+        document.getElementById('selectedDevices').textContent = `${document.getElementById('cameraSelect')?.selectedOptions[0]?.text || 'Default camera'} • ${document.getElementById('microphoneSelect')?.selectedOptions[0]?.text || 'Default microphone'}`;
+        startAudioMeter(stream);
+        await populateMediaDevices();
         showToast('✅ Camera started successfully', 'success');
     } catch (error) {
         console.error('Error accessing camera:', error);
-        showToast('❌ Failed to access camera. Please check permissions.', 'error');
+        const messages = {
+            NotAllowedError: 'Camera or microphone permission was denied. Allow access in browser settings and try again.',
+            NotFoundError: 'No camera or microphone was detected. Connect a device and try again.',
+            NotReadableError: 'The camera or microphone is already in use by another application.',
+            OverconstrainedError: 'The selected camera or microphone does not support the requested settings.'
+        };
+        showRecorderError(messages[error.name] || `Could not access camera or microphone: ${error.message || error.name}`);
     }
 }
 
 function stopCamera() {
     if (videoRecorderState.stream) {
-        videoRecorderState.stream.getTracks().forEach(track => track.stop());
-        videoRecorderState.stream = null;
+        if (videoRecorderState.isRecording) {
+            stopRecording();
+        }
+        cleanupVideoRecorder();
         
         const preview = document.getElementById('cameraPreview');
         const placeholder = document.getElementById('cameraPlaceholder');
         
-        preview.srcObject = null;
-        preview.style.display = 'none';
-        placeholder.style.display = 'flex';
-        
-        // Reset recording if active
-        if (videoRecorderState.isRecording) {
-            stopRecording();
+        if (preview) {
+            preview.srcObject = null;
+            preview.style.display = 'none';
+        }
+        if (placeholder) {
+            placeholder.style.display = 'flex';
         }
         
         // Update button visibility
-        document.getElementById('startCameraBtn').style.display = 'inline-flex';
-        document.getElementById('stopCameraBtn').style.display = 'none';
-        document.getElementById('startRecordingBtn').style.display = 'none';
-        document.getElementById('pauseRecordingBtn').style.display = 'none';
-        document.getElementById('stopRecordingBtn').style.display = 'none';
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const startRecordingBtn = document.getElementById('startRecordingBtn');
+        const pauseRecordingBtn = document.getElementById('pauseRecordingBtn');
+        const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+        if (startCameraBtn) startCameraBtn.style.display = 'inline-flex';
+        if (stopCameraBtn) stopCameraBtn.style.display = 'none';
+        if (startRecordingBtn) startRecordingBtn.style.display = 'none';
+        if (pauseRecordingBtn) pauseRecordingBtn.style.display = 'none';
+        if (stopRecordingBtn) stopRecordingBtn.style.display = 'none';
         
         showToast('📷 Camera stopped', 'info');
     }
 }
 
+function cleanupVideoRecorder() {
+    document.removeEventListener('keydown', handleRecorderShortcuts);
+    stopAudioMeter();
+    pauseTeleprompter();
+    if (videoRecorderState.timerInterval) {
+        clearInterval(videoRecorderState.timerInterval);
+        videoRecorderState.timerInterval = null;
+    }
+    if (videoRecorderState.stream) {
+        videoRecorderState.stream.getTracks().forEach(track => track.stop());
+        videoRecorderState.stream = null;
+    }
+    videoRecorderState.mediaRecorder = null;
+    videoRecorderState.isRecording = false;
+    videoRecorderState.isPaused = false;
+}
+
+function getBestRecordingMimeType() {
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+        return '';
+    }
+
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
 function startRecording() {
-    if (!videoRecorderState.stream) return;
-    
-    videoRecorderState.recordedChunks = [];
-    videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, {
-        mimeType: 'video/webm;codecs=vp9'
-    });
-    
-    videoRecorderState.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-            videoRecorderState.recordedChunks.push(event.data);
+    if (!videoRecorderState.stream) {
+        showRecorderError('Start the camera before recording.');
+        return;
+    }
+    if (videoRecorderState.isRecording) return;
+    const countdown = parseInt(document.getElementById('countdownSelect')?.value || '0', 10);
+    videoRecorderState.pendingMetadata = getSessionMetadata();
+    if (countdown > 0) {
+        runRecordingCountdown(countdown, beginRecordingNow);
+    } else {
+        beginRecordingNow();
+    }
+}
+
+function runRecordingCountdown(seconds, onComplete) {
+    const overlay = document.getElementById('countdownOverlay');
+    let remaining = seconds;
+    if (overlay) {
+        overlay.hidden = false;
+        overlay.textContent = remaining;
+    }
+    const tick = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(tick);
+            if (overlay) overlay.hidden = true;
+            onComplete();
+        } else if (overlay) {
+            overlay.textContent = remaining;
         }
+    }, 1000);
+}
+
+function beginRecordingNow() {
+    if (!window.MediaRecorder) {
+        showRecorderError('MediaRecorder is not supported in this browser. Try a recent Chrome, Edge, Firefox, or Safari.');
+        return;
+    }
+
+    videoRecorderState.recordedChunks = [];
+    const mimeType = getBestRecordingMimeType();
+    const recorderOptions = mimeType ? { mimeType } : undefined;
+
+    try {
+        videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, recorderOptions);
+    } catch (error) {
+        console.error('Failed to create MediaRecorder:', error);
+        showRecorderError('Could not start the recorder with the current camera or microphone settings. Try another device.');
+        return;
+    }
+
+    videoRecorderState.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) videoRecorderState.recordedChunks.push(event.data);
     };
-    
+
+    videoRecorderState.mediaRecorder.onerror = () => showRecorderError('Recording was interrupted. Please stop and try again.');
     videoRecorderState.mediaRecorder.onstop = () => {
-        const blob = new Blob(videoRecorderState.recordedChunks, { type: 'video/webm' });
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: mimeType || 'video/webm' });
         saveRecording(blob);
     };
-    
-    videoRecorderState.mediaRecorder.start(100);
+
+    videoRecorderState.mediaRecorder.start(1000);
     videoRecorderState.isRecording = true;
     videoRecorderState.isPaused = false;
     videoRecorderState.recordingStartTime = Date.now();
-    
-    // Show recording indicator and timer
     document.getElementById('recordingIndicator').style.display = 'flex';
+    document.getElementById('recordingStatus').textContent = 'Status: recording';
     startRecordingTimer();
-    
-    // Update button visibility
     document.getElementById('startRecordingBtn').style.display = 'none';
     document.getElementById('pauseRecordingBtn').style.display = 'inline-flex';
     document.getElementById('stopRecordingBtn').style.display = 'inline-flex';
-    
+    document.getElementById('retakeBtn').style.display = 'none';
     showToast('🔴 Recording started', 'success');
 }
 
@@ -3614,6 +3975,8 @@ function stopRecording() {
         document.getElementById('startRecordingBtn').style.display = 'inline-flex';
         document.getElementById('pauseRecordingBtn').style.display = 'none';
         document.getElementById('stopRecordingBtn').style.display = 'none';
+        document.getElementById('retakeBtn').style.display = 'inline-flex';
+        document.getElementById('recordingStatus').textContent = 'Status: saved';
         
         showToast('✅ Recording saved', 'success');
     }
@@ -3628,6 +3991,9 @@ function startRecordingTimer() {
         if (timerElement) {
             timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
+        const target = videoRecorderState.pendingMetadata?.targetDuration || parseInt(document.getElementById('targetDuration')?.value || '60', 10);
+        const targetBar = document.getElementById('targetProgressBar');
+        if (targetBar) targetBar.style.width = `${Math.min(100, (elapsed / 1000 / target) * 100)}%`;
     }, 1000);
 }
 
@@ -3640,6 +4006,7 @@ function stopRecordingTimer() {
 
 function saveRecording(blob) {
     const durationMs = Date.now() - videoRecorderState.recordingStartTime;
+    const metadata = videoRecorderState.pendingMetadata || getSessionMetadata();
     const recording = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
@@ -3649,23 +4016,35 @@ function saveRecording(blob) {
         durationMs: durationMs,
         size: blob.size,
         sizeFormatted: formatFileSize(blob.size),
-        name: `Recording ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+        name: metadata.title,
+        category: metadata.category,
+        goal: metadata.goal,
+        targetDuration: metadata.targetDuration,
+        tags: metadata.tags,
+        prompt: metadata.prompt,
+        rating: metadata.rating,
+        notes: metadata.notes,
+        favorite: metadata.favorite,
+        checklist: metadata.checklist
     };
     
     videoRecorderState.recordings.unshift(recording);
-    console.log('Recording saved:', recording);
-    console.log('Total recordings:', videoRecorderState.recordings.length);
+    videoRecorderState.lastRecording = recording;
     
     // Save to IndexedDB
     saveRecordingToDB(recording)
         .then(() => {
             showToast('💾 Recording saved to storage!', 'success');
             updateRecordingsList();
+            updatePracticeDashboard();
+            updateStorageUsage();
+            showRecordingReview(recording.id);
         })
         .catch(err => {
             console.error('Failed to save to IndexedDB:', err);
             showToast('⚠️ Recording saved (session only)', 'warning');
             updateRecordingsList();
+            showRecordingReview(recording.id);
         });
 }
 
@@ -3676,6 +4055,8 @@ function loadSavedRecordings() {
             videoRecorderState.recordings = recordings;
             console.log('Loaded recordings from storage:', recordings.length);
             updateRecordingsList();
+            updatePracticeDashboard();
+            updateStorageUsage();
             if (recordings.length > 0) {
                 showToast(`📦 Loaded ${recordings.length} saved recording${recordings.length > 1 ? 's' : ''}`, 'info');
             }
@@ -3692,16 +4073,23 @@ function updateRecordingsList() {
     const deleteAllBtn = document.getElementById('deleteAllBtn');
     const searchInput = document.getElementById('recordingsSearch');
     const sortSelect = document.getElementById('recordingsSort');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const favoriteFilter = document.getElementById('favoriteFilter');
     
     // Get search and sort values
     const searchTerm = searchInput?.value.toLowerCase() || '';
     const sortBy = sortSelect?.value || 'newest';
+    const category = categoryFilter?.value || 'all';
+    const favoriteOnly = favoriteFilter?.value === 'favorites';
     
     // Filter recordings
-    let filtered = videoRecorderState.recordings.filter(rec => 
-        rec.name.toLowerCase().includes(searchTerm) ||
-        new Date(rec.timestamp).toLocaleString().toLowerCase().includes(searchTerm)
-    );
+    let filtered = videoRecorderState.recordings.filter(rec => {
+        const haystack = [rec.name, rec.category, (rec.tags || []).join(' '), rec.notes, new Date(rec.timestamp).toLocaleString()].join(' ').toLowerCase();
+        const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+        const matchesCategory = category === 'all' || rec.category === category;
+        const matchesFavorite = !favoriteOnly || rec.favorite;
+        return matchesSearch && matchesCategory && matchesFavorite;
+    });
     
     // Sort recordings
     filtered.sort((a, b) => {
@@ -3709,6 +4097,8 @@ function updateRecordingsList() {
             case 'oldest': return new Date(a.timestamp) - new Date(b.timestamp);
             case 'longest': return b.durationMs - a.durationMs;
             case 'shortest': return a.durationMs - b.durationMs;
+            case 'largest': return b.size - a.size;
+            case 'smallest': return a.size - b.size;
             default: return new Date(b.timestamp) - new Date(a.timestamp);
         }
     });
@@ -3718,7 +4108,18 @@ function updateRecordingsList() {
     
     if (deleteAllBtn) {
         deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
+        deleteAllBtn.onclick = deleteAllRecordings;
     }
+    if (searchInput) {
+        searchInput.removeEventListener('input', updateRecordingsList);
+        searchInput.addEventListener('input', updateRecordingsList);
+    }
+    [sortSelect, categoryFilter, favoriteFilter].forEach(control => {
+        if (control) {
+            control.removeEventListener('change', updateRecordingsList);
+            control.addEventListener('change', updateRecordingsList);
+        }
+    });
     
     if (filtered.length === 0) {
         if (searchTerm) {
@@ -3753,7 +4154,7 @@ function updateRecordingsList() {
             </div>
             <div class="recording-info">
                 <div class="recording-title-row">
-                    <input type="text" class="recording-name-input" value="${recording.name}" 
+                    <input type="text" class="recording-name-input" value="${escapeAttr(recording.name || 'Untitled recording')}"
                            data-action="edit-name" />
                     <button class="edit-name-btn" data-action="focus-name" title="Edit name">
                         ✏️
@@ -3780,6 +4181,14 @@ function updateRecordingsList() {
                         <span class="meta-icon">💾</span>
                         <span class="meta-text">${recording.sizeFormatted}</span>
                     </div>
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">🏷️</span>
+                        <span class="meta-text">${escapeHtml(recording.category || 'Uncategorized')}</span>
+                    </div>
+                    <div class="meta-item-detailed">
+                        <span class="meta-icon">⭐</span>
+                        <span class="meta-text">${recording.rating ? recording.rating + '/5' : 'Not rated'}</span>
+                    </div>
                 </div>
             </div>
             <div class="recording-actions">
@@ -3787,9 +4196,21 @@ function updateRecordingsList() {
                     <span class="btn-icon">▶️</span>
                     <span class="btn-label">Play</span>
                 </button>
+                <button class="action-btn favorite-btn" data-action="favorite" title="Mark favourite">
+                    <span class="btn-icon">${recording.favorite ? '★' : '☆'}</span>
+                    <span class="btn-label">Fav</span>
+                </button>
                 <button class="action-btn download-btn" data-action="download" title="Download Video">
                     <span class="btn-icon">💾</span>
                     <span class="btn-label">Download</span>
+                </button>
+                <button class="action-btn notes-btn" data-action="notes" title="Add notes">
+                    <span class="btn-icon">📝</span>
+                    <span class="btn-label">Notes</span>
+                </button>
+                <button class="action-btn export-btn" data-action="export" title="Export metadata">
+                    <span class="btn-icon">{}</span>
+                    <span class="btn-label">Export</span>
                 </button>
                 <button class="action-btn delete-btn" data-action="delete" title="Delete Video">
                     <span class="btn-icon">🗑️</span>
@@ -3806,23 +4227,18 @@ function updateRecordingsList() {
     
     // Add event delegation for recording actions
     newList.addEventListener('click', (e) => {
-        console.log('Click detected:', e.target);
         const target = e.target.closest('[data-action]');
         if (!target) {
-            console.log('No data-action found');
             return;
         }
         
         const recordingItem = target.closest('.recording-item');
         if (!recordingItem) {
-            console.log('No recording-item found');
             return;
         }
         
         const recordingId = parseInt(recordingItem.dataset.id);
         const action = target.dataset.action;
-        
-        console.log('Action:', action, 'Recording ID:', recordingId);
         
         switch(action) {
             case 'play':
@@ -3833,6 +4249,15 @@ function updateRecordingsList() {
                 break;
             case 'delete':
                 deleteRecording(recordingId);
+                break;
+            case 'favorite':
+                toggleRecordingFavorite(recordingId);
+                break;
+            case 'notes':
+                editRecordingNotes(recordingId);
+                break;
+            case 'export':
+                exportRecordingMetadata(recordingId);
                 break;
             case 'focus-name':
                 const input = recordingItem.querySelector('.recording-name-input');
@@ -3854,35 +4279,99 @@ function updateRecordingsList() {
             }
         }
     });
-    
-    // Attach event listeners
-    if (searchInput) {
-        searchInput.removeEventListener('input', updateRecordingsList);
-        searchInput.addEventListener('input', updateRecordingsList);
-    }
-    if (sortSelect) {
-        sortSelect.removeEventListener('change', updateRecordingsList);
-        sortSelect.addEventListener('change', updateRecordingsList);
-    }
-    if (deleteAllBtn) {
-        deleteAllBtn.onclick = deleteAllRecordings;
-    }
+}
+
+
+function toggleRecordingFavorite(id) {
+    const recording = videoRecorderState.recordings.find(rec => rec.id === id);
+    if (!recording) return;
+    recording.favorite = !recording.favorite;
+    saveRecordingToDB(recording).finally(updateRecordingsList);
+}
+
+function editRecordingNotes(id) {
+    const recording = videoRecorderState.recordings.find(rec => rec.id === id);
+    if (!recording) return;
+    const notes = prompt('Add notes for this recording:', recording.notes || '');
+    if (notes === null) return;
+    recording.notes = notes;
+    saveRecordingToDB(recording).then(() => showToast('📝 Notes saved', 'success')).finally(updateRecordingsList);
+}
+
+function exportRecordingMetadata(id) {
+    const recording = videoRecorderState.recordings.find(rec => rec.id === id);
+    if (!recording) return;
+    const { blob, url, ...metadata } = recording;
+    const data = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(data);
+    link.download = `${sanitizeFilename(recording.name || 'recording')}-metadata.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+function sanitizeFilename(value) {
+    return String(value).trim().replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'recording';
+}
+
+function showRecordingReview(id) {
+    const recording = videoRecorderState.recordings.find(rec => rec.id === id);
+    if (!recording) return;
+    const modal = document.createElement('div');
+    modal.className = 'recording-modal';
+    const checklist = ['Eye contact', 'Voice clarity', 'Confidence', 'Speaking speed', 'Body language', 'Answer structure', 'Filler words'];
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content review-modal">
+            <div class="modal-header"><h3>Review your recording</h3><button class="modal-close" type="button">✕</button></div>
+            <div class="modal-body review-grid">
+                <video class="playback-video" src="${recording.url}" controls playsinline></video>
+                <div class="review-fields">
+                    <label>Title<input id="reviewTitle" value="${escapeAttr(recording.name)}"></label>
+                    <label>Category<input id="reviewCategory" value="${escapeAttr(recording.category || '')}"></label>
+                    <label>Tags<input id="reviewTags" value="${escapeAttr((recording.tags || []).join(', '))}"></label>
+                    <label>Self-rating<select id="reviewRating"><option value="0">Not rated</option>${[1,2,3,4,5].map(n => `<option value="${n}">${n} / 5</option>`).join('')}</select></label>
+                    <label>Notes<textarea id="reviewNotes" rows="4">${escapeHtml(recording.notes || '')}</textarea></label>
+                    <div class="review-checklist">${checklist.map(item => `<label><input type="checkbox" data-check="${item}"> ${item}</label>`).join('')}</div>
+                    <div class="review-actions">
+                        <button id="saveReviewBtn" class="control-button success" type="button">Save Review</button>
+                        <button class="control-button secondary" data-download-review type="button">Download</button>
+                        <button class="control-button danger" data-delete-review type="button">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    const close = () => modal.remove();
+    modal.querySelector('.modal-overlay').addEventListener('click', close);
+    modal.querySelector('.modal-close').addEventListener('click', close);
+    modal.querySelector('[data-download-review]').addEventListener('click', () => downloadRecording(id));
+    modal.querySelector('[data-delete-review]').addEventListener('click', () => { close(); deleteRecording(id); });
+    modal.querySelector('#reviewRating').value = String(recording.rating || 0);
+    modal.querySelector('#saveReviewBtn').addEventListener('click', () => {
+        recording.name = modal.querySelector('#reviewTitle').value.trim() || recording.name;
+        recording.category = modal.querySelector('#reviewCategory').value.trim() || recording.category;
+        recording.tags = modal.querySelector('#reviewTags').value.split(',').map(tag => tag.trim()).filter(Boolean);
+        recording.rating = Number(modal.querySelector('#reviewRating').value || 0);
+        recording.notes = modal.querySelector('#reviewNotes').value;
+        recording.checklist = {};
+        modal.querySelectorAll('[data-check]').forEach(input => { recording.checklist[input.dataset.check] = input.checked; });
+        saveRecordingToDB(recording).then(() => {
+            updateRecordingsList();
+            updatePracticeDashboard();
+            showToast('✅ Review saved', 'success');
+            close();
+        });
+    });
+    document.body.appendChild(modal);
 }
 
 function playRecording(id) {
-    console.log('playRecording called with id:', id);
-    console.log('Available recordings:', videoRecorderState.recordings);
-    
     const recording = videoRecorderState.recordings.find(r => r.id === id);
     
     if (!recording) {
-        console.error('Recording not found:', id);
-        console.error('Available IDs:', videoRecorderState.recordings.map(r => r.id));
         showToast('❌ Recording not found', 'error');
         return;
     }
-    
-    console.log('Playing recording:', recording);
     
     // Create modal for playback
     const modal = document.createElement('div');
@@ -3891,7 +4380,7 @@ function playRecording(id) {
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📹 ${recording.name || 'Recording Playback'}</h3>
+                <h3>📹 ${escapeHtml(recording.name || 'Recording Playback')}</h3>
                 <button class="modal-close">✕</button>
             </div>
             <div class="modal-body">
@@ -3930,7 +4419,6 @@ function playRecording(id) {
     document.addEventListener('keydown', handleEscape);
     
     document.body.appendChild(modal);
-    console.log('Modal added to body');
 }
 
 function downloadRecording(id) {
@@ -3939,7 +4427,7 @@ function downloadRecording(id) {
     
     const a = document.createElement('a');
     a.href = recording.url;
-    a.download = `recording_${new Date(recording.timestamp).toISOString().replace(/[:.]/g, '-')}.webm`;
+    a.download = `${sanitizeFilename(recording.name || 'recording')}_${new Date(recording.timestamp).toISOString().replace(/[:.]/g, '-')}.webm`;
     a.click();
     
     showToast('💾 Downloading recording...', 'success');
@@ -4837,10 +5325,10 @@ function renderVideoRecorder() {
     `;
 
     container.appendChild(recorder);
-    initVideoRecorder();
+    initLegacyVideoRecorder();
 }
 
-function initVideoRecorder() {
+function initLegacyVideoRecorder() {
     const startBtn = document.getElementById('startRecordBtn');
     const stopBtn = document.getElementById('stopRecordBtn');
     const pauseBtn = document.getElementById('pauseRecordBtn');
@@ -4942,7 +5430,7 @@ function initVideoRecorder() {
                 console.log('Recording stopped, chunks:', recordedChunks.length);
                 const blob = new Blob(recordedChunks, { type: mimeType });
                 console.log('Blob created, size:', blob.size);
-                saveRecording(blob, recordingSeconds);
+                saveLegacyRecording(blob, recordingSeconds);
                 recordingStream.getTracks().forEach(t => t.stop());
                 videoPreview.srcObject = null;
                 document.getElementById('previewPlaceholder').style.display = 'flex';
@@ -5028,7 +5516,7 @@ function initVideoRecorder() {
             totalDurationSeconds = 0;
             document.getElementById('videoCount').textContent = '0';
             updateTotalDuration();
-            updateRecordingsList();
+            updateLegacyRecordingsList();
             showToast('🗑️ All recordings deleted', 'info');
         }
     });
@@ -5036,7 +5524,7 @@ function initVideoRecorder() {
     loadRecordings();
 }
 
-function saveRecording(blob, duration) {
+function saveLegacyRecording(blob, duration) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = {
         id: Date.now(),
@@ -5066,7 +5554,7 @@ function saveRecording(blob, duration) {
         if (recordings.length > 0) {
             document.getElementById('clearAllBtn').style.display = 'inline-block';
         }
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('✅ Video saved to local storage', 'success');
     };
     reader.readAsDataURL(blob);
@@ -5085,7 +5573,7 @@ function formatDuration(seconds) {
     return `${mins}m ${secs}s`;
 }
 
-function updateRecordingsList() {
+function updateLegacyRecordingsList() {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const list = document.getElementById('recordingsList');
     document.getElementById('recordingsCount').textContent = `${recordings.length} video${recordings.length !== 1 ? 's' : ''}`;
@@ -5123,15 +5611,15 @@ function updateRecordingsList() {
                 </div>
             </div>
             <div class="recording-actions">
-                <button class="action-btn play-btn" onclick="playRecording(${recording.id})" title="Play recording">
+                <button class="action-btn play-btn" onclick="playLegacyRecording(${recording.id})" title="Play recording">
                     <span>▶️</span>
                     <span>Play</span>
                 </button>
-                <button class="action-btn download-btn" onclick="downloadRecording(${recording.id})" title="Download recording">
+                <button class="action-btn download-btn" onclick="downloadLegacyRecording(${recording.id})" title="Download recording">
                     <span>⬇️</span>
                     <span>Download</span>
                 </button>
-                <button class="action-btn delete-btn" onclick="deleteRecording(${recording.id})" title="Delete recording">
+                <button class="action-btn delete-btn" onclick="deleteLegacyRecording(${recording.id})" title="Delete recording">
                     <span>🗑️</span>
                     <span>Delete</span>
                 </button>
@@ -5140,7 +5628,7 @@ function updateRecordingsList() {
     `).join('');
 }
 
-function playRecording(id) {
+function playLegacyRecording(id) {
     const blobData = localStorage.getItem(`videoBlob_${id}`);
     if (!blobData) {
         showToast('Recording data not found ❌', 'error');
@@ -5168,7 +5656,7 @@ function playRecording(id) {
     document.body.appendChild(modal);
 }
 
-function downloadRecording(id) {
+function downloadLegacyRecording(id) {
     const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
     const recording = recordings.find(r => r.id === id);
     const blobData = localStorage.getItem(`videoBlob_${id}`);
@@ -5188,14 +5676,14 @@ function downloadRecording(id) {
     showToast('Download started 📥', 'success');
 }
 
-function deleteRecording(id) {
+function deleteLegacyRecording(id) {
     if (confirm('Are you sure you want to delete this recording? This cannot be undone.')) {
         const recordings = JSON.parse(localStorage.getItem('videoRecordings') || '[]');
         const filtered = recordings.filter(r => r.id !== id);
         localStorage.setItem('videoRecordings', JSON.stringify(filtered));
         localStorage.removeItem(`videoBlob_${id}`);
         document.getElementById('videoCount').textContent = filtered.length;
-        updateRecordingsList();
+        updateLegacyRecordingsList();
         showToast('Recording deleted 🗑️', 'info');
     }
 }
@@ -5208,7 +5696,7 @@ function loadRecordings() {
         document.getElementById('clearAllBtn').style.display = 'inline-block';
     }
     updateTotalDuration();
-    updateRecordingsList();
+    updateLegacyRecordingsList();
 }
 
 function dataURLtoBlob(dataURL) {
@@ -5227,6 +5715,9 @@ function dataURLtoBlob(dataURL) {
 window.playRecording = playRecording;
 window.downloadRecording = downloadRecording;
 window.deleteRecording = deleteRecording;
+window.playLegacyRecording = playLegacyRecording;
+window.downloadLegacyRecording = downloadLegacyRecording;
+window.deleteLegacyRecording = deleteLegacyRecording;
 window.updateRecordingName = updateRecordingName;
 window.editRecordingName = editRecordingName;
 window.deleteAllRecordings = deleteAllRecordings;
