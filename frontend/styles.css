@@ -5364,11 +5364,16 @@ mark {
 
 /* Video recorder UI refresh: keep active recorder aligned with app theme tokens */
 .video-recorder-container {
+  grid-column: 1 / -1;
   width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
   padding: clamp(1rem, 2vw, 2rem);
+  background: transparent;
 }
 
 .video-recorder-container .recorder-header {
+  display: block;
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.03));
   border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
@@ -5381,6 +5386,7 @@ mark {
 .video-recorder-container .recorder-title {
   font-size: clamp(1.9rem, 4vw, 2.75rem);
   line-height: 1.1;
+  margin-bottom: 0.75rem;
 }
 
 .video-recorder-container .recorder-subtitle,
@@ -5391,8 +5397,10 @@ mark {
 }
 
 .video-recorder-container .recorder-main {
+  display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.8fr);
   gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: start;
 }
 
 .video-recorder-container .camera-section,
@@ -5400,6 +5408,14 @@ mark {
   background: var(--bg-card);
   border: 1px solid rgba(var(--accent-rgb), 0.16);
   box-shadow: var(--shadow-sm);
+}
+
+.video-recorder-container .recordings-section {
+  margin-top: 0;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.16);
+  min-height: 0;
+  max-height: none;
 }
 
 .video-recorder-container .camera-preview-container {
