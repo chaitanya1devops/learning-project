@@ -1638,7 +1638,10 @@ function shuffleArray(arr) {
 }
 
 function renderTopic(topic) {
-    cleanupVideoRecorder();
+    topic = normalizeTopic(topic);
+    if (currentTopic === 'Video Recorder' && topic !== 'Video Recorder') {
+        stopCamera();
+    }
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
@@ -3393,117 +3396,87 @@ function showVideoRecorder() {
         search.disabled = true;
         search.placeholder = 'Video recorder active';
     }
-
+    updateActiveTabButton('Video Recorder');
+    updateHeaderTopic('Video Recorder', 1, 1);
     container.innerHTML = `
-        <div class="video-recorder-container video-studio simple-recorder" aria-live="polite">
-            <header class="simple-recorder-header">
+        <div class="video-recorder-container simple-video-recorder">
+            <div class="recorder-header compact-recorder-header">
                 <div>
-                    <h2 class="recorder-title">Video Practice Recorder</h2>
-                    <p class="recorder-subtitle">Record a practice answer, review it, and save it locally on your device.</p>
+                    <h2 class="recorder-title">🎥 Video Recorder</h2>
+                    <p class="recorder-subtitle">Start camera, record, stop, then replay or download locally.</p>
                 </div>
-                <div class="simple-header-meta">
-                    <span class="privacy-badge">🔒 Local only</span>
-                    <span id="storageUsage" class="storage-usage">Storage: checking…</span>
-                </div>
-            </header>
+            </div>
 
-            <section class="simple-dashboard" aria-label="Daily practice dashboard">
-                <div><span>Today</span><strong id="todayRecordings">0</strong><small>recordings</small></div>
-                <div><span>Practice</span><strong id="todayPracticeTime">0m</strong><small>today</small></div>
-                <div><span>Streak</span><strong id="practiceStreak">0</strong><small>days</small></div>
-                <div><span>Avg rating</span><strong id="averageRating">–</strong><small>self review</small></div>
-            </section>
-
-            <div class="simple-recorder-grid">
-                <section class="camera-section studio-panel" aria-label="Recording area">
-                    <div class="simple-setup-card">
-                        <label>Recording title
-                            <input id="recordingTitle" type="text" placeholder="e.g., Tell me about yourself">
-                        </label>
-                        <label>Practice mode
-                            <select id="recordingCategory">
-                                <option>Interview Practice</option>
-                                <option>Communication</option>
-                                <option>Presentation</option>
-                                <option>Daily Journal</option>
-                                <option>YouTube</option>
-                                <option>Custom</option>
-                            </select>
-                        </label>
-                        <label>Countdown
-                            <select id="countdownSelect"><option value="0">Off</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select>
-                        </label>
-                        <label>Target
-                            <select id="targetDuration"><option value="60">1 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select>
-                        </label>
-                        <label class="simple-wide">Practice prompt or notes
-                            <textarea id="practicePrompt" rows="3" placeholder="Paste the question or talking points you want to practice…"></textarea>
-                        </label>
-                        <label class="simple-wide">Tags
-                            <input id="recordingTags" type="text" placeholder="interview, sre, weekly-review">
-                        </label>
-                        <input id="sessionGoal" type="hidden" value="">
-                    </div>
-
-                    <div class="device-row simple-device-row" aria-label="Device selection">
-                        <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
-                        <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
-                    </div>
-
-                    <div class="camera-preview-container simple-preview" id="previewFrame">
+            <div class="recorder-main single-column-recorder">
+                <section class="camera-section simple-camera-section" aria-label="Video recording controls">
+                    <div class="camera-preview-container simple-camera-preview">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
                             <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
                         <div id="countdownOverlay" class="countdown-overlay" hidden></div>
                         <div id="cameraPlaceholder" class="camera-placeholder">
-                            <div class="placeholder-icon">🎥</div>
-                            <p>Start camera to preview yourself</p>
-                            <small>Recordings are stored locally and are not uploaded.</small>
+                            <div class="placeholder-icon">📹</div>
+                            <p>Start your camera to preview</p>
                         </div>
                     </div>
 
-                    <div class="status-grid simple-status-row">
-                        <span id="cameraStatus" class="status-chip">Camera: off</span>
-                        <span id="microphoneStatus" class="status-chip">Mic: off</span>
-                        <span id="recordingStatus" class="status-chip">Ready</span>
-                        <span id="selectedDevices" class="status-chip">Default devices</span>
+                    <div class="camera-controls primary-recording-controls">
+                        <button id="startCameraBtn" class="control-button primary" type="button">
+                            <span class="btn-icon">📷</span>
+                            <span class="btn-text">Start Camera</span>
+                        </button>
+                        <button id="startRecordingBtn" class="control-button success" type="button" disabled>
+                            <span class="btn-icon">●</span>
+                            <span class="btn-text">Start Recording</span>
+                        </button>
+                        <button id="stopRecordingBtn" class="control-button danger" type="button" style="display: none;">
+                            <span class="btn-icon">■</span>
+                            <span class="btn-text">Stop Recording</span>
+                        </button>
+                        <button id="stopCameraBtn" class="control-button secondary" type="button" style="display: none;">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">Stop Camera</span>
+                        </button>
                     </div>
-                    <div id="audioMeter" class="audio-meter" aria-label="Microphone level" hidden><span id="audioMeterBar"></span></div>
-                    <div id="targetProgress" class="target-progress" hidden><span id="targetProgressBar"></span></div>
-
-                    <div class="camera-controls simple-controls">
-                        <button id="startCameraBtn" class="control-button primary" type="button" title="Turn camera on (C)">Start Camera</button>
-                        <button id="stopCameraBtn" class="control-button secondary" type="button" style="display:none" title="Turn camera off (C)">Camera Off</button>
-                        <button id="muteMicBtn" class="control-button secondary" type="button" style="display:none" disabled title="Mute or unmute microphone (M)">Mute Mic</button>
-                        <button id="mirrorToggleBtn" class="control-button secondary" type="button" title="Mirror preview">Mirror</button>
-                        <button id="fullscreenBtn" class="control-button secondary" type="button" title="Full screen preview (F)">Full Screen</button>
-                        <button id="startRecordingBtn" class="control-button success" type="button" style="display:none" disabled title="Start recording (Space)">Start Recording</button>
-                        <button id="pauseRecordingBtn" class="control-button warning" type="button" style="display:none" title="Pause or resume (Space)">Pause</button>
-                        <button id="stopRecordingBtn" class="control-button danger" type="button" style="display:none" title="Stop recording (S)">Stop</button>
-                        <button id="retakeBtn" class="control-button secondary" type="button" style="display:none" title="Retake (R)">Retake</button>
-                    </div>
-                    <div id="recorderError" class="recorder-error" role="alert" hidden></div>
                 </section>
 
-                <aside class="recordings-section studio-panel simple-library" aria-label="Saved recordings">
-                    <div class="recordings-header">
-                        <div class="recordings-header-top"><h3 class="recordings-title">Saved recordings</h3><span id="recordingsCount" class="recordings-count">0 videos</span></div>
-                        <div class="recordings-controls">
-                            <input type="text" id="recordingsSearch" class="recordings-search" placeholder="Search…" aria-label="Search recordings">
-                            <select id="categoryFilter" class="recordings-sort" aria-label="Filter by category"><option value="all">All categories</option><option>Interview Practice</option><option>Daily Journal</option><option>Presentation</option><option>Communication</option><option>Custom</option></select>
-                            <select id="favoriteFilter" class="recordings-sort" aria-label="Filter favourites"><option value="all">All</option><option value="favorites">Favourites</option></select>
-                            <select id="recordingsSort" class="recordings-sort" aria-label="Sort recordings"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="longest">Longest</option><option value="shortest">Shortest</option><option value="largest">Largest</option><option value="smallest">Smallest</option></select>
-                            <button id="deleteAllBtn" class="header-action-btn danger" type="button" style="display:none">Delete All</button>
+                <section class="recordings-section simple-recordings-section" aria-label="Saved recordings">
+                    <div class="recordings-header compact-recordings-header">
+                        <div>
+                            <h3 class="recordings-title">Saved Recordings</h3>
+                            <span id="recordingsCount" class="recordings-count">0 videos</span>
+                        </div>
+                        <button id="deleteAllBtn" class="header-action-btn danger" type="button" style="display: none;" title="Delete all recordings">
+                            Delete All
+                        </button>
+                    </div>
+                    <div class="recordings-controls simple-recordings-controls">
+                        <input type="text" id="recordingsSearch" class="recordings-search" placeholder="Search recordings...">
+                        <select id="recordingsSort" class="recordings-sort" aria-label="Sort recordings">
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="longest">Longest</option>
+                            <option value="shortest">Shortest</option>
+                        </select>
+                    </div>
+                    <div id="recordingsList" class="recordings-list">
+                        <div class="empty-recordings">
+                            <div class="empty-icon">📹</div>
+                            <p>No recordings yet</p>
+                            <p class="empty-subtitle">Click Start Recording after camera preview is active.</p>
                         </div>
                     </div>
-                    <div id="recordingsList" class="recordings-list"></div>
-                </aside>
+                </section>
             </div>
         </div>
     `;
 
-    bindVideoStudioControls();
+    document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+    document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+    document.getElementById('startRecordingBtn').addEventListener('click', startRecording);
+    document.getElementById('stopRecordingBtn').addEventListener('click', stopRecording);
+
     initIndexedDB()
         .then(() => loadSavedRecordings())
         .catch(err => {
@@ -3783,6 +3756,24 @@ function getBestRecordingMimeType() {
     return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
 }
 
+function getBestRecordingMimeType() {
+    if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function setRecorderControlState(id, display, disabled) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    if (display !== undefined) element.style.display = display;
+    if (disabled !== undefined) element.disabled = disabled;
+}
+
 async function startCamera() {
     clearRecorderError();
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -3790,8 +3781,9 @@ async function startCamera() {
         return;
     }
     try {
-        const cameraId = document.getElementById('cameraSelect')?.value;
-        const microphoneId = document.getElementById('microphoneSelect')?.value;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Camera and microphone APIs are not available in this browser.');
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
             video: cameraId ? { deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: microphoneId ? { deviceId: { exact: microphoneId } } : true
@@ -3800,25 +3792,16 @@ async function startCamera() {
         videoRecorderState.stream = stream;
         const preview = document.getElementById('cameraPreview');
         const placeholder = document.getElementById('cameraPlaceholder');
-        if (preview) {
-            preview.srcObject = stream;
-            preview.style.display = 'block';
-        }
-        if (placeholder) placeholder.style.display = 'none';
-
-        document.getElementById('startCameraBtn').style.display = 'none';
-        document.getElementById('stopCameraBtn').style.display = 'inline-flex';
-        document.getElementById('startRecordingBtn').disabled = false;
-        document.getElementById('muteMicBtn').style.display = 'inline-flex';
-        document.getElementById('muteMicBtn').disabled = stream.getAudioTracks().length === 0;
-        const audioMeter = document.getElementById('audioMeter');
-        if (audioMeter) audioMeter.hidden = stream.getAudioTracks().length === 0;
-        document.getElementById('cameraStatus').textContent = stream.getVideoTracks().length ? 'Camera: on' : 'Camera: unavailable';
-        document.getElementById('microphoneStatus').textContent = stream.getAudioTracks().length ? 'Mic: on' : 'Mic: unavailable';
-        document.getElementById('recordingStatus').textContent = 'Status: previewing';
-        document.getElementById('selectedDevices').textContent = `${document.getElementById('cameraSelect')?.selectedOptions[0]?.text || 'Default camera'} • ${document.getElementById('microphoneSelect')?.selectedOptions[0]?.text || 'Default microphone'}`;
-        startAudioMeter(stream);
-        await populateMediaDevices();
+        
+        preview.srcObject = stream;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        
+        // Update button visibility
+        setRecorderControlState('startCameraBtn', 'none');
+        setRecorderControlState('stopCameraBtn', 'inline-flex');
+        setRecorderControlState('startRecordingBtn', 'inline-flex', false);
+        
         showToast('✅ Camera started successfully', 'success');
     } catch (error) {
         console.error('Error accessing camera:', error);
@@ -3845,31 +3828,15 @@ function stopCamera() {
         const preview = document.getElementById('cameraPreview');
         const placeholder = document.getElementById('cameraPlaceholder');
         
-        if (preview) {
-            preview.srcObject = null;
-            preview.style.display = 'none';
-        }
-        if (placeholder) {
-            placeholder.style.display = 'flex';
-        }
+        preview.srcObject = null;
+        preview.style.display = 'none';
+        placeholder.style.display = 'flex';
         
         // Update button visibility
-        const startCameraBtn = document.getElementById('startCameraBtn');
-        const stopCameraBtn = document.getElementById('stopCameraBtn');
-        const startRecordingBtn = document.getElementById('startRecordingBtn');
-        const pauseRecordingBtn = document.getElementById('pauseRecordingBtn');
-        const stopRecordingBtn = document.getElementById('stopRecordingBtn');
-        if (startCameraBtn) startCameraBtn.style.display = 'inline-flex';
-        if (stopCameraBtn) stopCameraBtn.style.display = 'none';
-        if (startRecordingBtn) startRecordingBtn.style.display = 'none';
-        const muteMicBtn = document.getElementById('muteMicBtn');
-        if (muteMicBtn) muteMicBtn.style.display = 'none';
-        const audioMeter = document.getElementById('audioMeter');
-        if (audioMeter) audioMeter.hidden = true;
-        const targetProgress = document.getElementById('targetProgress');
-        if (targetProgress) targetProgress.hidden = true;
-        if (pauseRecordingBtn) pauseRecordingBtn.style.display = 'none';
-        if (stopRecordingBtn) stopRecordingBtn.style.display = 'none';
+        setRecorderControlState('startCameraBtn', 'inline-flex');
+        setRecorderControlState('stopCameraBtn', 'none');
+        setRecorderControlState('startRecordingBtn', 'inline-flex', true);
+        setRecorderControlState('stopRecordingBtn', 'none');
         
         showToast('📷 Camera stopped', 'info');
     }
@@ -3908,64 +3875,32 @@ function getBestRecordingMimeType() {
 }
 
 function startRecording() {
-    if (!videoRecorderState.stream) {
-        showRecorderError('Start the camera before recording.');
-        return;
-    }
-    if (videoRecorderState.isRecording) return;
-    const countdown = parseInt(document.getElementById('countdownSelect')?.value || '0', 10);
-    videoRecorderState.pendingMetadata = getSessionMetadata();
-    if (countdown > 0) {
-        runRecordingCountdown(countdown, beginRecordingNow);
-    } else {
-        beginRecordingNow();
-    }
-}
-
-function runRecordingCountdown(seconds, onComplete) {
-    const overlay = document.getElementById('countdownOverlay');
-    let remaining = seconds;
-    if (overlay) {
-        overlay.hidden = false;
-        overlay.textContent = remaining;
-    }
-    const tick = setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-            clearInterval(tick);
-            if (overlay) overlay.hidden = true;
-            onComplete();
-        } else if (overlay) {
-            overlay.textContent = remaining;
-        }
-    }, 1000);
-}
-
-function beginRecordingNow() {
+    if (!videoRecorderState.stream) return;
     if (!window.MediaRecorder) {
-        showRecorderError('MediaRecorder is not supported in this browser. Try a recent Chrome, Edge, Firefox, or Safari.');
+        showToast('❌ Recording is not supported in this browser.', 'error');
         return;
     }
-
+    
     videoRecorderState.recordedChunks = [];
     const mimeType = getBestRecordingMimeType();
-    const recorderOptions = mimeType ? { mimeType } : undefined;
-
     try {
-        videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, recorderOptions);
+        videoRecorderState.mediaRecorder = mimeType
+            ? new MediaRecorder(videoRecorderState.stream, { mimeType })
+            : new MediaRecorder(videoRecorderState.stream);
+        videoRecorderState.mimeType = mimeType || videoRecorderState.mediaRecorder.mimeType || 'video/webm';
     } catch (error) {
-        console.error('Failed to create MediaRecorder:', error);
-        showRecorderError('Could not start the recorder with the current camera or microphone settings. Try another device.');
+        console.error('Failed to start MediaRecorder:', error);
+        showToast('❌ Recording format is not supported by this browser.', 'error');
         return;
     }
-
+    
     videoRecorderState.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) videoRecorderState.recordedChunks.push(event.data);
     };
 
     videoRecorderState.mediaRecorder.onerror = () => showRecorderError('Recording was interrupted. Please stop and try again.');
     videoRecorderState.mediaRecorder.onstop = () => {
-        const blob = new Blob(videoRecorderState.recordedChunks, { type: mimeType || 'video/webm' });
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: videoRecorderState.mimeType || 'video/webm' });
         saveRecording(blob);
     };
 
@@ -3973,15 +3908,15 @@ function beginRecordingNow() {
     videoRecorderState.isRecording = true;
     videoRecorderState.isPaused = false;
     videoRecorderState.recordingStartTime = Date.now();
-    document.getElementById('recordingIndicator').style.display = 'flex';
-    document.getElementById('recordingStatus').textContent = 'Recording';
-    const targetProgress = document.getElementById('targetProgress');
-    if (targetProgress) targetProgress.hidden = false;
+    
+    // Show recording indicator and timer
+    setRecorderControlState('recordingIndicator', 'flex');
     startRecordingTimer();
-    document.getElementById('startRecordingBtn').style.display = 'none';
-    document.getElementById('pauseRecordingBtn').style.display = 'inline-flex';
-    document.getElementById('stopRecordingBtn').style.display = 'inline-flex';
-    document.getElementById('retakeBtn').style.display = 'none';
+    
+    // Update button visibility
+    setRecorderControlState('startRecordingBtn', 'none');
+    setRecorderControlState('stopRecordingBtn', 'inline-flex');
+    
     showToast('🔴 Recording started', 'success');
 }
 
@@ -3990,12 +3925,14 @@ function pauseRecording() {
         if (videoRecorderState.isPaused) {
             videoRecorderState.mediaRecorder.resume();
             videoRecorderState.isPaused = false;
-            document.getElementById('pauseRecordingBtn').innerHTML = '<span class="btn-icon">⏸️</span><span class="btn-text">Pause</span>';
+            const pauseBtn = document.getElementById('pauseRecordingBtn');
+            if (pauseBtn) pauseBtn.innerHTML = '<span class="btn-icon">⏸️</span><span class="btn-text">Pause</span>';
             showToast('▶️ Recording resumed', 'info');
         } else {
             videoRecorderState.mediaRecorder.pause();
             videoRecorderState.isPaused = true;
-            document.getElementById('pauseRecordingBtn').innerHTML = '<span class="btn-icon">▶️</span><span class="btn-text">Resume</span>';
+            const pauseBtn = document.getElementById('pauseRecordingBtn');
+            if (pauseBtn) pauseBtn.innerHTML = '<span class="btn-icon">▶️</span><span class="btn-text">Resume</span>';
             showToast('⏸️ Recording paused', 'info');
         }
     }
@@ -4008,15 +3945,12 @@ function stopRecording() {
         videoRecorderState.isPaused = false;
         
         // Hide recording indicator
-        document.getElementById('recordingIndicator').style.display = 'none';
+        setRecorderControlState('recordingIndicator', 'none');
         stopRecordingTimer();
         
         // Update button visibility
-        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
-        document.getElementById('pauseRecordingBtn').style.display = 'none';
-        document.getElementById('stopRecordingBtn').style.display = 'none';
-        document.getElementById('retakeBtn').style.display = 'inline-flex';
-        document.getElementById('recordingStatus').textContent = 'Status: saved';
+        setRecorderControlState('startRecordingBtn', 'inline-flex', false);
+        setRecorderControlState('stopRecordingBtn', 'none');
         
         showToast('✅ Recording saved', 'success');
     }
