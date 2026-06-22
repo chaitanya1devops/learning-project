@@ -5360,3 +5360,86 @@ mark {
     padding: 1rem;
   }
 }
+
+/* Simple Video Recorder correction: keep only the essential recording UI visible. */
+.simple-video-recorder {
+  max-width: 1100px;
+  padding: 1rem;
+}
+
+.compact-recorder-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.compact-recorder-header .recorder-title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.single-column-recorder {
+  display: block;
+}
+
+.simple-camera-section,
+.simple-recordings-section {
+  box-shadow: none;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+}
+
+.simple-camera-section {
+  margin-bottom: 1rem;
+}
+
+.simple-camera-preview {
+  margin-bottom: 1rem;
+}
+
+.primary-recording-controls {
+  margin-bottom: 0;
+}
+
+.primary-recording-controls .control-button {
+  min-width: 170px;
+  justify-content: center;
+}
+
+.simple-recordings-section {
+  min-height: auto;
+  max-height: none;
+  padding: 1.25rem;
+}
+
+.compact-recordings-header {
+  align-items: center;
+  gap: 1rem;
+}
+
+.compact-recordings-header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.simple-recordings-controls {
+  margin-bottom: 1rem;
+}
+
+.simple-recordings-controls .recordings-search {
+  min-width: min(260px, 100%);
+}
+
+@media (max-width: 768px) {
+  .simple-video-recorder {
+    padding: 0.75rem;
+  }
+
+  .primary-recording-controls .control-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .compact-recordings-header {
+    align-items: flex-start;
+  }
+}
