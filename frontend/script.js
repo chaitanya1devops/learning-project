@@ -3438,6 +3438,7 @@ function showVideoRecorder() {
                         <input id="sessionGoal" type="hidden" value="">
                     </div>
 
+<<<<<<< codex/review-the-project-3f82yl
                     <details class="practice-tools">
                         <summary>Practice tools: prompts and teleprompter</summary>
                         <div class="practice-tools-grid">
@@ -3460,13 +3461,23 @@ function showVideoRecorder() {
                         <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
                     </div>
 
+=======
+                    <div class="device-row simple-device-row" aria-label="Device selection">
+                        <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
+                        <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
+                    </div>
+
+>>>>>>> main
                     <div class="camera-preview-container simple-preview" id="previewFrame">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
                             <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
                         <div id="countdownOverlay" class="countdown-overlay" hidden></div>
+<<<<<<< codex/review-the-project-3f82yl
                         <div id="teleprompterOverlay" class="teleprompter-overlay" hidden></div>
+=======
+>>>>>>> main
                         <div id="cameraPlaceholder" class="camera-placeholder">
                             <div class="placeholder-icon">🎥</div>
                             <p>Start camera to preview yourself</p>
@@ -3524,7 +3535,10 @@ function showVideoRecorder() {
         });
     populateMediaDevices();
     updateStorageUsage();
+<<<<<<< codex/review-the-project-3f82yl
     updatePracticeDashboard();
+=======
+>>>>>>> main
 }
 
 function bindVideoStudioControls() {
@@ -3809,7 +3823,6 @@ async function startCamera() {
 
         document.getElementById('startCameraBtn').style.display = 'none';
         document.getElementById('stopCameraBtn').style.display = 'inline-flex';
-        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
         document.getElementById('startRecordingBtn').disabled = false;
         document.getElementById('muteMicBtn').style.display = 'inline-flex';
         document.getElementById('muteMicBtn').disabled = stream.getAudioTracks().length === 0;
@@ -4148,11 +4161,19 @@ function updateRecordingsList() {
     if (deleteAllBtn) {
         deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
         deleteAllBtn.onclick = deleteAllRecordings;
+<<<<<<< codex/review-the-project-3f82yl
     }
     if (searchInput) {
         searchInput.removeEventListener('input', updateRecordingsList);
         searchInput.addEventListener('input', updateRecordingsList);
     }
+=======
+    }
+    if (searchInput) {
+        searchInput.removeEventListener('input', updateRecordingsList);
+        searchInput.addEventListener('input', updateRecordingsList);
+    }
+>>>>>>> main
     [sortSelect, categoryFilter, favoriteFilter].forEach(control => {
         if (control) {
             control.removeEventListener('change', updateRecordingsList);
