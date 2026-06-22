@@ -6070,3 +6070,135 @@ mark {
     width: 100%;
   }
 }
+
+/* Focused polish pass for professional daily use */
+.simple-recorder {
+  padding-top: 0.75rem;
+}
+
+.simple-recorder-header {
+  max-width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.simple-recorder-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+}
+
+.simple-recorder-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.58fr);
+}
+
+.simple-recorder .camera-section,
+.simple-recorder .simple-library {
+  padding: 1.25rem !important;
+}
+
+.simple-setup-card {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.simple-setup-card label:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+.simple-setup-card label:nth-child(6) {
+  grid-column: 1 / -1;
+}
+
+.simple-recorder .camera-preview-container {
+  min-height: 380px;
+  border-radius: 18px;
+}
+
+.simple-recorder .placeholder-icon {
+  font-size: 3.25rem;
+  opacity: 0.28;
+}
+
+.simple-recorder .camera-placeholder p {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+}
+
+.simple-status-row {
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.simple-status-row .status-chip {
+  min-height: 30px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.simple-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.simple-controls .control-button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  min-height: 48px;
+  box-shadow: none;
+}
+
+.simple-controls .control-button:disabled {
+  display: none;
+}
+
+.simple-library .recordings-header-top {
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.simple-library .recordings-title {
+  font-size: 1.25rem;
+}
+
+.simple-library .recordings-controls {
+  gap: 0.65rem;
+}
+
+.simple-library .recordings-list {
+  max-height: 620px;
+}
+
+.simple-library .empty-recordings {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 16px;
+}
+
+@media (max-width: 1180px) {
+  .simple-recorder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-library .recordings-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .simple-setup-card,
+  .simple-device-row {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-recorder .camera-preview-container {
+    min-height: 260px;
+  }
+}

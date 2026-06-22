@@ -3454,16 +3454,16 @@ function showVideoRecorder() {
                         <span id="recordingStatus" class="status-chip">Ready</span>
                         <span id="selectedDevices" class="status-chip">Default devices</span>
                     </div>
-                    <div class="audio-meter" aria-label="Microphone level"><span id="audioMeterBar"></span></div>
-                    <div class="target-progress"><span id="targetProgressBar"></span></div>
+                    <div id="audioMeter" class="audio-meter" aria-label="Microphone level" hidden><span id="audioMeterBar"></span></div>
+                    <div id="targetProgress" class="target-progress" hidden><span id="targetProgressBar"></span></div>
 
                     <div class="camera-controls simple-controls">
                         <button id="startCameraBtn" class="control-button primary" type="button" title="Turn camera on (C)">Start Camera</button>
                         <button id="stopCameraBtn" class="control-button secondary" type="button" style="display:none" title="Turn camera off (C)">Camera Off</button>
-                        <button id="muteMicBtn" class="control-button secondary" type="button" disabled title="Mute or unmute microphone (M)">Mute Mic</button>
+                        <button id="muteMicBtn" class="control-button secondary" type="button" style="display:none" disabled title="Mute or unmute microphone (M)">Mute Mic</button>
                         <button id="mirrorToggleBtn" class="control-button secondary" type="button" title="Mirror preview">Mirror</button>
                         <button id="fullscreenBtn" class="control-button secondary" type="button" title="Full screen preview (F)">Full Screen</button>
-                        <button id="startRecordingBtn" class="control-button success" type="button" disabled title="Start recording (Space)">Start Recording</button>
+                        <button id="startRecordingBtn" class="control-button success" type="button" style="display:none" disabled title="Start recording (Space)">Start Recording</button>
                         <button id="pauseRecordingBtn" class="control-button warning" type="button" style="display:none" title="Pause or resume (Space)">Pause</button>
                         <button id="stopRecordingBtn" class="control-button danger" type="button" style="display:none" title="Stop recording (S)">Stop</button>
                         <button id="retakeBtn" class="control-button secondary" type="button" style="display:none" title="Retake (R)">Retake</button>
@@ -3783,7 +3783,10 @@ async function startCamera() {
         document.getElementById('startCameraBtn').style.display = 'none';
         document.getElementById('stopCameraBtn').style.display = 'inline-flex';
         document.getElementById('startRecordingBtn').disabled = false;
+        document.getElementById('muteMicBtn').style.display = 'inline-flex';
         document.getElementById('muteMicBtn').disabled = stream.getAudioTracks().length === 0;
+        const audioMeter = document.getElementById('audioMeter');
+        if (audioMeter) audioMeter.hidden = stream.getAudioTracks().length === 0;
         document.getElementById('cameraStatus').textContent = stream.getVideoTracks().length ? 'Camera: on' : 'Camera: unavailable';
         document.getElementById('microphoneStatus').textContent = stream.getAudioTracks().length ? 'Mic: on' : 'Mic: unavailable';
         document.getElementById('recordingStatus').textContent = 'Status: previewing';
@@ -3830,6 +3833,12 @@ function stopCamera() {
         if (startCameraBtn) startCameraBtn.style.display = 'inline-flex';
         if (stopCameraBtn) stopCameraBtn.style.display = 'none';
         if (startRecordingBtn) startRecordingBtn.style.display = 'none';
+        const muteMicBtn = document.getElementById('muteMicBtn');
+        if (muteMicBtn) muteMicBtn.style.display = 'none';
+        const audioMeter = document.getElementById('audioMeter');
+        if (audioMeter) audioMeter.hidden = true;
+        const targetProgress = document.getElementById('targetProgress');
+        if (targetProgress) targetProgress.hidden = true;
         if (pauseRecordingBtn) pauseRecordingBtn.style.display = 'none';
         if (stopRecordingBtn) stopRecordingBtn.style.display = 'none';
         
@@ -3936,7 +3945,9 @@ function beginRecordingNow() {
     videoRecorderState.isPaused = false;
     videoRecorderState.recordingStartTime = Date.now();
     document.getElementById('recordingIndicator').style.display = 'flex';
-    document.getElementById('recordingStatus').textContent = 'Status: recording';
+    document.getElementById('recordingStatus').textContent = 'Recording';
+    const targetProgress = document.getElementById('targetProgress');
+    if (targetProgress) targetProgress.hidden = false;
     startRecordingTimer();
     document.getElementById('startRecordingBtn').style.display = 'none';
     document.getElementById('pauseRecordingBtn').style.display = 'inline-flex';
