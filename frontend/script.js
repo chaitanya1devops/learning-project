@@ -3782,7 +3782,6 @@ async function startCamera() {
 
         document.getElementById('startCameraBtn').style.display = 'none';
         document.getElementById('stopCameraBtn').style.display = 'inline-flex';
-        document.getElementById('startRecordingBtn').style.display = 'inline-flex';
         document.getElementById('startRecordingBtn').disabled = false;
         document.getElementById('muteMicBtn').style.display = 'inline-flex';
         document.getElementById('muteMicBtn').disabled = stream.getAudioTracks().length === 0;
