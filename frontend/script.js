@@ -3400,18 +3400,26 @@ function showVideoRecorder() {
                 </div>
             </header>
 
+            <section class="simple-dashboard" aria-label="Daily practice dashboard">
+                <div><span>Today</span><strong id="todayRecordings">0</strong><small>recordings</small></div>
+                <div><span>Practice</span><strong id="todayPracticeTime">0m</strong><small>today</small></div>
+                <div><span>Streak</span><strong id="practiceStreak">0</strong><small>days</small></div>
+                <div><span>Avg rating</span><strong id="averageRating">–</strong><small>self review</small></div>
+            </section>
+
             <div class="simple-recorder-grid">
                 <section class="camera-section studio-panel" aria-label="Recording area">
                     <div class="simple-setup-card">
                         <label>Recording title
                             <input id="recordingTitle" type="text" placeholder="e.g., Tell me about yourself">
                         </label>
-                        <label>Category
+                        <label>Practice mode
                             <select id="recordingCategory">
                                 <option>Interview Practice</option>
-                                <option>Daily Journal</option>
-                                <option>Presentation</option>
                                 <option>Communication</option>
+                                <option>Presentation</option>
+                                <option>Daily Journal</option>
+                                <option>YouTube</option>
                                 <option>Custom</option>
                             </select>
                         </label>
@@ -3430,17 +3438,46 @@ function showVideoRecorder() {
                         <input id="sessionGoal" type="hidden" value="">
                     </div>
 
+<<<<<<< codex/review-the-project-3f82yl
+                    <details class="practice-tools">
+                        <summary>Practice tools: prompts and teleprompter</summary>
+                        <div class="practice-tools-grid">
+                            <label>Prompt template
+                                <select id="promptSelect"><option>Tell me about yourself</option><option>Explain your current role</option><option>Describe a difficult problem you solved</option><option>Daily reflection</option><option>Presentation introduction</option><option>One-minute speaking challenge</option></select>
+                            </label>
+                            <label>Text size <input id="promptFontSize" type="range" min="18" max="42" value="26"></label>
+                            <label>Scroll speed <input id="promptSpeed" type="range" min="10" max="90" value="35"></label>
+                            <div class="practice-tool-actions">
+                                <button id="teleprompterStartBtn" class="studio-secondary-btn" type="button">Start</button>
+                                <button id="teleprompterPauseBtn" class="studio-secondary-btn" type="button">Pause</button>
+                                <button id="teleprompterResetBtn" class="studio-secondary-btn" type="button">Restart</button>
+                                <button id="teleprompterMirrorBtn" class="studio-secondary-btn" type="button">Mirror text</button>
+                            </div>
+                        </div>
+                    </details>
+
                     <div class="device-row simple-device-row" aria-label="Device selection">
                         <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
                         <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
                     </div>
 
+=======
+                    <div class="device-row simple-device-row" aria-label="Device selection">
+                        <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
+                        <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
+                    </div>
+
+>>>>>>> main
                     <div class="camera-preview-container simple-preview" id="previewFrame">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
                             <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
                         <div id="countdownOverlay" class="countdown-overlay" hidden></div>
+<<<<<<< codex/review-the-project-3f82yl
+                        <div id="teleprompterOverlay" class="teleprompter-overlay" hidden></div>
+=======
+>>>>>>> main
                         <div id="cameraPlaceholder" class="camera-placeholder">
                             <div class="placeholder-icon">🎥</div>
                             <p>Start camera to preview yourself</p>
@@ -3498,6 +3535,10 @@ function showVideoRecorder() {
         });
     populateMediaDevices();
     updateStorageUsage();
+<<<<<<< codex/review-the-project-3f82yl
+    updatePracticeDashboard();
+=======
+>>>>>>> main
 }
 
 function bindVideoStudioControls() {
@@ -4120,11 +4161,19 @@ function updateRecordingsList() {
     if (deleteAllBtn) {
         deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
         deleteAllBtn.onclick = deleteAllRecordings;
+<<<<<<< codex/review-the-project-3f82yl
     }
     if (searchInput) {
         searchInput.removeEventListener('input', updateRecordingsList);
         searchInput.addEventListener('input', updateRecordingsList);
     }
+=======
+    }
+    if (searchInput) {
+        searchInput.removeEventListener('input', updateRecordingsList);
+        searchInput.addEventListener('input', updateRecordingsList);
+    }
+>>>>>>> main
     [sortSelect, categoryFilter, favoriteFilter].forEach(control => {
         if (control) {
             control.removeEventListener('change', updateRecordingsList);
