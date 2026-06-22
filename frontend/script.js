@@ -1193,6 +1193,13 @@ const devOpsData = {
 // ---------------------- State ----------------------
 let currentTopic = localStorage.getItem('currentTopic') || 'Linux';
 let allTopics = Object.keys(devOpsData);
+const specialTopics = new Set(['Brain Games', 'Quizzes', 'Progress', 'Video Recorder', 'Favorites', 'Quiz3', 'Quiz4', 'Quiz5', 'Quiz6']);
+
+function normalizeTopic(topic) {
+    return (devOpsData[topic] || specialTopics.has(topic)) ? topic : 'Linux';
+}
+
+currentTopic = normalizeTopic(currentTopic);
 
 // ---------------------- Progress Tracking ----------------------
 function initializeProgressTracking() {
@@ -3438,46 +3445,17 @@ function showVideoRecorder() {
                         <input id="sessionGoal" type="hidden" value="">
                     </div>
 
-<<<<<<< codex/review-the-project-3f82yl
-                    <details class="practice-tools">
-                        <summary>Practice tools: prompts and teleprompter</summary>
-                        <div class="practice-tools-grid">
-                            <label>Prompt template
-                                <select id="promptSelect"><option>Tell me about yourself</option><option>Explain your current role</option><option>Describe a difficult problem you solved</option><option>Daily reflection</option><option>Presentation introduction</option><option>One-minute speaking challenge</option></select>
-                            </label>
-                            <label>Text size <input id="promptFontSize" type="range" min="18" max="42" value="26"></label>
-                            <label>Scroll speed <input id="promptSpeed" type="range" min="10" max="90" value="35"></label>
-                            <div class="practice-tool-actions">
-                                <button id="teleprompterStartBtn" class="studio-secondary-btn" type="button">Start</button>
-                                <button id="teleprompterPauseBtn" class="studio-secondary-btn" type="button">Pause</button>
-                                <button id="teleprompterResetBtn" class="studio-secondary-btn" type="button">Restart</button>
-                                <button id="teleprompterMirrorBtn" class="studio-secondary-btn" type="button">Mirror text</button>
-                            </div>
-                        </div>
-                    </details>
-
                     <div class="device-row simple-device-row" aria-label="Device selection">
                         <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
                         <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
                     </div>
 
-=======
-                    <div class="device-row simple-device-row" aria-label="Device selection">
-                        <label>Camera<select id="cameraSelect"><option value="">Default camera</option></select></label>
-                        <label>Microphone<select id="microphoneSelect"><option value="">Default microphone</option></select></label>
-                    </div>
-
->>>>>>> main
                     <div class="camera-preview-container simple-preview" id="previewFrame">
                         <video id="cameraPreview" class="camera-preview" autoplay muted playsinline></video>
                         <div id="recordingIndicator" class="recording-indicator" style="display: none;">
                             <span class="rec-dot"></span><span class="rec-text">REC</span><span id="recordingTimer" class="rec-timer">00:00</span>
                         </div>
                         <div id="countdownOverlay" class="countdown-overlay" hidden></div>
-<<<<<<< codex/review-the-project-3f82yl
-                        <div id="teleprompterOverlay" class="teleprompter-overlay" hidden></div>
-=======
->>>>>>> main
                         <div id="cameraPlaceholder" class="camera-placeholder">
                             <div class="placeholder-icon">🎥</div>
                             <p>Start camera to preview yourself</p>
@@ -3535,10 +3513,6 @@ function showVideoRecorder() {
         });
     populateMediaDevices();
     updateStorageUsage();
-<<<<<<< codex/review-the-project-3f82yl
-    updatePracticeDashboard();
-=======
->>>>>>> main
 }
 
 function bindVideoStudioControls() {
@@ -3798,6 +3772,17 @@ function handleRecorderShortcuts(event) {
     if (event.key.toLowerCase() === 'r') document.getElementById('retakeBtn')?.click();
 }
 
+function getBestRecordingMimeType() {
+    if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
 async function startCamera() {
     clearRecorderError();
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -3848,6 +3833,9 @@ async function startCamera() {
 }
 
 function stopCamera() {
+    if (videoRecorderState.isRecording) {
+        stopRecording();
+    }
     if (videoRecorderState.stream) {
         if (videoRecorderState.isRecording) {
             stopRecording();
@@ -4161,19 +4149,11 @@ function updateRecordingsList() {
     if (deleteAllBtn) {
         deleteAllBtn.style.display = videoRecorderState.recordings.length > 0 ? 'flex' : 'none';
         deleteAllBtn.onclick = deleteAllRecordings;
-<<<<<<< codex/review-the-project-3f82yl
     }
     if (searchInput) {
         searchInput.removeEventListener('input', updateRecordingsList);
         searchInput.addEventListener('input', updateRecordingsList);
     }
-=======
-    }
-    if (searchInput) {
-        searchInput.removeEventListener('input', updateRecordingsList);
-        searchInput.addEventListener('input', updateRecordingsList);
-    }
->>>>>>> main
     [sortSelect, categoryFilter, favoriteFilter].forEach(control => {
         if (control) {
             control.removeEventListener('change', updateRecordingsList);
