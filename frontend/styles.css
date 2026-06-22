@@ -5407,6 +5407,25 @@ mark {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), var(--shadow-sm);
 }
 
+.video-recorder-container .camera-placeholder {
+  gap: 0.4rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.video-recorder-container .camera-placeholder small {
+  color: var(--text-muted);
+  max-width: 28rem;
+}
+
+.video-recorder-container .camera-controls {
+  align-items: center;
+}
+
+.video-recorder-container .control-button {
+  min-height: 46px;
+}
+
 .recordings-header {
   flex-direction: column;
   align-items: stretch;
