@@ -1193,6 +1193,13 @@ const devOpsData = {
 // ---------------------- State ----------------------
 let currentTopic = localStorage.getItem('currentTopic') || 'Linux';
 let allTopics = Object.keys(devOpsData);
+const specialTopics = new Set(['Brain Games', 'Quizzes', 'Progress', 'Video Recorder', 'Favorites', 'Quiz3', 'Quiz4', 'Quiz5', 'Quiz6']);
+
+function normalizeTopic(topic) {
+    return (devOpsData[topic] || specialTopics.has(topic)) ? topic : 'Linux';
+}
+
+currentTopic = normalizeTopic(currentTopic);
 
 // ---------------------- Progress Tracking ----------------------
 function initializeProgressTracking() {
@@ -1630,10 +1637,14 @@ function shuffleArray(arr) {
 }
 
 function renderTopic(topic) {
+    topic = normalizeTopic(topic);
+    if (currentTopic === 'Video Recorder' && topic !== 'Video Recorder') {
+        stopCamera();
+    }
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
-    if (topic === 'Video Recorder') { showVideoRecorder(); return; }
+    if (topic === 'Video Recorder') { currentTopic = topic; localStorage.setItem('currentTopic', topic); showVideoRecorder(); return; }
     if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
@@ -3381,6 +3392,14 @@ let videoRecorderState = {
 
 function showVideoRecorder() {
     const container = document.getElementById('questionsContainer');
+    const search = document.getElementById('searchInput');
+    if (search) {
+        search.value = '';
+        search.disabled = true;
+        search.placeholder = 'Video recorder active';
+    }
+    updateActiveTabButton('Video Recorder');
+    updateHeaderTopic('Video Recorder', 1, 1);
     container.innerHTML = `
         <div class="video-recorder-container">
             <div class="recorder-header">
@@ -3433,7 +3452,7 @@ function showVideoRecorder() {
                         </div>
                         <div class="info-item">
                             <span class="info-icon">💾</span>
-                            <span class="info-text">Download recordings as MP4 files</span>
+                            <span class="info-text">Download recordings as WebM files</span>
                         </div>
                     </div>
                 </div>
@@ -3492,8 +3511,22 @@ function showVideoRecorder() {
         });
 }
 
+function getBestRecordingMimeType() {
+    if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm'
+    ];
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
 async function startCamera() {
     try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Camera and microphone APIs are not available in this browser.');
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { width: 1280, height: 720 },
             audio: true
@@ -3521,6 +3554,9 @@ async function startCamera() {
 }
 
 function stopCamera() {
+    if (videoRecorderState.isRecording) {
+        stopRecording();
+    }
     if (videoRecorderState.stream) {
         videoRecorderState.stream.getTracks().forEach(track => track.stop());
         videoRecorderState.stream = null;
@@ -3531,11 +3567,6 @@ function stopCamera() {
         preview.srcObject = null;
         preview.style.display = 'none';
         placeholder.style.display = 'flex';
-        
-        // Reset recording if active
-        if (videoRecorderState.isRecording) {
-            stopRecording();
-        }
         
         // Update button visibility
         document.getElementById('startCameraBtn').style.display = 'inline-flex';
@@ -3550,11 +3581,23 @@ function stopCamera() {
 
 function startRecording() {
     if (!videoRecorderState.stream) return;
+    if (!window.MediaRecorder) {
+        showToast('❌ Recording is not supported in this browser.', 'error');
+        return;
+    }
     
     videoRecorderState.recordedChunks = [];
-    videoRecorderState.mediaRecorder = new MediaRecorder(videoRecorderState.stream, {
-        mimeType: 'video/webm;codecs=vp9'
-    });
+    const mimeType = getBestRecordingMimeType();
+    try {
+        videoRecorderState.mediaRecorder = mimeType
+            ? new MediaRecorder(videoRecorderState.stream, { mimeType })
+            : new MediaRecorder(videoRecorderState.stream);
+        videoRecorderState.mimeType = mimeType || videoRecorderState.mediaRecorder.mimeType || 'video/webm';
+    } catch (error) {
+        console.error('Failed to start MediaRecorder:', error);
+        showToast('❌ Recording format is not supported by this browser.', 'error');
+        return;
+    }
     
     videoRecorderState.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -3563,7 +3606,7 @@ function startRecording() {
     };
     
     videoRecorderState.mediaRecorder.onstop = () => {
-        const blob = new Blob(videoRecorderState.recordedChunks, { type: 'video/webm' });
+        const blob = new Blob(videoRecorderState.recordedChunks, { type: videoRecorderState.mimeType || 'video/webm' });
         saveRecording(blob);
     };
     
