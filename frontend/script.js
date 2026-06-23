@@ -3255,7 +3255,12 @@ let videoPracticeState = {
     isRecording: false,
     isPaused: false,
     lastRecordedAt: null,
-    keyboardHandler: null
+    keyboardHandler: null,
+    audioContext: null,
+    audioAnalyser: null,
+    audioAnimationId: null,
+    muted: false,
+    mirrored: true
 };
 
 function showVideoPractice() {
@@ -3271,97 +3276,271 @@ function showVideoPractice() {
 
     container.innerHTML = `
         <section class="video-practice-page" aria-labelledby="videoPracticeTitle">
-            <div class="video-practice-card">
-                <header class="video-practice-header">
-                    <div>
-                        <p class="eyebrow">Private local recorder</p>
-                        <h2 id="videoPracticeTitle">🎥 Video Practice Recorder</h2>
-                        <p>Your recording stays on this device. Nothing is uploaded.</p>
-                    </div>
-                    <div class="video-practice-status" aria-live="polite">
-                        <span id="vpRecordDot" class="vp-record-dot" hidden></span>
-                        <strong id="vpStatusText">Ready</strong>
-                        <span id="vpTimer">00:00</span>
-                    </div>
-                </header>
-
-                <div class="practice-question-card" id="practiceQuestionCard">
-                    <label for="practiceQuestionInput">Enter a practice question or topic</label>
-                    <textarea id="practiceQuestionInput" rows="2" placeholder="Example: How would you deploy Jenkins in your organization?"></textarea>
-                    <button id="hideQuestionBtn" type="button" class="vp-link-btn">Hide question while recording</button>
+            <header class="video-practice-topbar">
+                <div>
+                    <p class="eyebrow">Private local recorder</p>
+                    <h2 id="videoPracticeTitle">🎥 Video Practice Recorder</h2>
+                    <p>Practice your interview answers, review your delivery, and download the recording privately.</p>
                 </div>
+                <span class="video-privacy-badge">🔒 Private • Stored locally</span>
+            </header>
 
-                <div class="video-practice-options" aria-label="Recording options">
-                    <label>Download Format
-                        <select id="vpFormatSelect" aria-label="Download format"></select>
-                    </label>
-                    <label>Video Quality
-                        <select id="vpQualitySelect" aria-label="Video quality">
-                            <option value="auto">Automatic</option>
-                            <option value="720">Standard – 720p</option>
-                            <option value="1080">High – 1080p</option>
-                        </select>
-                    </label>
-                </div>
-                <p id="vpFormatHelp" class="video-practice-help" role="status"></p>
+            <div class="video-practice-layout">
+                <main class="video-practice-main" aria-label="Recorder workspace">
+                    <article class="practice-question-card" id="practiceQuestionCard">
+                        <div>
+                            <span class="question-label">Practice Question</span>
+                            <p id="practiceQuestionText">Enter a practice question or topic below, or use this space to focus your answer.</p>
+                            <span class="question-hidden-text" hidden>Question hidden for distraction-free practice.</span>
+                        </div>
+                        <div class="question-meta-actions">
+                            <span class="question-badge">Custom topic</span>
+                            <span class="question-count">Question 1 of 1</span>
+                            <button id="showQuestionBtn" type="button" class="vp-link-btn" hidden>Show Question</button>
+                            <button id="hideQuestionBtn" type="button" class="vp-link-btn">Hide Question</button>
+                            <button id="nextQuestionBtn" type="button" class="vp-link-btn">Next Question</button>
+                        </div>
+                        <label class="question-input-label" for="practiceQuestionInput">Enter a practice question or topic</label>
+                        <textarea id="practiceQuestionInput" rows="2" placeholder="Example: How would you deploy Jenkins in your organization?"></textarea>
+                    </article>
 
-                <div class="video-practice-permissions" aria-label="Permission status">
-                    <span id="vpCameraStatus">Camera: Waiting for permission</span>
-                    <span id="vpMicStatus">Microphone: Waiting for permission</span>
-                </div>
+                    <section class="video-practice-stage" aria-label="Camera preview and recording controls">
+                        <div class="video-practice-preview-wrap" id="vpPreviewFrame">
+                            <video id="vpLivePreview" class="video-practice-preview mirrored" autoplay muted playsinline></video>
+                            <video id="vpPlayback" class="video-practice-preview" controls playsinline hidden></video>
+                            <div class="video-practice-overlay" aria-live="polite">
+                                <span id="vpRecordDot" class="vp-record-dot neutral"></span>
+                                <strong id="vpStatusText">Ready</strong>
+                                <span id="vpTimer">00:00</span>
+                            </div>
+                            <div id="vpEmptyState" class="video-practice-empty">
+                                <span>📷</span>
+                                <h3>Camera is off</h3>
+                                <p>Start the camera to preview yourself before recording.</p>
+                                <button id="vpEmptyStartBtn" type="button" class="vp-btn vp-btn-primary">Start Camera</button>
+                            </div>
+                        </div>
 
-                <div class="video-practice-preview-wrap">
-                    <video id="vpLivePreview" class="video-practice-preview mirrored" autoplay muted playsinline></video>
-                    <video id="vpPlayback" class="video-practice-preview" controls playsinline hidden></video>
-                    <div id="vpEmptyState" class="video-practice-empty">
-                        <span>📷</span>
-                        <p>Start the camera to preview yourself.</p>
-                    </div>
-                </div>
+                        <div class="audio-meter-card" aria-label="Microphone level">
+                            <div class="audio-meter-header">
+                                <span>Microphone level</span>
+                                <small id="vpAudioWarning">Waiting for microphone</small>
+                            </div>
+                            <div id="vpAudioBars" class="audio-bars" aria-hidden="true">
+                                ${Array.from({ length: 10 }, (_, index) => `<span data-bar="${index}"></span>`).join('')}
+                            </div>
+                        </div>
 
-                <div id="vpReviewMeta" class="video-practice-review" hidden>
-                    <span id="vpReviewDuration">Duration: 00:00</span>
-                    <span id="vpReviewFormat">Format: —</span>
-                    <span id="vpReviewSize">Size: —</span>
-                </div>
+                        <div id="vpControls" class="video-practice-controls" aria-label="Recording controls">
+                            <button id="vpStartCameraBtn" type="button" class="vp-btn vp-btn-primary" data-action="camera" title="Start camera">📷 Start Camera</button>
+                            <button id="vpTurnCameraOffBtn" type="button" class="vp-btn vp-btn-secondary" data-action="camera-off" title="Turn camera off" hidden>Camera Off</button>
+                            <button id="vpStartRecordingBtn" type="button" class="vp-btn vp-btn-primary" data-action="record" title="Start recording" hidden>● Start Recording</button>
+                            <button id="vpPauseBtn" type="button" class="vp-btn vp-btn-secondary" data-action="pause" title="Pause recording" hidden>⏸ Pause</button>
+                            <button id="vpStopBtn" type="button" class="vp-btn vp-btn-danger" data-action="stop" title="Stop recording" hidden>■ Stop Recording</button>
+                            <button id="vpDownloadBtn" type="button" class="vp-btn vp-btn-primary" data-action="download" title="Download recording" hidden>⬇ Download</button>
+                            <button id="vpRetakeBtn" type="button" class="vp-btn vp-btn-secondary" data-action="retake" title="Retake recording" hidden>↻ Retake</button>
+                            <button id="vpDeleteBtn" type="button" class="vp-btn vp-btn-danger" data-action="delete" title="Delete recording" hidden>🗑 Delete</button>
+                        </div>
 
-                <div class="video-practice-controls" aria-label="Recording controls">
-                    <button id="vpStartCameraBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Start camera">Start Camera</button>
-                    <button id="vpStartRecordingBtn" type="button" class="vp-btn vp-btn-primary" aria-label="Start recording" disabled>Start Recording</button>
-                    <button id="vpPauseBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Pause recording" disabled>Pause</button>
-                    <button id="vpStopBtn" type="button" class="vp-btn vp-btn-danger" aria-label="Stop recording" disabled>Stop</button>
-                    <button id="vpRetakeBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Retake recording" disabled>Retake</button>
-                    <button id="vpDownloadBtn" type="button" class="vp-btn vp-btn-primary" aria-label="Download recording" disabled>Download</button>
-                    <button id="vpDeleteBtn" type="button" class="vp-btn vp-btn-danger" aria-label="Delete recording" disabled>Delete</button>
-                </div>
+                        <div id="vpReviewMeta" class="video-practice-review" hidden>
+                            <span id="vpReviewDuration">Duration: 00:00</span>
+                            <span id="vpReviewResolution">Resolution: —</span>
+                            <span id="vpReviewFormat">Format: —</span>
+                            <span id="vpReviewSize">Size: —</span>
+                            <span id="vpReviewDate">Recorded: —</span>
+                        </div>
+                    </section>
+                </main>
 
-                <p id="vpMessage" class="video-practice-message" role="alert"></p>
-                <div id="vpSrStatus" class="sr-only" aria-live="assertive"></div>
+                <aside class="video-practice-sidebar" aria-label="Recording settings">
+                    <details class="video-settings-disclosure" open>
+                        <summary>Recording Settings</summary>
+                        <div class="video-side-card status-card">
+                            <h3>Recording Status</h3>
+                            <dl>
+                                <div><dt>State</dt><dd><span id="vpSideState" class="state-badge ready">Ready</span></dd></div>
+                                <div><dt>Duration</dt><dd id="vpSideDuration">00:00</dd></div>
+                                <div><dt>Estimated size</dt><dd id="vpSideSize">0 B</dd></div>
+                                <div><dt>Resolution</dt><dd id="vpSideResolution">—</dd></div>
+                                <div><dt>Format</dt><dd id="vpSideFormat">—</dd></div>
+                                <div><dt>Camera</dt><dd id="vpCameraStatus">Waiting for permission</dd></div>
+                                <div><dt>Microphone</dt><dd id="vpMicStatus">Waiting for permission</dd></div>
+                            </dl>
+                        </div>
+
+                        <div class="video-side-card">
+                            <h3>Device Settings</h3>
+                            <label>Camera
+                                <select id="vpCameraSelect" aria-label="Camera device"><option value="">Default camera</option></select>
+                            </label>
+                            <label>Microphone
+                                <select id="vpMicSelect" aria-label="Microphone device"><option value="">Default microphone</option></select>
+                            </label>
+                            <label>Speaker output
+                                <select id="vpSpeakerSelect" aria-label="Speaker output" disabled><option>Default output</option></select>
+                            </label>
+                            <div class="side-actions">
+                                <button id="vpRefreshDevicesBtn" type="button" class="vp-mini-btn">Refresh devices</button>
+                            </div>
+                            <label class="toggle-row"><input id="vpMirrorToggle" type="checkbox" checked> Mirror preview</label>
+                            <label class="toggle-row"><input id="vpMuteToggle" type="checkbox"> Mute microphone</label>
+                        </div>
+
+                        <div class="video-side-card">
+                            <h3>Video Settings</h3>
+                            <label>Video quality
+                                <select id="vpQualitySelect" aria-label="Video quality">
+                                    <option value="auto">Automatic</option>
+                                    <option value="480">480p</option>
+                                    <option value="720">720p HD</option>
+                                    <option value="1080">1080p Full HD</option>
+                                </select>
+                            </label>
+                            <label>Frame rate
+                                <select id="vpFrameRateSelect" aria-label="Frame rate">
+                                    <option value="auto">Automatic</option>
+                                    <option value="24">24 FPS</option>
+                                    <option value="30">30 FPS</option>
+                                    <option value="60">60 FPS</option>
+                                </select>
+                            </label>
+                            <label>Orientation
+                                <select id="vpOrientationSelect" aria-label="Orientation">
+                                    <option value="landscape">Landscape</option>
+                                    <option value="portrait">Portrait</option>
+                                    <option value="square">Square</option>
+                                </select>
+                            </label>
+                            <p class="side-helper">Unsupported camera settings automatically fall back to the closest available quality.</p>
+                        </div>
+
+                        <div class="video-side-card">
+                            <h3>Download Format</h3>
+                            <label>Format
+                                <select id="vpFormatSelect" aria-label="Download format"></select>
+                            </label>
+                            <p id="vpFormatHelp" class="side-helper" role="status"></p>
+                        </div>
+
+                        <div class="video-side-card privacy-card">
+                            <h3>🛡 Privacy</h3>
+                            <p>Your camera and microphone stay on this device. Recordings are not uploaded or stored on a server.</p>
+                        </div>
+                    </details>
+                </aside>
             </div>
+
+            <p id="vpMessage" class="video-practice-message" role="alert"></p>
+            <div id="vpSrStatus" class="sr-only" aria-live="assertive"></div>
         </section>
     `;
 
     bindVideoPracticeEvents();
     populateVideoPracticeFormats();
+    populateVideoPracticeDevices();
     setVideoPracticeIdleState();
 }
 
 function bindVideoPracticeEvents() {
+    document.getElementById('vpEmptyStartBtn')?.addEventListener('click', startVideoPracticeCamera);
     document.getElementById('vpStartCameraBtn')?.addEventListener('click', startVideoPracticeCamera);
+    document.getElementById('vpTurnCameraOffBtn')?.addEventListener('click', turnOffVideoPracticeCamera);
     document.getElementById('vpStartRecordingBtn')?.addEventListener('click', startVideoPracticeRecording);
     document.getElementById('vpPauseBtn')?.addEventListener('click', toggleVideoPracticePause);
     document.getElementById('vpStopBtn')?.addEventListener('click', stopVideoPracticeRecording);
     document.getElementById('vpRetakeBtn')?.addEventListener('click', retakeVideoPracticeRecording);
     document.getElementById('vpDeleteBtn')?.addEventListener('click', deleteVideoPracticeRecording);
     document.getElementById('vpDownloadBtn')?.addEventListener('click', downloadVideoPracticeRecording);
-    document.getElementById('hideQuestionBtn')?.addEventListener('click', event => {
-        const card = document.getElementById('practiceQuestionCard');
-        const isHidden = card?.classList.toggle('is-hidden');
-        event.currentTarget.textContent = isHidden ? 'Show question' : 'Hide question while recording';
-    });
+    document.getElementById('hideQuestionBtn')?.addEventListener('click', hidePracticeQuestion);
+    document.getElementById('showQuestionBtn')?.addEventListener('click', showPracticeQuestion);
+    document.getElementById('nextQuestionBtn')?.addEventListener('click', useNextPracticeQuestion);
+    document.getElementById('practiceQuestionInput')?.addEventListener('input', updatePracticeQuestionText);
+    document.getElementById('vpRefreshDevicesBtn')?.addEventListener('click', populateVideoPracticeDevices);
+    document.getElementById('vpCameraSelect')?.addEventListener('change', restartVideoPracticeCameraIfActive);
+    document.getElementById('vpMicSelect')?.addEventListener('change', restartVideoPracticeCameraIfActive);
+    document.getElementById('vpMirrorToggle')?.addEventListener('change', toggleVideoPracticeMirror);
+    document.getElementById('vpMuteToggle')?.addEventListener('change', toggleVideoPracticeMute);
     videoPracticeState.keyboardHandler = handleVideoPracticeShortcuts;
     document.addEventListener('keydown', videoPracticeState.keyboardHandler);
     window.addEventListener('beforeunload', cleanupVideoPractice, { once: true });
+}
+
+const videoPracticeSampleQuestions = [
+    'Tell me about yourself and your current DevOps role.',
+    'How would you deploy Jenkins in your organization?',
+    'Describe a production issue you solved and what you learned.',
+    'How do you troubleshoot a failing Kubernetes deployment?'
+];
+let videoPracticeQuestionIndex = 0;
+
+function updatePracticeQuestionText() {
+    const value = document.getElementById('practiceQuestionInput')?.value.trim();
+    const text = document.getElementById('practiceQuestionText');
+    if (text) text.textContent = value || 'Enter a practice question or topic below, or use this space to focus your answer.';
+}
+
+function hidePracticeQuestion() {
+    document.getElementById('practiceQuestionText')?.setAttribute('hidden', '');
+    document.querySelector('.question-hidden-text')?.removeAttribute('hidden');
+    document.getElementById('hideQuestionBtn')?.setAttribute('hidden', '');
+    document.getElementById('showQuestionBtn')?.removeAttribute('hidden');
+}
+
+function showPracticeQuestion() {
+    document.getElementById('practiceQuestionText')?.removeAttribute('hidden');
+    document.querySelector('.question-hidden-text')?.setAttribute('hidden', '');
+    document.getElementById('showQuestionBtn')?.setAttribute('hidden', '');
+    document.getElementById('hideQuestionBtn')?.removeAttribute('hidden');
+}
+
+function useNextPracticeQuestion() {
+    videoPracticeQuestionIndex = (videoPracticeQuestionIndex + 1) % videoPracticeSampleQuestions.length;
+    const input = document.getElementById('practiceQuestionInput');
+    if (input) input.value = videoPracticeSampleQuestions[videoPracticeQuestionIndex];
+    updatePracticeQuestionText();
+    showPracticeQuestion();
+}
+
+async function populateVideoPracticeDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        fillVideoPracticeDeviceSelect('vpCameraSelect', devices.filter(device => device.kind === 'videoinput'), 'Default camera');
+        fillVideoPracticeDeviceSelect('vpMicSelect', devices.filter(device => device.kind === 'audioinput'), 'Default microphone');
+        fillVideoPracticeDeviceSelect('vpSpeakerSelect', devices.filter(device => device.kind === 'audiooutput'), 'Default output');
+        const speaker = document.getElementById('vpSpeakerSelect');
+        if (speaker) speaker.disabled = !('setSinkId' in HTMLMediaElement.prototype);
+    } catch (error) {
+        console.warn('Unable to enumerate media devices:', error);
+    }
+}
+
+function fillVideoPracticeDeviceSelect(id, devices, fallbackLabel) {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = `<option value="">${fallbackLabel}</option>`;
+    devices.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || `${fallbackLabel.replace('Default ', '')} ${index + 1}`;
+        select.appendChild(option);
+    });
+    if ([...select.options].some(option => option.value === previous)) select.value = previous;
+}
+
+function restartVideoPracticeCameraIfActive() {
+    if (videoPracticeState.stream && !videoPracticeState.isRecording) startVideoPracticeCamera();
+}
+
+function toggleVideoPracticeMirror(event) {
+    videoPracticeState.mirrored = event.target.checked;
+    document.getElementById('vpLivePreview')?.classList.toggle('mirrored', videoPracticeState.mirrored);
+}
+
+function toggleVideoPracticeMute(event) {
+    videoPracticeState.muted = event.target.checked;
+    videoPracticeState.stream?.getAudioTracks().forEach(track => { track.enabled = !videoPracticeState.muted; });
 }
 
 function populateVideoPracticeFormats() {
@@ -3388,7 +3567,10 @@ function populateVideoPracticeFormats() {
         select.appendChild(mp4);
     }
 
-    setVideoPracticeMessage(supported.mp4 ? 'MP4 is supported in this browser.' : 'MP4 recording/conversion is not available here. WebM or original format will be used.', 'info');
+    const help = document.getElementById('vpFormatHelp');
+    if (help) help.textContent = supported.mp4
+        ? 'MP4 is supported natively in this browser.'
+        : 'Your browser records WebM/original natively. MP4 conversion is unavailable here.';
 }
 
 function getVideoPracticeSupportedMimeTypes() {
@@ -3413,14 +3595,24 @@ function getSelectedVideoPracticeMimeType() {
 
 function getVideoPracticeConstraints() {
     const quality = document.getElementById('vpQualitySelect')?.value || 'auto';
-    const base = { audio: true, video: { facingMode: 'user' } };
-    if (quality === '720') {
-        base.video = { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
-    }
-    if (quality === '1080') {
-        base.video = { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } };
-    }
-    return base;
+    const frameRate = document.getElementById('vpFrameRateSelect')?.value || 'auto';
+    const orientation = document.getElementById('vpOrientationSelect')?.value || 'landscape';
+    const cameraId = document.getElementById('vpCameraSelect')?.value || '';
+    const micId = document.getElementById('vpMicSelect')?.value || '';
+    const sizes = {
+        auto: [1280, 720],
+        '480': [854, 480],
+        '720': [1280, 720],
+        '1080': [1920, 1080]
+    };
+    let [width, height] = sizes[quality] || sizes.auto;
+    if (orientation === 'portrait') [width, height] = [height, width];
+    if (orientation === 'square') [width, height] = [720, 720];
+    const video = { facingMode: 'user', width: { ideal: width }, height: { ideal: height } };
+    if (cameraId) video.deviceId = { exact: cameraId };
+    if (frameRate !== 'auto') video.frameRate = { ideal: Number(frameRate) };
+    const audio = micId ? { deviceId: { exact: micId } } : true;
+    return { audio, video };
 }
 
 async function startVideoPracticeCamera() {
@@ -3461,6 +3653,9 @@ async function startVideoPracticeCamera() {
         document.getElementById('vpEmptyState')?.setAttribute('hidden', '');
         setPermissionStatus('vpCameraStatus', 'Camera: Ready');
         setPermissionStatus('vpMicStatus', 'Microphone: Ready');
+        populateVideoPracticeDevices();
+        startVideoPracticeAudioMeter(stream);
+        updateVideoPracticeSideStatus('Camera ready');
         setVideoPracticeMessage(getActualVideoQualityMessage(stream), 'info');
         setVideoPracticeButtonState({ cameraReady: true });
     } catch (error) {
@@ -3468,6 +3663,61 @@ async function startVideoPracticeCamera() {
         handleVideoPracticeMediaError(error);
     }
 }
+
+function turnOffVideoPracticeCamera() {
+    cleanupVideoPracticeStream();
+    stopVideoPracticeAudioMeter();
+    setVideoPracticeIdleState();
+    setVideoPracticeMessage('Camera turned off.', 'info');
+}
+
+function startVideoPracticeAudioMeter(stream) {
+    stopVideoPracticeAudioMeter();
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        videoPracticeState.audioContext = audioContext;
+        videoPracticeState.audioAnalyser = analyser;
+        updateVideoPracticeAudioMeter();
+    } catch (error) {
+        console.warn('Audio meter unavailable:', error);
+        const warning = document.getElementById('vpAudioWarning');
+        if (warning) warning.textContent = 'Audio meter unavailable';
+    }
+}
+
+function updateVideoPracticeAudioMeter() {
+    const analyser = videoPracticeState.audioAnalyser;
+    if (!analyser) return;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    const average = data.reduce((sum, value) => sum + value, 0) / data.length;
+    const bars = document.querySelectorAll('#vpAudioBars span');
+    bars.forEach((bar, index) => {
+        const threshold = (index + 1) * (255 / bars.length);
+        bar.style.transform = `scaleY(${Math.max(0.16, Math.min(1, average / threshold))})`;
+        bar.classList.toggle('is-active', average > threshold * 0.55);
+    });
+    const warning = document.getElementById('vpAudioWarning');
+    if (warning) warning.textContent = average < 4 && videoPracticeState.stream ? 'No microphone input detected' : 'Input detected';
+    videoPracticeState.audioAnimationId = requestAnimationFrame(updateVideoPracticeAudioMeter);
+}
+
+function stopVideoPracticeAudioMeter() {
+    if (videoPracticeState.audioAnimationId) cancelAnimationFrame(videoPracticeState.audioAnimationId);
+    videoPracticeState.audioAnimationId = null;
+    if (videoPracticeState.audioContext) videoPracticeState.audioContext.close().catch(() => {});
+    videoPracticeState.audioContext = null;
+    videoPracticeState.audioAnalyser = null;
+    document.querySelectorAll('#vpAudioBars span').forEach(bar => {
+        bar.style.transform = 'scaleY(0.16)';
+        bar.classList.remove('is-active');
+    });
+}
+
 
 function getActualVideoQualityMessage(stream) {
     const settings = stream.getVideoTracks()[0]?.getSettings?.() || {};
@@ -3595,6 +3845,7 @@ function finishVideoPracticeRecording() {
         live.hidden = true;
     }
     cleanupVideoPracticeStream();
+    stopVideoPracticeAudioMeter();
     if (playback) {
         playback.src = videoPracticeState.recordingUrl;
         playback.hidden = false;
@@ -3623,17 +3874,23 @@ function updateVideoPracticeTimer() {
     videoPracticeState.elapsedSeconds = Math.floor((Date.now() - videoPracticeState.recordingStartedAt) / 1000);
     const timer = document.getElementById('vpTimer');
     if (timer) timer.textContent = formatVideoPracticeDuration(videoPracticeState.elapsedSeconds);
+    updateVideoPracticeSideStatus(videoPracticeState.isPaused ? 'Paused' : 'Recording');
 }
 
 function updateVideoPracticeReview(blob) {
     const review = document.getElementById('vpReviewMeta');
     if (review) review.hidden = false;
     const duration = document.getElementById('vpReviewDuration');
+    const resolution = document.getElementById('vpReviewResolution');
     const format = document.getElementById('vpReviewFormat');
     const size = document.getElementById('vpReviewSize');
+    const date = document.getElementById('vpReviewDate');
     if (duration) duration.textContent = `Duration: ${formatVideoPracticeDuration(videoPracticeState.elapsedSeconds)}`;
+    if (resolution) resolution.textContent = `Resolution: ${getVideoPracticeResolutionText()}`;
     if (format) format.textContent = `Format: ${getVideoPracticeExtension()}`;
     if (size) size.textContent = `Size: ${formatVideoPracticeFileSize(blob.size)}`;
+    if (date) date.textContent = `Recorded: ${(videoPracticeState.lastRecordedAt || new Date()).toLocaleString()}`;
+    updateVideoPracticeSideStatus('Completed');
 }
 
 function downloadVideoPracticeRecording() {
@@ -3661,6 +3918,7 @@ function retakeVideoPracticeRecording() {
 function deleteVideoPracticeRecording() {
     clearVideoPracticeRecording();
     cleanupVideoPracticeStream();
+    stopVideoPracticeAudioMeter();
     setVideoPracticeIdleState();
     setVideoPracticeMessage('Recording deleted from memory.', 'info');
     announceVideoPractice('Recording deleted');
@@ -3727,33 +3985,90 @@ function setVideoPracticeIdleState() {
 }
 
 function setVideoPracticeButtonState(state) {
-    const startCamera = document.getElementById('vpStartCameraBtn');
-    const startRecording = document.getElementById('vpStartRecordingBtn');
-    const pause = document.getElementById('vpPauseBtn');
-    const stop = document.getElementById('vpStopBtn');
-    const retake = document.getElementById('vpRetakeBtn');
-    const download = document.getElementById('vpDownloadBtn');
-    const del = document.getElementById('vpDeleteBtn');
+    const ids = ['vpStartCameraBtn', 'vpTurnCameraOffBtn', 'vpStartRecordingBtn', 'vpPauseBtn', 'vpStopBtn', 'vpRetakeBtn', 'vpDownloadBtn', 'vpDeleteBtn'];
+    ids.forEach(id => { const button = document.getElementById(id); if (button) button.hidden = true; });
+    const show = (id, disabled = false) => {
+        const button = document.getElementById(id);
+        if (!button) return;
+        button.hidden = false;
+        button.disabled = disabled;
+    };
     const format = document.getElementById('vpFormatSelect');
     const quality = document.getElementById('vpQualitySelect');
+    const frameRate = document.getElementById('vpFrameRateSelect');
+    const orientation = document.getElementById('vpOrientationSelect');
     const lockOptions = Boolean(state.recording || state.processing || state.hasRecording || state.cameraReady);
-    if (format) format.disabled = lockOptions;
-    if (quality) quality.disabled = lockOptions;
-    if (startCamera) startCamera.disabled = Boolean(state.cameraReady || state.recording || state.processing || state.hasRecording);
-    if (startRecording) startRecording.disabled = !state.cameraReady || Boolean(state.recording || state.processing || state.hasRecording);
-    if (pause) pause.disabled = !state.recording;
-    if (stop) stop.disabled = !state.recording;
-    if (retake) retake.disabled = !state.hasRecording;
-    if (download) download.disabled = !state.hasRecording || Boolean(state.processing);
-    if (del) del.disabled = !state.hasRecording;
+    [format, quality, frameRate, orientation].forEach(input => { if (input) input.disabled = lockOptions; });
+
+    if (state.recording) {
+        show('vpPauseBtn');
+        show('vpStopBtn');
+        updateVideoPracticeSideStatus(videoPracticeState.isPaused ? 'Paused' : 'Recording');
+        return;
+    }
+    if (state.processing) {
+        show('vpStopBtn', true);
+        updateVideoPracticeSideStatus('Processing');
+        return;
+    }
+    if (state.hasRecording) {
+        show('vpDownloadBtn');
+        show('vpRetakeBtn');
+        show('vpDeleteBtn');
+        updateVideoPracticeSideStatus('Completed');
+        return;
+    }
+    if (state.cameraReady) {
+        show('vpStartRecordingBtn');
+        show('vpTurnCameraOffBtn');
+        updateVideoPracticeSideStatus('Camera ready');
+        return;
+    }
+    show('vpStartCameraBtn');
+    updateVideoPracticeSideStatus('Ready');
 }
 
 function setVideoPracticeStatus(text, recording) {
     const status = document.getElementById('vpStatusText');
     const dot = document.getElementById('vpRecordDot');
     if (status) status.textContent = text;
-    if (dot) dot.hidden = !recording;
+    if (dot) {
+        dot.hidden = false;
+        dot.className = `vp-record-dot ${recording ? 'recording' : (text.includes('Paused') ? 'paused' : 'neutral')}`;
+    }
+    updateVideoPracticeSideStatus(text);
 }
+
+function updateVideoPracticeSideStatus(stateText) {
+    const badge = document.getElementById('vpSideState');
+    if (badge) {
+        const normalized = stateText.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '') || 'ready';
+        badge.className = `state-badge ${normalized}`;
+        badge.textContent = stateText;
+    }
+    const sideDuration = document.getElementById('vpSideDuration');
+    if (sideDuration) sideDuration.textContent = formatVideoPracticeDuration(videoPracticeState.elapsedSeconds || 0);
+    const sideSize = document.getElementById('vpSideSize');
+    if (sideSize) sideSize.textContent = videoPracticeState.recordingBlob ? formatVideoPracticeFileSize(videoPracticeState.recordingBlob.size) : estimateVideoPracticeSize();
+    const sideResolution = document.getElementById('vpSideResolution');
+    if (sideResolution) sideResolution.textContent = getVideoPracticeResolutionText();
+    const sideFormat = document.getElementById('vpSideFormat');
+    if (sideFormat) sideFormat.textContent = videoPracticeState.recordingMimeType || getSelectedVideoPracticeMimeType() || '—';
+}
+
+function getVideoPracticeResolutionText() {
+    const settings = videoPracticeState.stream?.getVideoTracks?.()[0]?.getSettings?.();
+    if (settings?.width && settings?.height) return `${settings.width}×${settings.height}`;
+    const video = document.getElementById('vpPlayback');
+    if (video?.videoWidth && video?.videoHeight) return `${video.videoWidth}×${video.videoHeight}`;
+    return '—';
+}
+
+function estimateVideoPracticeSize() {
+    if (!videoPracticeState.isRecording) return '0 B';
+    return formatVideoPracticeFileSize(Math.max(0, videoPracticeState.elapsedSeconds) * 220000);
+}
+
 
 function setPermissionStatus(id, text) {
     const element = document.getElementById(id);
@@ -3762,12 +4077,35 @@ function setPermissionStatus(id, text) {
 
 function setVideoPracticeMessage(message, type = 'info') {
     const element = document.getElementById('vpMessage');
-    const help = document.getElementById('vpFormatHelp');
     if (element) {
         element.textContent = message || '';
         element.dataset.type = type;
     }
-    if (help && type === 'info') help.textContent = message || '';
+    if (event.key.toLowerCase() === 's') stopVideoPracticeRecording();
+    if (event.key.toLowerCase() === 'r') retakeVideoPracticeRecording();
+}
+
+function getVideoPracticeExtension() {
+    if (videoPracticeState.recordingMimeType.includes('mp4')) return 'mp4';
+    return 'webm';
+}
+
+function formatVideoPracticeDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatVideoPracticeFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatVideoPracticeTimestamp(date) {
+    const pad = value => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
 function announceVideoPractice(message) {
