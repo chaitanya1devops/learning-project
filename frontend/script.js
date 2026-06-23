@@ -1193,7 +1193,7 @@ const devOpsData = {
 // ---------------------- State ----------------------
 let currentTopic = localStorage.getItem('currentTopic') || 'Linux';
 let allTopics = Object.keys(devOpsData);
-const specialTopics = new Set(['Brain Games', 'Quizzes', 'Progress', 'Favorites', 'Quiz3', 'Quiz4', 'Quiz5', 'Quiz6']);
+const specialTopics = new Set(['Brain Games', 'Quizzes', 'Progress', 'Video Practice', 'Favorites', 'Quiz3', 'Quiz4', 'Quiz5', 'Quiz6']);
 
 function normalizeTopic(topic) {
     return (devOpsData[topic] || specialTopics.has(topic)) ? topic : 'Linux';
@@ -1639,9 +1639,13 @@ function shuffleArray(arr) {
 
 function renderTopic(topic) {
     topic = normalizeTopic(topic);
+    if (currentTopic === 'Video Practice' && topic !== 'Video Practice') {
+        cleanupVideoPractice();
+    }
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
     if (topic === 'Progress') { renderProgressDashboard(); return; }
+    if (topic === 'Video Practice') { currentTopic = topic; localStorage.setItem('currentTopic', topic); showVideoPractice(); return; }
     if (topic === 'Favorites') { renderFavorites(); return; }
     if (['Quiz3','Quiz4','Quiz5','Quiz6'].includes(topic)) { renderSequentialQuiz(topic); return; }
     currentTopic = topic;
@@ -3227,6 +3231,585 @@ function hideRegionName() {
     if (tooltip) {
         tooltip.style.display = 'none';
     }
+}
+
+// ---------------------- Video Practice Recorder ----------------------
+const videoPracticeMimeCandidates = [
+    { format: 'webm', mimeType: 'video/webm;codecs=vp9,opus', label: 'WebM (VP9)' },
+    { format: 'webm', mimeType: 'video/webm;codecs=vp8,opus', label: 'WebM (VP8)' },
+    { format: 'webm', mimeType: 'video/webm', label: 'WebM' },
+    { format: 'mp4', mimeType: 'video/mp4;codecs=h264,aac', label: 'MP4 (H.264)' },
+    { format: 'mp4', mimeType: 'video/mp4', label: 'MP4' }
+];
+
+let videoPracticeState = {
+    stream: null,
+    recorder: null,
+    chunks: [],
+    recordingBlob: null,
+    recordingUrl: null,
+    recordingMimeType: '',
+    recordingStartedAt: null,
+    elapsedSeconds: 0,
+    timerId: null,
+    isRecording: false,
+    isPaused: false,
+    lastRecordedAt: null,
+    keyboardHandler: null
+};
+
+function showVideoPractice() {
+    const container = document.getElementById('questionsContainer');
+    const search = document.getElementById('searchInput');
+    if (search) {
+        search.value = '';
+        search.disabled = true;
+        search.placeholder = 'Video Practice active';
+    }
+    updateActiveTabButton('Video Practice');
+    updateHeaderTopic('Video Practice', 1, 1);
+
+    container.innerHTML = `
+        <section class="video-practice-page" aria-labelledby="videoPracticeTitle">
+            <div class="video-practice-card">
+                <header class="video-practice-header">
+                    <div>
+                        <p class="eyebrow">Private local recorder</p>
+                        <h2 id="videoPracticeTitle">🎥 Video Practice Recorder</h2>
+                        <p>Your recording stays on this device. Nothing is uploaded.</p>
+                    </div>
+                    <div class="video-practice-status" aria-live="polite">
+                        <span id="vpRecordDot" class="vp-record-dot" hidden></span>
+                        <strong id="vpStatusText">Ready</strong>
+                        <span id="vpTimer">00:00</span>
+                    </div>
+                </header>
+
+                <div class="practice-question-card" id="practiceQuestionCard">
+                    <label for="practiceQuestionInput">Enter a practice question or topic</label>
+                    <textarea id="practiceQuestionInput" rows="2" placeholder="Example: How would you deploy Jenkins in your organization?"></textarea>
+                    <button id="hideQuestionBtn" type="button" class="vp-link-btn">Hide question while recording</button>
+                </div>
+
+                <div class="video-practice-options" aria-label="Recording options">
+                    <label>Download Format
+                        <select id="vpFormatSelect" aria-label="Download format"></select>
+                    </label>
+                    <label>Video Quality
+                        <select id="vpQualitySelect" aria-label="Video quality">
+                            <option value="auto">Automatic</option>
+                            <option value="720">Standard – 720p</option>
+                            <option value="1080">High – 1080p</option>
+                        </select>
+                    </label>
+                </div>
+                <p id="vpFormatHelp" class="video-practice-help" role="status"></p>
+
+                <div class="video-practice-permissions" aria-label="Permission status">
+                    <span id="vpCameraStatus">Camera: Waiting for permission</span>
+                    <span id="vpMicStatus">Microphone: Waiting for permission</span>
+                </div>
+
+                <div class="video-practice-preview-wrap">
+                    <video id="vpLivePreview" class="video-practice-preview mirrored" autoplay muted playsinline></video>
+                    <video id="vpPlayback" class="video-practice-preview" controls playsinline hidden></video>
+                    <div id="vpEmptyState" class="video-practice-empty">
+                        <span>📷</span>
+                        <p>Start the camera to preview yourself.</p>
+                    </div>
+                </div>
+
+                <div id="vpReviewMeta" class="video-practice-review" hidden>
+                    <span id="vpReviewDuration">Duration: 00:00</span>
+                    <span id="vpReviewFormat">Format: —</span>
+                    <span id="vpReviewSize">Size: —</span>
+                </div>
+
+                <div class="video-practice-controls" aria-label="Recording controls">
+                    <button id="vpStartCameraBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Start camera">Start Camera</button>
+                    <button id="vpStartRecordingBtn" type="button" class="vp-btn vp-btn-primary" aria-label="Start recording" disabled>Start Recording</button>
+                    <button id="vpPauseBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Pause recording" disabled>Pause</button>
+                    <button id="vpStopBtn" type="button" class="vp-btn vp-btn-danger" aria-label="Stop recording" disabled>Stop</button>
+                    <button id="vpRetakeBtn" type="button" class="vp-btn vp-btn-secondary" aria-label="Retake recording" disabled>Retake</button>
+                    <button id="vpDownloadBtn" type="button" class="vp-btn vp-btn-primary" aria-label="Download recording" disabled>Download</button>
+                    <button id="vpDeleteBtn" type="button" class="vp-btn vp-btn-danger" aria-label="Delete recording" disabled>Delete</button>
+                </div>
+
+                <p id="vpMessage" class="video-practice-message" role="alert"></p>
+                <div id="vpSrStatus" class="sr-only" aria-live="assertive"></div>
+            </div>
+        </section>
+    `;
+
+    bindVideoPracticeEvents();
+    populateVideoPracticeFormats();
+    setVideoPracticeIdleState();
+}
+
+function bindVideoPracticeEvents() {
+    document.getElementById('vpStartCameraBtn')?.addEventListener('click', startVideoPracticeCamera);
+    document.getElementById('vpStartRecordingBtn')?.addEventListener('click', startVideoPracticeRecording);
+    document.getElementById('vpPauseBtn')?.addEventListener('click', toggleVideoPracticePause);
+    document.getElementById('vpStopBtn')?.addEventListener('click', stopVideoPracticeRecording);
+    document.getElementById('vpRetakeBtn')?.addEventListener('click', retakeVideoPracticeRecording);
+    document.getElementById('vpDeleteBtn')?.addEventListener('click', deleteVideoPracticeRecording);
+    document.getElementById('vpDownloadBtn')?.addEventListener('click', downloadVideoPracticeRecording);
+    document.getElementById('hideQuestionBtn')?.addEventListener('click', event => {
+        const card = document.getElementById('practiceQuestionCard');
+        const isHidden = card?.classList.toggle('is-hidden');
+        event.currentTarget.textContent = isHidden ? 'Show question' : 'Hide question while recording';
+    });
+    videoPracticeState.keyboardHandler = handleVideoPracticeShortcuts;
+    document.addEventListener('keydown', videoPracticeState.keyboardHandler);
+    window.addEventListener('beforeunload', cleanupVideoPractice, { once: true });
+}
+
+function populateVideoPracticeFormats() {
+    const select = document.getElementById('vpFormatSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    const supported = getVideoPracticeSupportedMimeTypes();
+    const original = document.createElement('option');
+    original.value = 'original';
+    original.textContent = 'Original browser format';
+    select.appendChild(original);
+
+    if (supported.webm) {
+        const webm = document.createElement('option');
+        webm.value = 'webm';
+        webm.textContent = 'WebM';
+        select.appendChild(webm);
+    }
+
+    if (supported.mp4) {
+        const mp4 = document.createElement('option');
+        mp4.value = 'mp4';
+        mp4.textContent = 'MP4';
+        select.appendChild(mp4);
+    }
+
+    setVideoPracticeMessage(supported.mp4 ? 'MP4 is supported in this browser.' : 'MP4 recording/conversion is not available here. WebM or original format will be used.', 'info');
+}
+
+function getVideoPracticeSupportedMimeTypes() {
+    const supports = { webm: '', mp4: '', original: '' };
+    if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return supports;
+    for (const candidate of videoPracticeMimeCandidates) {
+        if (MediaRecorder.isTypeSupported(candidate.mimeType) && !supports[candidate.format]) {
+            supports[candidate.format] = candidate.mimeType;
+        }
+    }
+    supports.original = supports.webm || supports.mp4 || '';
+    return supports;
+}
+
+function getSelectedVideoPracticeMimeType() {
+    const format = document.getElementById('vpFormatSelect')?.value || 'original';
+    const supported = getVideoPracticeSupportedMimeTypes();
+    if (format === 'webm') return supported.webm;
+    if (format === 'mp4') return supported.mp4;
+    return supported.original;
+}
+
+function getVideoPracticeConstraints() {
+    const quality = document.getElementById('vpQualitySelect')?.value || 'auto';
+    const base = { audio: true, video: { facingMode: 'user' } };
+    if (quality === '720') {
+        base.video = { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } };
+    }
+    if (quality === '1080') {
+        base.video = { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } };
+    }
+    return base;
+}
+
+async function startVideoPracticeCamera() {
+    try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            setVideoPracticeMessage('This browser does not support camera recording.', 'error');
+            return;
+        }
+        cleanupVideoPracticeStream();
+        setPermissionStatus('vpCameraStatus', 'Camera: Waiting for permission');
+        setPermissionStatus('vpMicStatus', 'Microphone: Waiting for permission');
+        const stream = await navigator.mediaDevices.getUserMedia(getVideoPracticeConstraints());
+        const hasVideo = stream.getVideoTracks().length > 0;
+        const hasAudio = stream.getAudioTracks().length > 0;
+        if (!hasVideo || !hasAudio) {
+            stream.getTracks().forEach(track => track.stop());
+            setPermissionStatus('vpCameraStatus', hasVideo ? 'Camera: Ready' : 'Camera unavailable');
+            setPermissionStatus('vpMicStatus', hasAudio ? 'Microphone: Ready' : 'Microphone unavailable');
+            setVideoPracticeMessage(hasVideo ? 'Microphone unavailable. Please connect a microphone.' : 'Camera unavailable. Please connect a camera.', 'error');
+            return;
+        }
+        videoPracticeState.stream = stream;
+        stream.getTracks().forEach(track => {
+            track.addEventListener('ended', () => {
+                if (videoPracticeState.isRecording) {
+                    setVideoPracticeMessage('Camera or microphone disconnected during recording.', 'error');
+                    stopVideoPracticeRecording();
+                }
+            }, { once: true });
+        });
+        const preview = document.getElementById('vpLivePreview');
+        if (preview) {
+            preview.srcObject = stream;
+            preview.hidden = false;
+        }
+        const playback = document.getElementById('vpPlayback');
+        if (playback) playback.hidden = true;
+        document.getElementById('vpEmptyState')?.setAttribute('hidden', '');
+        setPermissionStatus('vpCameraStatus', 'Camera: Ready');
+        setPermissionStatus('vpMicStatus', 'Microphone: Ready');
+        setVideoPracticeMessage(getActualVideoQualityMessage(stream), 'info');
+        setVideoPracticeButtonState({ cameraReady: true });
+    } catch (error) {
+        console.error('Video Practice camera error:', error);
+        handleVideoPracticeMediaError(error);
+    }
+}
+
+function getActualVideoQualityMessage(stream) {
+    const settings = stream.getVideoTracks()[0]?.getSettings?.() || {};
+    if (!settings.width || !settings.height) return 'Camera ready.';
+    return `Camera ready at ${settings.width}×${settings.height}.`;
+}
+
+function handleVideoPracticeMediaError(error) {
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        setPermissionStatus('vpCameraStatus', 'Camera permission denied');
+        setPermissionStatus('vpMicStatus', 'Microphone permission denied');
+        setVideoPracticeMessage('Permission denied. Please allow camera and microphone access in your browser settings.', 'error');
+        return;
+    }
+    if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        setPermissionStatus('vpCameraStatus', 'Camera unavailable');
+        setPermissionStatus('vpMicStatus', 'Microphone unavailable');
+        setVideoPracticeMessage('No camera or microphone was found. Please connect a device and try again.', 'error');
+        return;
+    }
+    if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        setVideoPracticeMessage('Camera or microphone is already in use by another application.', 'error');
+        return;
+    }
+    setVideoPracticeMessage('Could not start camera. Please check your device and browser permissions.', 'error');
+}
+
+function startVideoPracticeRecording() {
+    if (videoPracticeState.isRecording || !videoPracticeState.stream) return;
+    if (!window.MediaRecorder) {
+        setVideoPracticeMessage('This browser does not support MediaRecorder.', 'error');
+        return;
+    }
+    const mimeType = getSelectedVideoPracticeMimeType();
+    if (!mimeType) {
+        setVideoPracticeMessage('Selected recording format is not supported in this browser.', 'error');
+        return;
+    }
+    clearVideoPracticeRecording();
+    videoPracticeState.chunks = [];
+    try {
+        videoPracticeState.recorder = new MediaRecorder(videoPracticeState.stream, { mimeType });
+    } catch (error) {
+        console.error('Video Practice recorder error:', error);
+        setVideoPracticeMessage('Selected recording format is unsupported. Please choose another format.', 'error');
+        return;
+    }
+    videoPracticeState.recordingMimeType = videoPracticeState.recorder.mimeType || mimeType;
+    videoPracticeState.recorder.ondataavailable = event => {
+        if (event.data && event.data.size > 0) videoPracticeState.chunks.push(event.data);
+    };
+    videoPracticeState.recorder.onerror = event => {
+        console.error('Recording interrupted:', event.error || event);
+        setVideoPracticeMessage('Recording was interrupted. Please try again.', 'error');
+    };
+    videoPracticeState.recorder.onstop = finishVideoPracticeRecording;
+    videoPracticeState.recorder.start(250);
+    videoPracticeState.isRecording = true;
+    videoPracticeState.isPaused = false;
+    videoPracticeState.elapsedSeconds = 0;
+    videoPracticeState.recordingStartedAt = Date.now();
+    startVideoPracticeTimer();
+    setVideoPracticeStatus('Recording', true);
+    setVideoPracticeButtonState({ recording: true });
+    announceVideoPractice('Recording started');
+}
+
+function toggleVideoPracticePause() {
+    const recorder = videoPracticeState.recorder;
+    if (!recorder || !videoPracticeState.isRecording) return;
+    if (videoPracticeState.isPaused) {
+        recorder.resume();
+        videoPracticeState.isPaused = false;
+        videoPracticeState.recordingStartedAt = Date.now() - (videoPracticeState.elapsedSeconds * 1000);
+        startVideoPracticeTimer();
+        document.getElementById('vpPauseBtn').textContent = 'Pause';
+        setVideoPracticeStatus('Recording', true);
+        announceVideoPractice('Recording resumed');
+    } else {
+        recorder.pause();
+        videoPracticeState.isPaused = true;
+        stopVideoPracticeTimer();
+        document.getElementById('vpPauseBtn').textContent = 'Resume';
+        setVideoPracticeStatus('Recording Paused', true);
+        announceVideoPractice('Recording paused');
+    }
+}
+
+function stopVideoPracticeRecording() {
+    const recorder = videoPracticeState.recorder;
+    if (!recorder || !videoPracticeState.isRecording) return;
+    try {
+        recorder.stop();
+    } catch (error) {
+        console.error('Stop recording failed:', error);
+        setVideoPracticeMessage('Recording could not be stopped cleanly. Please retake.', 'error');
+    }
+    videoPracticeState.isRecording = false;
+    videoPracticeState.isPaused = false;
+    stopVideoPracticeTimer();
+    setVideoPracticeStatus('Processing recording…', false);
+    setVideoPracticeButtonState({ processing: true });
+    announceVideoPractice('Recording stopped');
+}
+
+function finishVideoPracticeRecording() {
+    if (!videoPracticeState.chunks.length) {
+        setVideoPracticeMessage('Recording is empty or corrupted. Please retake.', 'error');
+        setVideoPracticeButtonState({ cameraReady: Boolean(videoPracticeState.stream) });
+        return;
+    }
+    const blob = new Blob(videoPracticeState.chunks, { type: videoPracticeState.recordingMimeType || 'video/webm' });
+    if (!blob.size) {
+        setVideoPracticeMessage('Recording is empty or corrupted. Please retake.', 'error');
+        return;
+    }
+    videoPracticeState.recordingBlob = blob;
+    videoPracticeState.recordingUrl = URL.createObjectURL(blob);
+    videoPracticeState.lastRecordedAt = new Date();
+    const playback = document.getElementById('vpPlayback');
+    const live = document.getElementById('vpLivePreview');
+    if (live) {
+        live.pause();
+        live.srcObject = null;
+        live.hidden = true;
+    }
+    cleanupVideoPracticeStream();
+    if (playback) {
+        playback.src = videoPracticeState.recordingUrl;
+        playback.hidden = false;
+    }
+    updateVideoPracticeReview(blob);
+    setVideoPracticeStatus('Review recording', false);
+    setVideoPracticeButtonState({ hasRecording: true });
+    setVideoPracticeMessage('Recording ready to preview or download.', 'success');
+}
+
+function startVideoPracticeTimer() {
+    stopVideoPracticeTimer();
+    updateVideoPracticeTimer();
+    videoPracticeState.timerId = window.setInterval(updateVideoPracticeTimer, 1000);
+}
+
+function stopVideoPracticeTimer() {
+    if (videoPracticeState.timerId) {
+        clearInterval(videoPracticeState.timerId);
+        videoPracticeState.timerId = null;
+    }
+}
+
+function updateVideoPracticeTimer() {
+    if (!videoPracticeState.recordingStartedAt || videoPracticeState.isPaused) return;
+    videoPracticeState.elapsedSeconds = Math.floor((Date.now() - videoPracticeState.recordingStartedAt) / 1000);
+    const timer = document.getElementById('vpTimer');
+    if (timer) timer.textContent = formatVideoPracticeDuration(videoPracticeState.elapsedSeconds);
+}
+
+function updateVideoPracticeReview(blob) {
+    const review = document.getElementById('vpReviewMeta');
+    if (review) review.hidden = false;
+    const duration = document.getElementById('vpReviewDuration');
+    const format = document.getElementById('vpReviewFormat');
+    const size = document.getElementById('vpReviewSize');
+    if (duration) duration.textContent = `Duration: ${formatVideoPracticeDuration(videoPracticeState.elapsedSeconds)}`;
+    if (format) format.textContent = `Format: ${getVideoPracticeExtension()}`;
+    if (size) size.textContent = `Size: ${formatVideoPracticeFileSize(blob.size)}`;
+}
+
+function downloadVideoPracticeRecording() {
+    if (!videoPracticeState.recordingBlob) return;
+    const requested = document.getElementById('vpFormatSelect')?.value || 'original';
+    const extension = getVideoPracticeExtension();
+    if (requested === 'mp4' && extension !== 'mp4') {
+        setVideoPracticeMessage('MP4 conversion is unavailable in this browser. Choose WebM or Original browser format.', 'error');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = videoPracticeState.recordingUrl;
+    link.download = `video-practice-${formatVideoPracticeTimestamp(videoPracticeState.lastRecordedAt || new Date())}.${extension}`;
+    link.click();
+    setVideoPracticeMessage('Download started.', 'success');
+}
+
+function retakeVideoPracticeRecording() {
+    clearVideoPracticeRecording();
+    setVideoPracticeIdleState();
+    startVideoPracticeCamera();
+    announceVideoPractice('Ready to retake');
+}
+
+function deleteVideoPracticeRecording() {
+    clearVideoPracticeRecording();
+    cleanupVideoPracticeStream();
+    setVideoPracticeIdleState();
+    setVideoPracticeMessage('Recording deleted from memory.', 'info');
+    announceVideoPractice('Recording deleted');
+}
+
+function clearVideoPracticeRecording() {
+    if (videoPracticeState.recordingUrl) URL.revokeObjectURL(videoPracticeState.recordingUrl);
+    videoPracticeState.recordingBlob = null;
+    videoPracticeState.recordingUrl = null;
+    videoPracticeState.chunks = [];
+    const playback = document.getElementById('vpPlayback');
+    if (playback) {
+        playback.removeAttribute('src');
+        playback.hidden = true;
+        playback.load();
+    }
+    const review = document.getElementById('vpReviewMeta');
+    if (review) review.hidden = true;
+}
+
+function cleanupVideoPracticeStream() {
+    if (videoPracticeState.stream) {
+        videoPracticeState.stream.getTracks().forEach(track => track.stop());
+        videoPracticeState.stream = null;
+    }
+}
+
+function cleanupVideoPractice() {
+    if (videoPracticeState.recorder && videoPracticeState.recorder.state !== 'inactive') {
+        try {
+            videoPracticeState.recorder.onstop = null;
+            videoPracticeState.recorder.stop();
+        } catch (error) {
+            console.warn('Recorder cleanup failed:', error);
+        }
+    }
+    stopVideoPracticeTimer();
+    cleanupVideoPracticeStream();
+    clearVideoPracticeRecording();
+    videoPracticeState.isRecording = false;
+    videoPracticeState.isPaused = false;
+    if (videoPracticeState.keyboardHandler) {
+        document.removeEventListener('keydown', videoPracticeState.keyboardHandler);
+        videoPracticeState.keyboardHandler = null;
+    }
+}
+
+function setVideoPracticeIdleState() {
+    videoPracticeState.elapsedSeconds = 0;
+    videoPracticeState.isRecording = false;
+    videoPracticeState.isPaused = false;
+    setVideoPracticeStatus('Ready', false);
+    const timer = document.getElementById('vpTimer');
+    if (timer) timer.textContent = '00:00';
+    const live = document.getElementById('vpLivePreview');
+    if (live) {
+        live.hidden = false;
+        live.srcObject = null;
+    }
+    document.getElementById('vpEmptyState')?.removeAttribute('hidden');
+    setPermissionStatus('vpCameraStatus', 'Camera: Waiting for permission');
+    setPermissionStatus('vpMicStatus', 'Microphone: Waiting for permission');
+    setVideoPracticeButtonState({ idle: true });
+}
+
+function setVideoPracticeButtonState(state) {
+    const startCamera = document.getElementById('vpStartCameraBtn');
+    const startRecording = document.getElementById('vpStartRecordingBtn');
+    const pause = document.getElementById('vpPauseBtn');
+    const stop = document.getElementById('vpStopBtn');
+    const retake = document.getElementById('vpRetakeBtn');
+    const download = document.getElementById('vpDownloadBtn');
+    const del = document.getElementById('vpDeleteBtn');
+    const format = document.getElementById('vpFormatSelect');
+    const quality = document.getElementById('vpQualitySelect');
+    const lockOptions = Boolean(state.recording || state.processing || state.hasRecording || state.cameraReady);
+    if (format) format.disabled = lockOptions;
+    if (quality) quality.disabled = lockOptions;
+    if (startCamera) startCamera.disabled = Boolean(state.cameraReady || state.recording || state.processing || state.hasRecording);
+    if (startRecording) startRecording.disabled = !state.cameraReady || Boolean(state.recording || state.processing || state.hasRecording);
+    if (pause) pause.disabled = !state.recording;
+    if (stop) stop.disabled = !state.recording;
+    if (retake) retake.disabled = !state.hasRecording;
+    if (download) download.disabled = !state.hasRecording || Boolean(state.processing);
+    if (del) del.disabled = !state.hasRecording;
+}
+
+function setVideoPracticeStatus(text, recording) {
+    const status = document.getElementById('vpStatusText');
+    const dot = document.getElementById('vpRecordDot');
+    if (status) status.textContent = text;
+    if (dot) dot.hidden = !recording;
+}
+
+function setPermissionStatus(id, text) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = text;
+}
+
+function setVideoPracticeMessage(message, type = 'info') {
+    const element = document.getElementById('vpMessage');
+    const help = document.getElementById('vpFormatHelp');
+    if (element) {
+        element.textContent = message || '';
+        element.dataset.type = type;
+    }
+    if (help && type === 'info') help.textContent = message || '';
+}
+
+function announceVideoPractice(message) {
+    const element = document.getElementById('vpSrStatus');
+    if (element) element.textContent = message;
+}
+
+function handleVideoPracticeShortcuts(event) {
+    if (currentTopic !== 'Video Practice') return;
+    const tag = event.target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return;
+    if (event.code === 'Space') {
+        event.preventDefault();
+        if (videoPracticeState.isRecording) toggleVideoPracticePause();
+        else if (videoPracticeState.stream) startVideoPracticeRecording();
+        else startVideoPracticeCamera();
+    }
+    if (event.key.toLowerCase() === 's') stopVideoPracticeRecording();
+    if (event.key.toLowerCase() === 'r') retakeVideoPracticeRecording();
+}
+
+function getVideoPracticeExtension() {
+    if (videoPracticeState.recordingMimeType.includes('mp4')) return 'mp4';
+    return 'webm';
+}
+
+function formatVideoPracticeDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatVideoPracticeFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatVideoPracticeTimestamp(date) {
+    const pad = value => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
 function askNewMapQuestion(regions) {

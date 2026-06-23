@@ -3524,144 +3524,273 @@ mark {
   50% { transform: translateY(-10px); }
 }
 
-/* Simple Video Recorder correction: keep only the essential recording UI visible. */
-.simple-video-recorder {
-  max-width: 1100px;
-  padding: 1rem;
-}
-
-.compact-recorder-header {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-}
-
-.compact-recorder-header .recorder-title {
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-}
-
-.single-column-recorder {
-  display: block;
-}
-
-.simple-camera-section,
-.simple-recordings-section {
-  box-shadow: none;
-  border: 1px solid rgba(var(--accent-rgb), 0.18);
-}
-
-.simple-camera-section {
-  margin-bottom: 1rem;
-}
-
-.simple-camera-preview {
-  margin-bottom: 1rem;
-}
-
-.primary-recording-controls {
-  margin-bottom: 0;
-}
-
-.primary-recording-controls .control-button {
-  min-width: 170px;
-  justify-content: center;
-}
-
-.simple-recordings-section {
-  min-height: auto;
-  max-height: none;
-  padding: 1.25rem;
-}
-
-.compact-recordings-header {
-  align-items: center;
-  gap: 1rem;
-}
-
-.compact-recordings-header > div {
+/* Video Practice Recorder */
+.video-practice-page {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2rem);
 }
 
-.simple-recordings-controls {
+.video-practice-card {
+  width: min(100%, 1080px);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(10, 14, 23, 0.92));
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.video-practice-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
   margin-bottom: 1rem;
 }
 
-.simple-recordings-controls .recordings-search {
-  min-width: min(260px, 100%);
+.video-practice-header h2 {
+  color: var(--accent);
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  margin: 0.15rem 0 0.4rem;
 }
 
-@media (max-width: 768px) {
-  .simple-video-recorder {
-    padding: 0.75rem;
-  }
-
-  .primary-recording-controls .control-button {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .compact-recordings-header {
-    align-items: flex-start;
-  }
+.video-practice-header p {
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-/* Daily practice recorder: one prompt field and four clear controls. */
-.practice-topic-label {
-  display: block;
-  margin-bottom: 0.5rem;
+.video-practice-status {
+  min-width: 170px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.video-practice-status #vpTimer {
+  grid-column: 1 / -1;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+}
+
+.vp-record-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: #ff4757;
+  box-shadow: 0 0 0 6px rgba(255, 71, 87, 0.18);
+}
+
+.practice-question-card,
+.video-practice-options,
+.video-practice-permissions,
+.video-practice-review {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.practice-question-card {
+  align-items: stretch;
+  padding: 1rem;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: 18px;
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+.practice-question-card.is-hidden textarea,
+.practice-question-card.is-hidden label {
+  display: none;
+}
+
+.practice-question-card label,
+.video-practice-options label {
   color: var(--text);
   font-weight: 700;
 }
 
-.practice-topic-input {
-  width: 100%;
-  min-height: 88px;
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(var(--accent-rgb), 0.22);
-  border-radius: 14px;
-  resize: vertical;
-  background: rgba(var(--accent-rgb), 0.05);
+.practice-question-card textarea {
+  flex: 1 1 340px;
+  min-height: 58px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  background: rgba(0, 0, 0, 0.22);
   color: var(--text);
   font: inherit;
+  resize: vertical;
 }
 
-.practice-topic-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
-}
-
-.primary-recording-controls {
+.video-practice-options label {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
-  gap: 0.75rem;
+  gap: 0.35rem;
 }
 
-.primary-recording-controls .control-button {
+.video-practice-options select {
+  min-width: 190px;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.video-practice-help,
+.video-practice-message {
+  min-height: 1.4rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+}
+
+.video-practice-message[data-type="error"] { color: #ff7b87; }
+.video-practice-message[data-type="success"] { color: #5ee6a8; }
+
+.video-practice-permissions span,
+.video-practice-review span {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.video-practice-preview-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
   width: 100%;
-  min-width: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  background: #03070d;
+  margin-bottom: 1rem;
 }
 
-.recording-indicator {
-  font-size: 1rem;
+.video-practice-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.rec-timer {
-  font-size: 1.1rem;
+.video-practice-preview[hidden] {
+  display: none;
+}
+
+.video-practice-preview.mirrored {
+  transform: scaleX(-1);
+}
+
+.video-practice-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.6rem;
+  color: var(--text-secondary);
+  background: radial-gradient(circle at center, rgba(var(--accent-rgb), 0.16), transparent 60%);
+}
+
+.video-practice-empty[hidden] {
+  display: none;
+}
+
+.video-practice-empty span {
+  font-size: 3rem;
+}
+
+.video-practice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.vp-btn,
+.vp-link-btn {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: #fff;
   font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-@media (max-width: 900px) {
-  .primary-recording-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.vp-btn:focus-visible,
+.vp-link-btn:focus-visible,
+.video-practice-options select:focus-visible,
+.practice-question-card textarea:focus-visible {
+  outline: 3px solid rgba(var(--accent-rgb), 0.45);
+  outline-offset: 2px;
+}
+
+.vp-btn:hover:not(:disabled),
+.vp-link-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.vp-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.vp-btn-primary { background: linear-gradient(135deg, var(--accent), #00c8ff); }
+.vp-btn-secondary { background: linear-gradient(135deg, #334155, #475569); }
+.vp-btn-danger { background: linear-gradient(135deg, #e74c3c, #b91c1c); }
+.vp-link-btn { background: rgba(var(--accent-rgb), 0.2); color: var(--accent); }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .video-practice-header {
+    flex-direction: column;
+  }
+
+  .video-practice-status {
+    width: 100%;
+  }
+
+  .video-practice-controls .vp-btn {
+    flex: 1 1 150px;
   }
 }
 
 @media (max-width: 520px) {
-  .primary-recording-controls {
-    grid-template-columns: 1fr;
+  .video-practice-page {
+    padding: 0.75rem;
+  }
+
+  .video-practice-card {
+    padding: 0.85rem;
+    border-radius: 18px;
+  }
+
+  .video-practice-controls {
+    flex-direction: column;
+  }
+
+  .video-practice-controls .vp-btn {
+    width: 100%;
   }
 }
