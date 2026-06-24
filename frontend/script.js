@@ -1330,6 +1330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressUI();
 });
 
+
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
     const container = document.getElementById('questionsContainer');
@@ -1640,9 +1641,6 @@ function renderTopic(topic) {
     topic = normalizeTopic(topic);
     if (currentTopic === 'Video Practice' && topic !== 'Video Practice') {
         cleanupVideoPractice();
-    }
-    if (topic !== 'Video Practice') {
-        document.getElementById('questionsContainer')?.classList.remove('video-practice-container');
     }
     if (topic === 'Brain Games') { renderBrainGames(); return; }
     if (topic === 'Quizzes') { renderQuizMenu(); return; }
@@ -3275,7 +3273,6 @@ function showVideoPractice() {
     }
     updateActiveTabButton('Video Practice');
     updateHeaderTopic('Video Practice', 1, 1);
-    container.classList.add('video-practice-container');
 
     container.innerHTML = `
         <section class="video-practice-page" aria-labelledby="videoPracticeTitle">
@@ -4084,6 +4081,73 @@ function setVideoPracticeMessage(message, type = 'info') {
         element.textContent = message || '';
         element.dataset.type = type;
     }
+    if (event.key.toLowerCase() === 's') stopVideoPracticeRecording();
+    if (event.key.toLowerCase() === 'r') retakeVideoPracticeRecording();
+}
+
+function getVideoPracticeExtension() {
+    if (videoPracticeState.recordingMimeType.includes('mp4')) return 'mp4';
+    return 'webm';
+}
+
+function formatVideoPracticeDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatVideoPracticeFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatVideoPracticeTimestamp(date) {
+    const pad = value => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+}
+
+function announceVideoPractice(message) {
+    const element = document.getElementById('vpSrStatus');
+    if (element) element.textContent = message;
+}
+
+function handleVideoPracticeShortcuts(event) {
+    if (currentTopic !== 'Video Practice') return;
+    const tag = event.target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return;
+    if (event.code === 'Space') {
+        event.preventDefault();
+        if (videoPracticeState.isRecording) toggleVideoPracticePause();
+        else if (videoPracticeState.stream) startVideoPracticeRecording();
+        else startVideoPracticeCamera();
+    }
+    if (event.key.toLowerCase() === 's') stopVideoPracticeRecording();
+    if (event.key.toLowerCase() === 'r') retakeVideoPracticeRecording();
+}
+
+function getVideoPracticeExtension() {
+    if (videoPracticeState.recordingMimeType.includes('mp4')) return 'mp4';
+    return 'webm';
+}
+
+function formatVideoPracticeDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatVideoPracticeFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatVideoPracticeTimestamp(date) {
+    const pad = value => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
 function announceVideoPractice(message) {

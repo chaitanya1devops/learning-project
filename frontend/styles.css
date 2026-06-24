@@ -946,6 +946,7 @@ mark {
 .question { font-size:1rem; font-weight:600; }
 .answer { font-size:.8rem; }
 
+
 /* ==================== TOPIC QUIZ SYSTEM STYLES ==================== */
 
 /* Quiz Menu Enhancements */
@@ -4238,6 +4239,7 @@ mark {
     grid-template-columns: 1fr;
     flex-direction: column;
   }
+}
 
   .question-meta-actions {
     justify-content: flex-start;
@@ -4248,6 +4250,7 @@ mark {
     aspect-ratio: 16 / 9;
     border-radius: 18px;
   }
+}
 
   .video-practice-controls {
     position: sticky;
@@ -4258,76 +4261,5 @@ mark {
   .vp-btn {
     flex: 1 1 calc(50% - 0.75rem);
     min-width: 0;
-  }
-}
-
-
-/* Video Practice must opt out of the Q&A card grid. */
-.questions-container.video-practice-container {
-  display: block;
-  grid-template-columns: none;
-  width: 100%;
-}
-
-.questions-container.video-practice-container > .video-practice-page {
-  grid-column: 1 / -1;
-}
-
-/* Final Video Practice frame reset: remove inherited flex/card constraints from older recorder CSS. */
-.questions-container.video-practice-container {
-  display: block;
-  grid-template-columns: none;
-  width: 100%;
-  max-width: none;
-}
-
-.questions-container.video-practice-container .video-practice-page {
-  display: block;
-  width: min(100%, 1360px);
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: clamp(1rem, 2.4vw, 2rem);
-}
-
-.questions-container.video-practice-container .video-practice-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 28vw, 380px);
-  gap: clamp(1.25rem, 2vw, 1.75rem);
-  align-items: start;
-}
-
-.questions-container.video-practice-container .video-practice-topbar,
-.questions-container.video-practice-container .video-practice-stage,
-.questions-container.video-practice-container .practice-question-card,
-.questions-container.video-practice-container .video-side-card {
-  box-sizing: border-box;
-}
-
-.questions-container.video-practice-container .video-practice-preview-wrap {
-  width: 100%;
-  max-width: none;
-  min-height: clamp(440px, 50vw, 660px);
-  margin: 0 0 1rem;
-}
-
-.questions-container.video-practice-container .video-practice-controls {
-  width: 100%;
-  max-width: none;
-}
-
-@media (max-width: 1100px) {
-  .questions-container.video-practice-container .video-practice-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .questions-container.video-practice-container .video-practice-page {
-    padding: 1rem max(1rem, env(safe-area-inset-left)) 1rem max(1rem, env(safe-area-inset-right));
-  }
-
-  .questions-container.video-practice-container .video-practice-preview-wrap {
-    min-height: auto;
-    aspect-ratio: 16 / 9;
   }
 }
