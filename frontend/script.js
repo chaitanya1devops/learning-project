@@ -3625,19 +3625,23 @@ async function startVideoPracticeCamera() {
     try {
         if (!navigator.mediaDevices?.getUserMedia) {
             setVideoPracticeMessage('This browser does not support camera recording.', 'error');
+            setVideoPracticeButtonState({ idle: true });
             return;
         }
         cleanupVideoPracticeStream();
         setPermissionStatus('vpCameraStatus', 'Camera: Waiting for permission');
         setPermissionStatus('vpMicStatus', 'Microphone: Waiting for permission');
-        const stream = await navigator.mediaDevices.getUserMedia(getVideoPracticeConstraints());
+        setVideoPracticeButtonState({ requesting: true });
+
+        const stream = await requestVideoPracticeStreamWithFallbacks();
         const hasVideo = stream.getVideoTracks().length > 0;
         const hasAudio = stream.getAudioTracks().length > 0;
-        if (!hasVideo || !hasAudio) {
+        if (!hasVideo) {
             stream.getTracks().forEach(track => track.stop());
-            setPermissionStatus('vpCameraStatus', hasVideo ? 'Camera: Ready' : 'Camera unavailable');
+            setPermissionStatus('vpCameraStatus', 'Camera unavailable');
             setPermissionStatus('vpMicStatus', hasAudio ? 'Microphone: Ready' : 'Microphone unavailable');
-            setVideoPracticeMessage(hasVideo ? 'Microphone unavailable. Please connect a microphone.' : 'Camera unavailable. Please connect a camera.', 'error');
+            setVideoPracticeMessage('Camera unavailable. Please connect a camera and try again.', 'error');
+            setVideoPracticeButtonState({ idle: true });
             return;
         }
         videoPracticeState.stream = stream;
@@ -3658,16 +3662,43 @@ async function startVideoPracticeCamera() {
         if (playback) playback.hidden = true;
         document.getElementById('vpEmptyState')?.setAttribute('hidden', '');
         setPermissionStatus('vpCameraStatus', 'Camera: Ready');
-        setPermissionStatus('vpMicStatus', 'Microphone: Ready');
+        setPermissionStatus('vpMicStatus', hasAudio ? 'Microphone: Ready' : 'Microphone unavailable');
         populateVideoPracticeDevices();
-        startVideoPracticeAudioMeter(stream);
+        if (hasAudio) {
+            startVideoPracticeAudioMeter(stream);
+        } else {
+            stopVideoPracticeAudioMeter();
+            const warning = document.getElementById('vpAudioWarning');
+            if (warning) warning.textContent = 'No microphone input detected';
+        }
         updateVideoPracticeSideStatus('Camera ready');
-        setVideoPracticeMessage(getActualVideoQualityMessage(stream), 'info');
+        setVideoPracticeMessage(hasAudio ? getActualVideoQualityMessage(stream) : `${getActualVideoQualityMessage(stream)} Microphone was not detected, so this recording will be video-only.`, hasAudio ? 'info' : 'error');
         setVideoPracticeButtonState({ cameraReady: true });
     } catch (error) {
         console.error('Video Practice camera error:', error);
         handleVideoPracticeMediaError(error);
+        setVideoPracticeButtonState({ idle: true });
+        document.getElementById('vpEmptyState')?.removeAttribute('hidden');
     }
+}
+
+async function requestVideoPracticeStreamWithFallbacks() {
+    const attempts = [
+        getVideoPracticeConstraints(),
+        { video: { facingMode: 'user' }, audio: true },
+        { video: true, audio: true },
+        { video: { facingMode: 'user' }, audio: false },
+        { video: true, audio: false }
+    ];
+    let lastError;
+    for (const constraints of attempts) {
+        try {
+            return await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError || new Error('Unable to start camera');
 }
 
 function turnOffVideoPracticeCamera() {
@@ -3758,20 +3789,18 @@ function startVideoPracticeRecording() {
         return;
     }
     const mimeType = getSelectedVideoPracticeMimeType();
-    if (!mimeType) {
-        setVideoPracticeMessage('Selected recording format is not supported in this browser.', 'error');
-        return;
-    }
     clearVideoPracticeRecording();
     videoPracticeState.chunks = [];
     try {
-        videoPracticeState.recorder = new MediaRecorder(videoPracticeState.stream, { mimeType });
+        videoPracticeState.recorder = mimeType
+            ? new MediaRecorder(videoPracticeState.stream, { mimeType })
+            : new MediaRecorder(videoPracticeState.stream);
     } catch (error) {
         console.error('Video Practice recorder error:', error);
         setVideoPracticeMessage('Selected recording format is unsupported. Please choose another format.', 'error');
         return;
     }
-    videoPracticeState.recordingMimeType = videoPracticeState.recorder.mimeType || mimeType;
+    videoPracticeState.recordingMimeType = videoPracticeState.recorder.mimeType || mimeType || 'video/webm';
     videoPracticeState.recorder.ondataavailable = event => {
         if (event.data && event.data.size > 0) videoPracticeState.chunks.push(event.data);
     };
@@ -4003,9 +4032,14 @@ function setVideoPracticeButtonState(state) {
     const quality = document.getElementById('vpQualitySelect');
     const frameRate = document.getElementById('vpFrameRateSelect');
     const orientation = document.getElementById('vpOrientationSelect');
-    const lockOptions = Boolean(state.recording || state.processing || state.hasRecording || state.cameraReady);
+    const lockOptions = Boolean(state.recording || state.processing || state.hasRecording || state.cameraReady || state.requesting);
     [format, quality, frameRate, orientation].forEach(input => { if (input) input.disabled = lockOptions; });
 
+    if (state.requesting) {
+        show('vpStartCameraBtn', true);
+        updateVideoPracticeSideStatus('Permission required');
+        return;
+    }
     if (state.recording) {
         show('vpPauseBtn');
         show('vpStopBtn');
@@ -4087,31 +4121,6 @@ function setVideoPracticeMessage(message, type = 'info') {
         element.textContent = message || '';
         element.dataset.type = type;
     }
-    if (event.key.toLowerCase() === 's') stopVideoPracticeRecording();
-    if (event.key.toLowerCase() === 'r') retakeVideoPracticeRecording();
-}
-
-function getVideoPracticeExtension() {
-    if (videoPracticeState.recordingMimeType.includes('mp4')) return 'mp4';
-    return 'webm';
-}
-
-function formatVideoPracticeDuration(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function formatVideoPracticeFileSize(bytes) {
-    if (!bytes) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-function formatVideoPracticeTimestamp(date) {
-    const pad = value => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
 function announceVideoPractice(message) {
