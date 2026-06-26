@@ -3830,6 +3830,16 @@ function startVideoPracticeAudioMeter(stream) {
         const warning = document.getElementById('vpAudioWarning');
         if (warning) warning.textContent = 'Audio meter unavailable';
     }
+    stopVideoPracticeTimer();
+    cleanupVideoPracticeStream();
+    clearVideoPracticeRecording();
+    revokeVideoPracticeSavedUrls();
+    videoPracticeState.isRecording = false;
+    videoPracticeState.isPaused = false;
+    if (videoPracticeState.keyboardHandler) {
+        document.removeEventListener('keydown', videoPracticeState.keyboardHandler);
+        videoPracticeState.keyboardHandler = null;
+    }
 }
 
 function updateVideoPracticeAudioMeter() {
