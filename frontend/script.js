@@ -3264,6 +3264,15 @@ let videoPracticeState = {
     audioAnalyser: null,
     audioAnimationId: null,
     muted: false,
+    mirrored: true,
+    currentRecordingId: null,
+    savedRecordings: [],
+    savedRecordingUrls: []
+};
+
+const videoPracticeDbName = 'video-practice-recordings';
+const videoPracticeStoreName = 'recordings';
+
     mirrored: true
 };
 
@@ -3336,6 +3345,38 @@ function showVideoPractice() {
                                 ${Array.from({ length: 10 }, (_, index) => `<span data-bar="${index}"></span>`).join('')}
                             </div>
                         </div>
+
+                        <div id="vpControls" class="video-practice-controls" aria-label="Recording controls">
+                            <button id="vpStartCameraBtn" type="button" class="vp-btn vp-btn-primary" data-action="camera" title="Start camera">📷 Start Camera</button>
+                            <button id="vpTurnCameraOffBtn" type="button" class="vp-btn vp-btn-secondary" data-action="camera-off" title="Turn camera off" hidden>Camera Off</button>
+                            <button id="vpStartRecordingBtn" type="button" class="vp-btn vp-btn-primary" data-action="record" title="Start recording" hidden>● Start Recording</button>
+                            <button id="vpPauseBtn" type="button" class="vp-btn vp-btn-secondary" data-action="pause" title="Pause recording" hidden>⏸ Pause</button>
+                            <button id="vpStopBtn" type="button" class="vp-btn vp-btn-danger" data-action="stop" title="Stop recording" hidden>■ Stop Recording</button>
+                            <button id="vpDownloadBtn" type="button" class="vp-btn vp-btn-primary" data-action="download" title="Download recording" hidden>⬇ Download</button>
+                            <button id="vpRetakeBtn" type="button" class="vp-btn vp-btn-secondary" data-action="retake" title="Retake recording" hidden>↻ Retake</button>
+                            <button id="vpDeleteBtn" type="button" class="vp-btn vp-btn-danger" data-action="delete" title="Delete recording" hidden>🗑 Delete</button>
+                        </div>
+
+                        <div id="vpReviewMeta" class="video-practice-review" hidden>
+                            <span id="vpReviewDuration">Duration: 00:00</span>
+                            <span id="vpReviewResolution">Resolution: —</span>
+                            <span id="vpReviewFormat">Format: —</span>
+                            <span id="vpReviewSize">Size: —</span>
+                            <span id="vpReviewDate">Recorded: —</span>
+                        </div>
+                    </section>
+
+                    <section class="video-practice-library" aria-labelledby="vpLibraryTitle">
+                        <div class="video-practice-library-header">
+                            <div>
+                                <p class="eyebrow">Saved locally</p>
+                                <h3 id="vpLibraryTitle">Previous recordings</h3>
+                                <p>Videos are saved in this browser so you can replay and download them later.</p>
+                            </div>
+                            <span id="vpLibraryCount" class="video-privacy-badge">0 videos</span>
+                        </div>
+                        <div id="vpSavedRecordings" class="video-practice-saved-list">
+                            <div class="video-practice-empty-library">No videos recorded yet. Record your first practice answer to see it here.</div>
 
                         <div id="vpControls" class="video-practice-controls" aria-label="Recording controls">
                             <button id="vpStartCameraBtn" type="button" class="vp-btn vp-btn-primary" data-action="camera" title="Start camera">📷 Start Camera</button>
@@ -3445,6 +3486,62 @@ function showVideoPractice() {
     populateVideoPracticeFormats();
     populateVideoPracticeDevices();
     setVideoPracticeIdleState();
+    loadVideoPracticeSavedRecordings();
+}
+
+function bindVideoPracticeEvents() {
+    document.getElementById('vpEmptyStartBtn')?.addEventListener('click', startVideoPracticeCamera);
+    document.getElementById('vpStartCameraBtn')?.addEventListener('click', startVideoPracticeCamera);
+    document.getElementById('vpTurnCameraOffBtn')?.addEventListener('click', turnOffVideoPracticeCamera);
+    document.getElementById('vpStartRecordingBtn')?.addEventListener('click', startVideoPracticeRecording);
+    document.getElementById('vpPauseBtn')?.addEventListener('click', toggleVideoPracticePause);
+    document.getElementById('vpStopBtn')?.addEventListener('click', stopVideoPracticeRecording);
+    document.getElementById('vpRetakeBtn')?.addEventListener('click', retakeVideoPracticeRecording);
+    document.getElementById('vpDeleteBtn')?.addEventListener('click', deleteVideoPracticeRecording);
+    document.getElementById('vpDownloadBtn')?.addEventListener('click', downloadVideoPracticeRecording);
+    document.getElementById('hideQuestionBtn')?.addEventListener('click', hidePracticeQuestion);
+    document.getElementById('showQuestionBtn')?.addEventListener('click', showPracticeQuestion);
+    document.getElementById('nextQuestionBtn')?.addEventListener('click', useNextPracticeQuestion);
+    document.getElementById('practiceQuestionInput')?.addEventListener('input', updatePracticeQuestionText);
+    document.getElementById('vpRefreshDevicesBtn')?.addEventListener('click', populateVideoPracticeDevices);
+    document.getElementById('vpCameraSelect')?.addEventListener('change', restartVideoPracticeCameraIfActive);
+    document.getElementById('vpMicSelect')?.addEventListener('change', restartVideoPracticeCameraIfActive);
+    document.getElementById('vpMirrorToggle')?.addEventListener('change', toggleVideoPracticeMirror);
+    document.getElementById('vpMuteToggle')?.addEventListener('change', toggleVideoPracticeMute);
+    document.getElementById('vpSavedRecordings')?.addEventListener('click', handleVideoPracticeSavedListClick);
+    videoPracticeState.keyboardHandler = handleVideoPracticeShortcuts;
+    document.addEventListener('keydown', videoPracticeState.keyboardHandler);
+    window.addEventListener('beforeunload', cleanupVideoPractice, { once: true });
+}
+
+const videoPracticeSampleQuestions = [
+    'Tell me about yourself and your current DevOps role.',
+    'How would you deploy Jenkins in your organization?',
+    'Describe a production issue you solved and what you learned.',
+    'How do you troubleshoot a failing Kubernetes deployment?'
+];
+let videoPracticeQuestionIndex = 0;
+
+function updatePracticeQuestionText() {
+    const value = document.getElementById('practiceQuestionInput')?.value.trim();
+    const text = document.getElementById('practiceQuestionText');
+    if (text) text.textContent = value || 'Enter a practice question or topic below, or use this space to focus your answer.';
+}
+
+function hidePracticeQuestion() {
+    document.getElementById('practiceQuestionText')?.setAttribute('hidden', '');
+    document.querySelector('.question-hidden-text')?.removeAttribute('hidden');
+    document.getElementById('hideQuestionBtn')?.setAttribute('hidden', '');
+    document.getElementById('showQuestionBtn')?.removeAttribute('hidden');
+}
+
+function showPracticeQuestion() {
+    document.getElementById('practiceQuestionText')?.removeAttribute('hidden');
+    document.querySelector('.question-hidden-text')?.setAttribute('hidden', '');
+    document.getElementById('showQuestionBtn')?.setAttribute('hidden', '');
+    document.getElementById('hideQuestionBtn')?.removeAttribute('hidden');
+}
+
 }
 
 function bindVideoPracticeEvents() {
@@ -3564,6 +3661,15 @@ function populateVideoPracticeFormats() {
         webm.value = 'webm';
         webm.textContent = 'WebM';
         select.appendChild(webm);
+    }
+
+    if (supported.mp4) {
+        const mp4 = document.createElement('option');
+        mp4.value = 'mp4';
+        mp4.textContent = 'MP4';
+        select.appendChild(mp4);
+    }
+
     }
 
     if (supported.mp4) {
@@ -3886,11 +3992,240 @@ function finishVideoPracticeRecording() {
         playback.hidden = false;
     }
     updateVideoPracticeReview(blob);
+    saveVideoPracticeRecording(blob);
+    setVideoPracticeStatus('Review recording', false);
+    setVideoPracticeButtonState({ hasRecording: true });
+    setVideoPracticeMessage('Recording ready. It is saved locally in Previous recordings.', 'success');
+}
+
+function startVideoPracticeTimer() {
+    stopVideoPracticeTimer();
+    updateVideoPracticeTimer();
+    videoPracticeState.timerId = window.setInterval(updateVideoPracticeTimer, 1000);
+}
+
+function stopVideoPracticeTimer() {
+    if (videoPracticeState.timerId) {
+        clearInterval(videoPracticeState.timerId);
+        videoPracticeState.timerId = null;
+    }
+}
+
+function updateVideoPracticeTimer() {
+    if (!videoPracticeState.recordingStartedAt || videoPracticeState.isPaused) return;
+    videoPracticeState.elapsedSeconds = Math.floor((Date.now() - videoPracticeState.recordingStartedAt) / 1000);
+    const timer = document.getElementById('vpTimer');
+    if (timer) timer.textContent = formatVideoPracticeDuration(videoPracticeState.elapsedSeconds);
+    updateVideoPracticeSideStatus(videoPracticeState.isPaused ? 'Paused' : 'Recording');
+}
+
+function updateVideoPracticeReview(blob) {
+    const review = document.getElementById('vpReviewMeta');
+    if (review) review.hidden = false;
+    const duration = document.getElementById('vpReviewDuration');
+    const resolution = document.getElementById('vpReviewResolution');
+    const format = document.getElementById('vpReviewFormat');
+    const size = document.getElementById('vpReviewSize');
+    const date = document.getElementById('vpReviewDate');
+    if (duration) duration.textContent = `Duration: ${formatVideoPracticeDuration(videoPracticeState.elapsedSeconds)}`;
+    if (resolution) resolution.textContent = `Resolution: ${getVideoPracticeResolutionText()}`;
+    if (format) format.textContent = `Format: ${getVideoPracticeExtension()}`;
+    if (size) size.textContent = `Size: ${formatVideoPracticeFileSize(blob.size)}`;
+    if (date) date.textContent = `Recorded: ${(videoPracticeState.lastRecordedAt || new Date()).toLocaleString()}`;
+    updateVideoPracticeSideStatus('Completed');
+}
+
+function downloadVideoPracticeRecording() {
+    if (!videoPracticeState.recordingBlob) return;
+    const requested = document.getElementById('vpFormatSelect')?.value || 'original';
+    const extension = getVideoPracticeExtension();
+    if (requested === 'mp4' && extension !== 'mp4') {
+        setVideoPracticeMessage('MP4 conversion is unavailable in this browser. Choose WebM or Original browser format.', 'error');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = videoPracticeState.recordingUrl;
+    link.download = `video-practice-${formatVideoPracticeTimestamp(videoPracticeState.lastRecordedAt || new Date())}.${extension}`;
+    link.click();
+    setVideoPracticeMessage('Download started.', 'success');
+}
+
+function retakeVideoPracticeRecording() {
+    clearVideoPracticeRecording();
+    setVideoPracticeIdleState();
+    startVideoPracticeCamera();
+    announceVideoPractice('Ready to retake');
+}
+
+async function deleteVideoPracticeRecording() {
+    if (videoPracticeState.currentRecordingId) {
+        await deleteVideoPracticeSavedRecording(videoPracticeState.currentRecordingId);
+        videoPracticeState.currentRecordingId = null;
+    }
+    clearVideoPracticeRecording();
+    cleanupVideoPracticeStream();
+    stopVideoPracticeAudioMeter();
+    setVideoPracticeIdleState();
+    setVideoPracticeMessage('Recording deleted.', 'info');
+    announceVideoPractice('Recording deleted');
+}
+
+function clearVideoPracticeRecording() {
+    if (videoPracticeState.recordingUrl) URL.revokeObjectURL(videoPracticeState.recordingUrl);
+    videoPracticeState.recordingBlob = null;
+    videoPracticeState.recordingUrl = null;
+    videoPracticeState.chunks = [];
+    const playback = document.getElementById('vpPlayback');
+    if (playback) {
+        playback.removeAttribute('src');
+        playback.hidden = true;
+        playback.load();
+    }
+    const review = document.getElementById('vpReviewMeta');
+    if (review) review.hidden = true;
+}
+
+function openVideoPracticeDb() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+            reject(new Error('IndexedDB is unavailable'));
+            return;
+        }
+        const request = indexedDB.open(videoPracticeDbName, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(videoPracticeStoreName)) {
+                db.createObjectStore(videoPracticeStoreName, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Could not open recordings database'));
+    });
+}
+
+async function withVideoPracticeStore(mode, callback) {
+    const db = await openVideoPracticeDb();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(videoPracticeStoreName, mode);
+        const store = transaction.objectStore(videoPracticeStoreName);
+        const request = callback(store);
+        transaction.oncomplete = () => {
+            db.close();
+            resolve(request && 'result' in request ? request.result : request);
+        };
+        transaction.onerror = () => {
+            db.close();
+            reject(transaction.error || new Error('Recording database transaction failed'));
+        };
+    });
+}
+
+async function saveVideoPracticeRecording(blob) {
+    const recordedAt = videoPracticeState.lastRecordedAt || new Date();
+    const id = `vp-${recordedAt.getTime()}`;
+    const record = {
+        id,
+        title: `Video Practice ${recordedAt.toLocaleString()}`,
+        createdAt: recordedAt.toISOString(),
+        duration: videoPracticeState.elapsedSeconds,
+        mimeType: videoPracticeState.recordingMimeType || blob.type || 'video/webm',
+        size: blob.size,
+        blob
+    };
+    try {
+        await withVideoPracticeStore('readwrite', store => store.put(record));
+        videoPracticeState.currentRecordingId = id;
+        await loadVideoPracticeSavedRecordings();
+    } catch (error) {
+        console.error('Could not save Video Practice recording:', error);
+        setVideoPracticeMessage('Recording is ready, but browser storage is unavailable. Please download it now.', 'error');
+    }
+}
+
+async function loadVideoPracticeSavedRecordings() {
+    const list = document.getElementById('vpSavedRecordings');
+    if (!list) return;
+    revokeVideoPracticeSavedUrls();
+    try {
+        const records = await withVideoPracticeStore('readonly', store => store.getAll());
+        videoPracticeState.savedRecordings = records
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(record => ({ ...record, url: URL.createObjectURL(record.blob) }));
+        videoPracticeState.savedRecordingUrls = videoPracticeState.savedRecordings.map(record => record.url);
+        renderVideoPracticeSavedRecordings();
+    } catch (error) {
+        console.error('Could not load Video Practice recordings:', error);
+        list.innerHTML = '<div class="video-practice-empty-library">Saved recordings are unavailable in this browser. You can still download the current recording.</div>';
+    }
+    cleanupVideoPracticeStream();
+    stopVideoPracticeAudioMeter();
+    if (playback) {
+        playback.src = videoPracticeState.recordingUrl;
+        playback.hidden = false;
+    }
+    updateVideoPracticeReview(blob);
     setVideoPracticeStatus('Review recording', false);
     setVideoPracticeButtonState({ hasRecording: true });
     setVideoPracticeMessage('Recording ready to preview or download.', 'success');
 }
 
+function renderVideoPracticeSavedRecordings() {
+    const list = document.getElementById('vpSavedRecordings');
+    const count = document.getElementById('vpLibraryCount');
+    if (!list) return;
+    if (count) count.textContent = `${videoPracticeState.savedRecordings.length} video${videoPracticeState.savedRecordings.length === 1 ? '' : 's'}`;
+    if (!videoPracticeState.savedRecordings.length) {
+        list.innerHTML = '<div class="video-practice-empty-library">No videos recorded yet. Record your first practice answer to see it here.</div>';
+        return;
+    }
+    list.innerHTML = videoPracticeState.savedRecordings.map(record => `
+        <article class="video-practice-saved-card" data-id="${escapeHtml(record.id)}">
+            <video src="${record.url}" controls preload="metadata" playsinline></video>
+            <div class="video-practice-saved-meta">
+                <h4>${escapeHtml(record.title)}</h4>
+                <p>${new Date(record.createdAt).toLocaleString()} • ${formatVideoPracticeDuration(record.duration || 0)} • ${formatVideoPracticeFileSize(record.size || 0)}</p>
+                <div class="video-practice-saved-actions">
+                    <button type="button" class="vp-mini-btn" data-saved-action="download" data-id="${escapeHtml(record.id)}">Download</button>
+                    <button type="button" class="vp-mini-btn vp-mini-danger" data-saved-action="delete" data-id="${escapeHtml(record.id)}">Delete</button>
+                </div>
+            </div>
+        </article>
+    `).join('');
+}
+
+function handleVideoPracticeSavedListClick(event) {
+    const button = event.target.closest('[data-saved-action]');
+    if (!button) return;
+    const record = videoPracticeState.savedRecordings.find(item => item.id === button.dataset.id);
+    if (!record) return;
+    if (button.dataset.savedAction === 'download') downloadVideoPracticeSavedRecording(record);
+    if (button.dataset.savedAction === 'delete') deleteVideoPracticeSavedRecording(record.id);
+}
+
+function downloadVideoPracticeSavedRecording(record) {
+    const link = document.createElement('a');
+    link.href = record.url;
+    link.download = `video-practice-${formatVideoPracticeTimestamp(new Date(record.createdAt))}.${record.mimeType?.includes('mp4') ? 'mp4' : 'webm'}`;
+    link.click();
+    setVideoPracticeMessage('Saved recording download started.', 'success');
+}
+
+async function deleteVideoPracticeSavedRecording(id) {
+    const confirmed = window.confirm('Delete this saved recording? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+        await withVideoPracticeStore('readwrite', store => store.delete(id));
+        await loadVideoPracticeSavedRecordings();
+        setVideoPracticeMessage('Saved recording deleted.', 'info');
+    } catch (error) {
+        console.error('Could not delete saved recording:', error);
+        setVideoPracticeMessage('Could not delete the saved recording. Please try again.', 'error');
+    }
+}
+
+function revokeVideoPracticeSavedUrls() {
+    videoPracticeState.savedRecordingUrls.forEach(url => URL.revokeObjectURL(url));
+    videoPracticeState.savedRecordingUrls = [];
 function startVideoPracticeTimer() {
     stopVideoPracticeTimer();
     updateVideoPracticeTimer();
@@ -3993,6 +4328,7 @@ function cleanupVideoPractice() {
     stopVideoPracticeTimer();
     cleanupVideoPracticeStream();
     clearVideoPracticeRecording();
+    revokeVideoPracticeSavedUrls();
     videoPracticeState.isRecording = false;
     videoPracticeState.isPaused = false;
     if (videoPracticeState.keyboardHandler) {
