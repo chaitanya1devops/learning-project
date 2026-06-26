@@ -5,9 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DevOps Interview Q&A</title>
   <script>
-    const base = location.pathname.includes('/frontend/')
-      ? location.pathname.slice(0, location.pathname.indexOf('/frontend/') + '/frontend/'.length)
-      : './';
+    const path = location.pathname;
+    const frontendIndex = path.indexOf('/frontend/');
+    const pathParts = path.split('/').filter(Boolean);
+    let base = '/';
+
+    if (frontendIndex >= 0) {
+      base = path.slice(0, frontendIndex + '/frontend/'.length);
+    } else if (location.hostname.endsWith('github.io') && pathParts.length > 0) {
+      base = `/${pathParts[0]}/`;
+    }
+
     location.replace(base + location.search + location.hash);
   </script>
 </head>

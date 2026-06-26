@@ -98,16 +98,14 @@
 
     <script src="script.js"></script>
     <script>
-        // Register Service Worker for aggressive cache busting
+        // Register the service worker without forcing reloads.
+        // The previous cache-busting reload loop could make the deployed endpoint look broken.
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?t=' + new Date().getTime()).catch(err => {
+            navigator.serviceWorker.register('sw.js').then(registration => {
+                registration.update().catch(() => {});
+            }).catch(err => {
                 console.log('ServiceWorker registration failed: ', err);
             });
-        }
-        
-        // Clear browser cache on page load
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-            window.location.reload(true);
         }
     </script>
 </body>
