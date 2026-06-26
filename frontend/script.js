@@ -1330,6 +1330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgressUI();
 });
 
+
 // ---------------------- Rendering ----------------------
 function renderQuizMenu() {
     const container = document.getElementById('questionsContainer');
